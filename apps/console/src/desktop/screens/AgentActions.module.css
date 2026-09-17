@@ -1,0 +1,708 @@
+/**
+ * The four actions — frames 2a (620 wide), 2c (520), 2e (380) and 2g (520).
+ *
+ * One stylesheet because they are one conversation and share every part:
+ * the head, the field row, the foot with its sentence, and exactly one
+ * accent-filled commit. The hold's commit is deliberately NOT that one —
+ * it is navy, because blocking a sale is not the screen's next action.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ow-layer-scrim);
+  background: var(--ow-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ow-space-24);
+}
+
+.panel {
+  width: 520px;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden auto;
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-floating);
+}
+
+/* A settlement is the widest, because it carries a table of orders. */
+.panelWide {
+  composes: panel;
+  width: 620px;
+}
+
+/* One question, because it blocks a sale. */
+.panelSmall {
+  composes: panel;
+  width: 380px;
+}
+
+/* ---------------------------------- head ---------------------------------- */
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-14) var(--ow-space-16);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.headTitle {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+}
+
+.headWho {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.close {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: none;
+  color: var(--ow-color-ink-3);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--ow-color-surface-2);
+  color: var(--ow-color-ink);
+}
+
+/* ------------------------------ what he owes ------------------------------- */
+
+.owedBand {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-20);
+  padding: var(--ow-space-13) var(--ow-space-16);
+  background: var(--ow-color-warn-panel);
+  border-bottom: 1px solid var(--ow-color-warn-panel-edge);
+}
+
+.owedLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.owedFig {
+  composes: fig from './Agents.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-22);
+  color: var(--ow-color-warn-ink);
+}
+
+.owedSide {
+  padding-bottom: var(--ow-space-3);
+}
+
+.owedLabelSmall {
+  composes: owedLabel;
+  font-size: var(--ow-size-10);
+}
+
+.owedOn {
+  composes: fig from './Agents.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+/* The correction, where the figure is: he is paying for goods he has taken,
+   not handing over money he collected for the shop. */
+.owedWords {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: var(--ow-space-3);
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-warn-panel-ink);
+  text-wrap: pretty;
+}
+
+/* ------------------------------- the orders -------------------------------- */
+
+/* Four columns — tick, order, delivered, shop price. There is no
+   client-price column: the figure taken is the shop's. */
+.tableHead {
+  flex: none;
+  display: grid;
+  grid-template-columns: 22px 92px minmax(0, 1fr) 128px;
+  align-items: center;
+  column-gap: var(--ow-space-10);
+  padding: var(--ow-space-7) var(--ow-space-16);
+  background: var(--ow-color-row-hover);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.column {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.columnRight {
+  text-align: right;
+}
+
+.tableRow {
+  flex: none;
+  display: grid;
+  grid-template-columns: 22px 92px minmax(0, 1fr) 128px;
+  align-items: center;
+  column-gap: var(--ow-space-10);
+  padding: var(--ow-space-9) var(--ow-space-16);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+/* Orders he paid for at pickup: still in the cycle, with nothing to take. */
+.tableRowQuiet {
+  opacity: 0.75;
+}
+
+.tick {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-checkbox-large);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-on-fill);
+  cursor: pointer;
+}
+
+.tickOn {
+  composes: tick;
+  border-color: var(--ow-color-navy);
+  background: var(--ow-color-navy);
+}
+
+/* Not a control: there is nothing to take off these. */
+.tickOff {
+  composes: tick;
+  cursor: default;
+}
+
+.doc {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12);
+}
+
+.restCount {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.when {
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amount {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-13);
+  text-align: right;
+}
+
+.amountQuiet {
+  color: var(--ow-color-ink-2);
+}
+
+/* --------------------------------- fields ---------------------------------- */
+
+.fields {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-14);
+  flex-wrap: wrap;
+  padding: var(--ow-space-13) var(--ow-space-16);
+}
+
+.fieldAmount {
+  width: 170px;
+}
+
+.fieldAccount {
+  width: 160px;
+}
+
+.fieldDate {
+  width: 140px;
+}
+
+.fieldFrom {
+  width: 170px;
+}
+
+.fieldRef {
+  flex: 1;
+  min-width: 0;
+}
+
+.fieldName {
+  flex: 1;
+  min-width: 0;
+}
+
+.fieldPhone {
+  flex: 1;
+  min-width: 0;
+}
+
+.fieldRound {
+  width: 130px;
+  flex: none;
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.labelSoft {
+  font-weight: var(--ow-weight-medium);
+  letter-spacing: var(--ow-tracking-normal);
+  color: var(--ow-color-ink-4);
+}
+
+.labelWarn {
+  composes: label;
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.labelSpaced {
+  composes: label;
+  margin-top: var(--ow-space-13);
+}
+
+.field {
+  margin-top: var(--ow-space-6);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ow-space-7);
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-field);
+  font-size: var(--ow-size-12-5);
+}
+
+/* The field the cursor lands in wears the navy edge. */
+.fieldLive {
+  composes: field;
+  border-color: var(--ow-color-navy);
+}
+
+.amountField {
+  composes: field;
+  border-color: var(--ow-color-navy);
+}
+
+.amountTyped {
+  composes: fig from './Agents.fig.css';
+  flex: 1;
+  font-size: var(--ow-size-17);
+}
+
+.unit {
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-ink-2);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+}
+
+.input::placeholder {
+  color: var(--ow-color-ink-3);
+}
+
+.select {
+  composes: field;
+  position: relative;
+  padding: 0;
+}
+
+.selectInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--ow-space-11);
+  border: 0;
+  border-radius: var(--ow-radius-field);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+  appearance: none;
+  cursor: pointer;
+}
+
+.caret {
+  position: absolute;
+  right: var(--ow-space-11);
+  color: var(--ow-color-ink-4);
+  pointer-events: none;
+}
+
+.dateText {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12-5);
+}
+
+/* ---------------------------------- foot ----------------------------------- */
+
+.foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-12) var(--ow-space-16);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.footWords {
+  flex: 1;
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* The one accent-filled control in this file. */
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 36px;
+  padding: 0 var(--ow-space-14);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.primary:hover {
+  background: var(--ow-color-accent-btn-hover);
+}
+
+.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 var(--ow-space-13);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.secondary:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/* ------------------------------ the commission ----------------------------- */
+
+.twoUp {
+  flex: none;
+  display: flex;
+  gap: var(--ow-space-16);
+  padding: var(--ow-space-13) var(--ow-space-16);
+}
+
+.claim {
+  flex: 1;
+  min-width: 0;
+}
+
+.claimFig {
+  composes: fig from './Agents.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-22);
+}
+
+.claimBasis {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.claimSide {
+  flex: 1;
+  min-width: 0;
+  padding-top: var(--ow-space-2);
+}
+
+.claimSideFig {
+  composes: fig from './Agents.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-15);
+  color: var(--ow-color-warn-ink);
+}
+
+.noticeWrap {
+  flex: none;
+  padding: 0 var(--ow-space-16) var(--ow-space-13);
+}
+
+/* The reconciliation, stated where the claim is made. */
+.noticeGood {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-9) var(--ow-space-11);
+  background: var(--ow-color-good-fill);
+  border: 1px solid var(--ow-color-good-edge-soft);
+  border-radius: var(--ow-radius-field);
+}
+
+.noticeWarn {
+  composes: noticeGood;
+  background: var(--ow-color-warn-panel);
+  border-color: var(--ow-color-warn-panel-edge);
+}
+
+.noticeGlyph {
+  flex: none;
+  color: var(--ow-color-good-ink);
+}
+
+.noticeGlyphWarn {
+  flex: none;
+  color: var(--ow-color-warn-ink);
+}
+
+.noticeWords {
+  flex: 1;
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-good-notice-ink);
+  text-wrap: pretty;
+}
+
+.noticeWordsWarn {
+  composes: noticeWords;
+  color: var(--ow-color-warn-panel-ink);
+}
+
+/* --------------------------------- the hold -------------------------------- */
+
+.ask {
+  padding: var(--ow-space-14) var(--ow-space-16);
+}
+
+.askTitle {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+}
+
+.inlineFig {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink);
+}
+
+.askStrong {
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.askWords {
+  margin-top: var(--ow-space-7);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* What the agent will read, in his words, before it is done to him. */
+.quote {
+  margin-top: var(--ow-space-6);
+  padding: var(--ow-space-9) var(--ow-space-11);
+  background: var(--ow-color-row-hover);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-field);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-prose);
+}
+
+.askActions {
+  margin-top: var(--ow-space-14);
+  display: flex;
+  gap: var(--ow-space-8);
+}
+
+.secondaryWide {
+  composes: secondary;
+  flex: 1;
+}
+
+/* Navy, not accent. A hold is a door, not the next action. */
+.dark {
+  composes: secondary;
+  flex: 1;
+  border-color: var(--ow-color-navy);
+  background: var(--ow-color-navy);
+  color: var(--ow-color-on-fill);
+}
+
+.dark:hover {
+  background: var(--ow-color-navy-hover);
+}
+
+/* -------------------------------- the invite ------------------------------- */
+
+.termsBlock {
+  flex: none;
+  padding: 0 var(--ow-space-16) var(--ow-space-13);
+}
+
+.terms {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  gap: var(--ow-space-10);
+}
+
+/* Terms are the decision, so they are cards carrying their consequence. */
+.term {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: var(--ow-space-11);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.termOn {
+  composes: term;
+  border-color: var(--ow-color-navy);
+  background: var(--ow-color-row-hover);
+}
+
+.termHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.termName {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-ink);
+}
+
+.termWords {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+.ceiling {
+  flex: none;
+  padding: 0 var(--ow-space-16) var(--ow-space-13);
+}
+
+/* Greyed until credit is chosen — a ceiling on prepay is a question with no
+   answer, not a field with a zero in it. */
+.ceilingOff {
+  composes: ceiling;
+  opacity: 0.5;
+}
+
+.ceilingField {
+  margin-top: var(--ow-space-6);
+  width: 200px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-field);
+}
+
+.ceilingInput {
+  composes: fig from './Agents.fig.css';
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font-size: var(--ow-size-15);
+  color: var(--ow-color-ink);
+}
+
+.ceilingInput::placeholder {
+  color: var(--ow-color-ink-4);
+}
+
+.ceilingWords {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}

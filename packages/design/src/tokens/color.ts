@@ -108,6 +108,11 @@ export const color = {
   railInkBad: '#f8cdc6',
   /** A label on the phone header's margin cell — pale green on the tint. */
   railInkGood: '#b9e6d3',
+  /**
+   * A label on the phone header's OWED cell — pale amber on the amber tint
+   * over navy. 12.07:1 on `navy`; it never lands on anything lighter.
+   */
+  railInkWarn: '#f6dfab',
 
   /* --------------------------------- accent ------------------------------- */
   /** The one thing to do next, as a FILL, an ICON or a left border. */
@@ -175,6 +180,13 @@ export const color = {
   goodInkStrong: '#0b5e42',
   /** Ink for captions sitting ON the green panel. 7.58:1 on `goodFill`. */
   goodPanelInk: '#39544b',
+  /**
+   * A sentence inside a green NOTICE — the reconciliation chip's own
+   * paragraph on the commission dialog. Darker than `goodPanelInk` because
+   * it is a claim being checked ("the payout agrees with what this screen
+   * shows"), and a claim is read twice. 7.94:1 on `goodFill`.
+   */
+  goodNoticeInk: '#20544a',
 
   infoFill: '#eef4ff',
   infoChip: '#eaf1ff',
@@ -241,6 +253,17 @@ export const color = {
   payLate: '#f0b323',
   payQuiet: '#dedbd4',
 
+  /**
+   * The part of a waterfall that is not yours: what the goods cost the shop,
+   * under what the shop kept.
+   *
+   * Same value as `payQuiet` and a different name, because the two are
+   * answering different questions — one is "nothing is known here", the
+   * other is "this part is money that was already spent". A future palette
+   * could warm one without warming the other. Bars, never text: 1.38:1.
+   */
+  costBar: '#dedbd4',
+
   /** White, as an ink on a filled accent, navy or state colour. */
   onFill: '#ffffff',
 } as const;
@@ -305,6 +328,7 @@ export const neverCarriesText: readonly {
   { token: 'debtFresh', why: '1.57:1 on white — a band of the debt bar' },
   { token: 'payLate', why: '1.88:1 on white — the late band of the pays bar' },
   { token: 'payQuiet', why: '1.38:1 on white — a pays bar with no history in it' },
+  { token: 'costBar', why: '1.38:1 on white — the cost band of a waterfall' },
 ];
 
 /**
@@ -370,6 +394,7 @@ export const legalPairings: readonly {
   { ink: 'railHead', ground: 'navy', floor: 'body', note: 'a rail section heading' },
   { ink: 'railInkBad', ground: 'navy', floor: 'body', note: 'the debt cell label' },
   { ink: 'railInkGood', ground: 'navy', floor: 'body', note: 'the margin cell label' },
+  { ink: 'railInkWarn', ground: 'navy', floor: 'body', note: 'the owed cell label' },
   { ink: 'onFill', ground: 'navy', floor: 'body', note: 'the active rail row, dark buttons' },
   { ink: 'onFill', ground: 'navyHover', floor: 'body', note: 'a dark button, hovered' },
 
@@ -406,6 +431,7 @@ export const legalPairings: readonly {
   { ink: 'goodInk', ground: 'bg', floor: 'body', note: 'a gain on the ground' },
   { ink: 'goodInkStrong', ground: 'goodChip', floor: 'body', note: 'text on the deep green chip' },
   { ink: 'goodPanelInk', ground: 'goodFill', floor: 'body', note: 'a caption on the green panel' },
+  { ink: 'goodNoticeInk', ground: 'goodFill', floor: 'body', note: 'the reconciliation notice' },
   /**
    * Green as a GROUND. The hand-off button — "Open WhatsApp with this" — is
    * a door out of the app rather than the screen's next action, so it wears
@@ -448,11 +474,13 @@ export const legalPairings: readonly {
   { ink: 'ink2', ground: 'studyFill', floor: 'body', note: "a picked row's meta" },
   { ink: 'badInk', ground: 'studyFill', floor: 'body', note: 'a picked row\'s overdue figure' },
   { ink: 'warnInk', ground: 'studyFill', floor: 'body', note: 'a picked row\'s near-due age' },
+  { ink: 'goodInk', ground: 'studyFill', floor: 'body', note: "a picked row's margin" },
 
   // A hovered row carries the same four.
   { ink: 'ink2', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s meta' },
   { ink: 'badInk', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s overdue figure' },
   { ink: 'warnInk', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s near-due age' },
+  { ink: 'goodInk', ground: 'rowHover', floor: 'body', note: "a hovered row's margin" },
 
   // The focus ring, as a control boundary.
   { ink: 'accentBtn', ground: 'surface', floor: 'ui', note: 'the focus ring' },
@@ -478,6 +506,9 @@ export const intentionalAliases: readonly (readonly [ColorToken, ColorToken])[] 
   // and its one ranked row stop matching. The split is also what lets a test
   // count filled CONTROLS without counting an avatar.
   ['accentBtn', 'accentMark'],
+  // The inert grey under a bar, twice: an account with no pay history, and
+  // the cost band of the waterfall. One value, two questions — see costBar.
+  ['payQuiet', 'costBar'],
   // Accent type and bad type are one colour. An overdue figure IS bad news,
   // and the design draws it once; two names because a future palette could
   // move "late" without moving "the next action".

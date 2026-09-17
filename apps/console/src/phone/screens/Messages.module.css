@@ -1083,7 +1083,7 @@
 .tick {
   width: 17px;
   height: 17px;
-  border-radius: var(--ow-radius-checkbox-phone);
+  border-radius: var(--ow-radius-checkbox-large);
   background: var(--ow-color-navy);
   color: var(--ow-color-on-fill);
   flex: none;

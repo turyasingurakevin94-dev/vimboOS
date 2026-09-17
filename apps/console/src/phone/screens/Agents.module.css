@@ -1,0 +1,496 @@
+/**
+ * Agents — the phone, to frame 1b's measurements.
+ *
+ * **There is no width media query in this file, and there must never be.**
+ * The phone is one width. A breakpoint here would be the responsive
+ * compromise the 820px switch exists to replace, and a test fails on one.
+ *
+ * The frame's own numbers: a navy header at 10/12/0 carrying a three-cell
+ * figure strip on a 7% white wash, 34px tabs under a 2px accent underline,
+ * two-line rows at a 44px floor on white, and the picked agent as a card at
+ * the foot of the list with two 44px actions.
+ */
+
+/* The screen's root IS the grid cell of the shell — there is no wrapper. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ow-color-bg);
+}
+
+/* --------------------------------- header --------------------------------- */
+
+.head {
+  flex: none;
+  padding: var(--ow-space-10) var(--ow-space-12) 0;
+  background: var(--ow-color-navy);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+/* The raw accent, behind a glyph. It is 3.66:1 and can never carry a word. */
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--ow-radius-segment);
+  background: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* An 18px mark in a 44px target. The frame draws the mark; the thumb's floor
+   is not something a frame can show, and it does not move. */
+.glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  margin: 0 calc(var(--ow-space-10) * -1);
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+}
+
+/* ------------------------------ the position ------------------------------ */
+
+/**
+ * Translucent, not a flat token: nothing solid can let the navy through, and
+ * a second navy would read as a card sitting on the header rather than a
+ * pane cut into it.
+ */
+.figures {
+  margin-top: var(--ow-space-9);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-radius: var(--ow-radius-field);
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.cell {
+  padding: var(--ow-space-7) var(--ow-space-9);
+  border-right: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+/* The one figure the owner acts on, and the only tinted cell. The amber has
+   to sit ON the navy, so it is the meaning colour at 16% rather than a token
+   that would paint over it. */
+.cellOwed {
+  composes: cell;
+  border-right: 0;
+  background: rgba(240, 179, 35, 0.16);
+}
+
+.cellLabel {
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.cellLabelOwed {
+  composes: cellLabel;
+  color: var(--ow-color-rail-ink-warn);
+}
+
+.cellFig {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-13-5);
+  color: var(--ow-color-on-fill);
+}
+
+.cellUnit {
+  font-size: var(--ow-size-9-5);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.cellUnitOwed {
+  font-size: var(--ow-size-9-5);
+  color: var(--ow-color-rail-ink-warn);
+}
+
+/* ---------------------------------- tabs ---------------------------------- */
+
+.tabs {
+  margin-top: var(--ow-space-9);
+  display: flex;
+}
+
+.tab {
+  flex: 1;
+  height: 34px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.tabOn {
+  composes: tab;
+  border-bottom-color: var(--ow-color-accent);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+}
+
+/* ---------------------------------- list ---------------------------------- */
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--ow-color-surface);
+}
+
+.band {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-7) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.bandFig {
+  composes: fig from './Agents.fig.css';
+  margin-left: auto;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.bandWords {
+  margin-left: auto;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+/* ---------------------------------- a row ---------------------------------- */
+
+/* Three columns over two lines: the avatar spans both, the name and the
+   amount take the first, the qualifier and the word for the amount take the
+   second. 44px is a floor, not a target. */
+.row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--ow-space-10);
+  row-gap: var(--ow-space-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--ow-space-10) var(--ow-space-12);
+  border: 0;
+  border-bottom: 1px solid var(--ow-color-rule);
+  background: none;
+  text-align: left;
+  font-family: var(--ow-font-ui);
+}
+
+.avatar {
+  grid-row: span 2;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ow-radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-bold);
+  flex: none;
+}
+
+.name {
+  min-width: 0;
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.figure {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-13-5);
+  color: var(--ow-color-ink);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Amber only when it is owed. Every other figure here is simply what he was
+   billed, and an amber figure that means nothing teaches that amber means
+   nothing. */
+.figureWarn {
+  composes: figure;
+  color: var(--ow-color-warn-ink);
+}
+
+.note {
+  min-width: 0;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marks {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  overflow: hidden;
+}
+
+.pill {
+  composes: fig from './Agents.fig.css';
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-10-5);
+  white-space: nowrap;
+  flex: none;
+}
+
+.markFact {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.word {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ------------------------------ the picked one ----------------------------- */
+
+.pickedWrap {
+  padding: var(--ow-space-12);
+  background: var(--ow-color-bg);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.card {
+  overflow: hidden;
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-10) var(--ow-space-12);
+  background: var(--ow-color-navy);
+}
+
+.cardAvatar {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ow-color-accent-mark);
+  color: var(--ow-color-on-fill);
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.cardName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-on-fill);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardChip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--ow-color-on-fill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.cardBody {
+  padding: var(--ow-space-10) var(--ow-space-12);
+}
+
+.wf {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 84px;
+  align-items: center;
+  column-gap: var(--ow-space-9);
+  padding: var(--ow-space-6) 0;
+}
+
+.wfTotal {
+  composes: wf;
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.wfLabel {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  white-space: nowrap;
+}
+
+.wfLabelTotal {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.wfBar {
+  height: 9px;
+  border-radius: var(--ow-radius-bar-waterfall);
+}
+
+.wfFig {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12);
+  text-align: right;
+}
+
+.wfFigGood {
+  composes: wfFig;
+  color: var(--ow-color-good-ink);
+}
+
+.owed {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-9) var(--ow-space-12);
+  background: var(--ow-color-warn-panel);
+  border-top: 1px solid var(--ow-color-warn-panel-edge);
+}
+
+.owedLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.owedFig {
+  composes: fig from './Agents.fig.css';
+  margin-left: auto;
+  font-size: var(--ow-size-14);
+  color: var(--ow-color-warn-ink);
+}
+
+.actions {
+  display: flex;
+  gap: var(--ow-space-7);
+  padding: var(--ow-space-10) var(--ow-space-12);
+}
+
+/* The one accent-filled control on this screen, at the thumb's floor. */
+.primary {
+  flex: 1;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.secondary {
+  flex: 1;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.bonusRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--ow-space-12);
+  border: 0;
+  border-top: 1px solid var(--ow-color-rule);
+  background: none;
+  font-family: var(--ow-font-ui);
+  text-align: left;
+}
+
+.bonusLabel {
+  flex: 1;
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.bonusMark {
+  display: flex;
+  color: var(--ow-color-ink-4);
+}

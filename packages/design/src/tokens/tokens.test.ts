@@ -287,11 +287,12 @@ describe('space and radius', () => {
     // corner of a chat bubble that is not a corner. `checkbox` is 4px, the
     // same value `barTop` already carries, and putting
     // `--ow-radius-bar-top` on a checkbox is precisely the mistake this rule
-    // exists to stop. `checkboxPhone` is that checkbox at the 17px the phone
-    // draws it. A shared value is fine; a shared name would not be.
+    // exists to stop. `checkboxLarge` is that checkbox one step bigger — the
+    // phone's 17px box and the 16px one the Agents settlement table draws.
+    // A shared value is fine; a shared name would not be.
     expect(Object.keys(radius)).toEqual([
-      'barSmall', 'bubbleTail', 'barTop', 'checkbox', 'checkboxPhone',
-      'chipSquare', 'segment', 'iconChip', 'button',
+      'barWaterfall', 'barSmall', 'bubbleTail', 'barTop', 'checkbox',
+      'checkboxLarge', 'chipSquare', 'segment', 'iconChip', 'button',
       'field', 'tile', 'block', 'card', 'sheet', 'frame', 'pill',
     ]);
   });
@@ -301,8 +302,8 @@ describe('space and radius', () => {
     // with `barSmall` and `checkbox` with `barTop`, and a tie is not an
     // order. Neither pair is ever adjacent or compared, so nothing is lost.
     const px = [
-      'barSmall', 'barTop', 'checkboxPhone', 'chipSquare', 'segment',
-      'iconChip', 'button',
+      'barWaterfall', 'barSmall', 'barTop', 'checkboxLarge', 'chipSquare',
+      'segment', 'iconChip', 'button',
       'field', 'tile', 'card', 'frame',
     ] as const;
     for (let i = 1; i < px.length; i++) {

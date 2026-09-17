@@ -20,6 +20,7 @@ import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
 import { Customers } from './screens/Customers.js';
 import { Messages } from './screens/Messages.js';
+import { Agents } from './screens/Agents.js';
 import { More, type MoreDestination } from './screens/More.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
@@ -76,17 +77,19 @@ export default function PhoneApp(): ReactElement {
         <Invoices />
       ) : tab === 'more' ? (
         /**
-         * Two handoffs now end under this tab: the Customers phone frames
-         * draw the bar with **More** lit, and so does every Messages phone
-         * frame. Both screens are built, five tabs cannot hold six
-         * destinations, and no frame draws the sheet that stands between
-         * them — so `More` is the plainest list that keeps both reachable,
-         * and it goes the day the real sheet is designed.
+         * Three handoffs now end under this tab: the Customers phone frames
+         * draw the bar with **More** lit, and so do every Messages frame and
+         * the Agents 1b frame. All three screens are built, five tabs cannot
+         * hold seven destinations, and no frame draws the sheet that stands
+         * between them — so `More` is the plainest list that keeps all three
+         * reachable, and it goes the day the real sheet is designed.
          */
         beyond === null ? (
           <More onOpen={setBeyond} />
         ) : beyond === 'customers' ? (
           <Customers />
+        ) : beyond === 'agents' ? (
+          <Agents />
         ) : (
           <Messages />
         )

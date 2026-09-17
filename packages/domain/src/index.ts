@@ -7,3 +7,4 @@ export * from './quote.js';
 export * from './invoices.js';
 export * from './messages.js';
 export * from './customers.js';
+export * from './agents.js';

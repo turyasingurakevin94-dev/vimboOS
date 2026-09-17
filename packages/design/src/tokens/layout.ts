@@ -40,6 +40,12 @@ export const space = {
 /** Each radius names what wears it, because that is how it stays consistent. */
 export const radius = {
   /**
+   * A bar inside a row, 9px tall — the waterfall on the agent panel. At this
+   * height anything rounder is a lozenge; this is a bar with its corners
+   * taken off.
+   */
+  barWaterfall: '2px',
+  /**
    * A bar in a small inline series — the five months on the customer panel.
    * Not `barTop`: the shortest of those bars is 5px tall, and a 4px radius on
    * a 5px bar is a lozenge rather than a bar.
@@ -49,10 +55,18 @@ export const radius = {
   bubbleTail: '3px',
   /** The top of a bar in a chart. Flat foot, rounded head. */
   barTop: '4px',
-  /** A checkbox on the desktop, at 15px square. */
+  /** A tick box at 15px square, which is how Messages draws one. */
   checkbox: '4px',
-  /** The same checkbox on the phone, where it is 17px and rounder with it. */
-  checkboxPhone: '5px',
+  /**
+   * A tick box that is bigger, and rounder with it: the phone's 17px box,
+   * and the 16px one the Agents settlement table draws on both designs.
+   *
+   * It was `checkboxPhone` until Agents arrived drawing the same 5px on a
+   * desktop dialog. The name says what wears it — a larger box — because a
+   * name that says which DESIGN wears it stops being true the moment the
+   * other design draws the same thing.
+   */
+  checkboxLarge: '5px',
   /** A square chip — the rail's section abbreviations. */
   chipSquare: '6px',
   /** An inner segment: a ghost number field, a dashed placeholder square,
@@ -88,6 +102,11 @@ export const elevation = {
   lens: '0 1px 2px rgba(23, 34, 60, 0.08)',
   /** Something genuinely floating: a menu, the phone sheet, a toast. */
   floating: '0 18px 40px rgba(23, 34, 60, 0.16)',
+  /**
+   * A sheet rising from the bottom of the phone. It throws its shadow UP,
+   * onto the screen it covers — the same light, from the other side.
+   */
+  sheet: '0 -10px 30px rgba(23, 34, 60, 0.22)',
 } as const;
 
 /** Chrome dimensions, named. */

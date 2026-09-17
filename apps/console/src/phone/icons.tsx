@@ -100,13 +100,21 @@ export function TabMark({
   );
 }
 
-/** Small marks the phone screens need outside the tab bar. */
+/**
+ * Small marks the phone screens need outside the tab bar.
+ *
+ * `stroke` is here for one mark only: the tick inside a 16px checkbox, which
+ * the frames draw at 3.4 because a 2-weight tick inside a box that small
+ * reads as a smudge in daylight.
+ */
 export function Mark({
   d,
   size = 16,
+  stroke = 2,
 }: {
   readonly d: string;
   readonly size?: number;
+  readonly stroke?: number;
 }): ReactElement {
   return (
     <svg
@@ -115,7 +123,7 @@ export function Mark({
       height={size}
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={stroke}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -144,6 +152,10 @@ export const PATH = {
   dots: 'M12 12h.01M19 12h.01M5 12h.01',
   chevronDown: 'm6 9 6 6 6-6',
   trash: 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6',
+  /* The agents screen's own marks. `tick` is the one that goes INSIDE a 16px
+     box, which is why it starts where it does and is drawn heavier. */
+  tick: 'm5 12.5 4.5 4.5L19 7',
+  calendar: 'M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 10h18M8 2v4M16 2v4',
   /* The brand square's mark: a shop with a door. Two subpaths, one `d`. */
   home: 'M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21v-6h6v6',
   /* The Messages desk's own marks. */

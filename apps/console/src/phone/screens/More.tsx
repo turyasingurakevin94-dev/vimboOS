@@ -1,10 +1,11 @@
 /**
  * More — the one piece of navigation no frame draws.
  *
- * Both the Customers phone frames and every Messages phone frame draw the tab
- * bar with **More** lit, so both screens are reached through it and both are
- * built. Five tabs cannot hold six destinations, so this stands between the
- * tab and them until the real sheet exists.
+ * The Customers phone frames, every Messages phone frame and the Agents 1b
+ * frame all draw the tab bar with **More** lit, so all three screens are
+ * reached through it and all three are built. Five tabs cannot hold seven
+ * destinations, so this stands between the tab and them until the real sheet
+ * exists.
  *
  * It invents as little as it can: a title and the destinations, as 44px rows
  * in the phone's own row idiom. Its counts are the same reckonings the
@@ -23,7 +24,7 @@ import { DEMO_TODAY, demoCustomers, demoDesk } from '@ow/data';
 import s from './More.module.css';
 import { Mark, PATH } from '../icons.js';
 
-export type MoreDestination = 'customers' | 'messages';
+export type MoreDestination = 'customers' | 'messages' | 'agents';
 
 export interface MoreProps {
   readonly onOpen: (destination: MoreDestination) => void;
@@ -42,6 +43,14 @@ export function More({ onOpen }: MoreProps): ReactElement {
   }[] = [
     { id: 'customers', label: 'Customers', icon: PATH.users, badge: owing },
     { id: 'messages', label: 'Messages', icon: PATH.bubble, badge: owed },
+    /**
+     * No badge, because the rail draws none on Sales agents. Two agents are
+     * behind on settlement and the screen says so the moment you arrive —
+     * but a badge here that the rail does not draw would be this list
+     * inventing an obligation count, which is the drift the rest of this
+     * file exists to avoid.
+     */
+    { id: 'agents', label: 'Sales agents', icon: PATH.box, badge: 0 },
   ];
 
   return (

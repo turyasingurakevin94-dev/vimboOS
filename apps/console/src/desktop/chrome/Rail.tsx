@@ -179,7 +179,31 @@ const KEYWORDS: readonly (readonly [string, string])[] = [
   ['media', 'products'],
   ['photos', 'products'],
   ['consignment', 'inventory'],
+  // Commissions was a screen until this pass. Its four words reach Agents,
+  // where the figures it existed to compare now live on the agent panel.
+  ['commission', 'agents'],
+  ['commissions', 'agents'],
+  ['bonus', 'agents'],
+  ['earnings', 'agents'],
+  ['payout', 'agents'],
+  ['sales agent', 'agents'],
 ];
+
+/**
+ * The words that should land on the commission block rather than the top of
+ * Agents.
+ *
+ * Cutting Commissions is only finished if typing "payout" puts the payout in
+ * front of the person who typed it. `resolveTab` says WHICH screen; this says
+ * WHERE on it, and the screen scrolls its bonus block into view.
+ */
+const BONUS_WORDS = ['commission', 'bonus', 'earnings', 'payout'] as const;
+
+/** Whether a typed phrase was asking for the commission figures. */
+export const asksForBonus = (query: string): boolean => {
+  const q = query.trim().toLowerCase();
+  return q !== '' && BONUS_WORDS.some((word) => q.includes(word));
+};
 
 /**
  * Which destination a typed phrase reaches, or `null` for none.
