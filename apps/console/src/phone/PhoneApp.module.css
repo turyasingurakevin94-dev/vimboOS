@@ -69,6 +69,7 @@
  * (4.54:1 and 5.11:1), so there is nothing to correct and the file wins.
  */
 .tabPill {
+  position: relative;
   display: grid;
   place-items: center;
   width: 38px;
@@ -84,4 +85,21 @@
 .tabOn {
   color: var(--ow-color-accent-btn);
   font-weight: var(--ow-weight-bold);
+}
+
+/**
+ * Something wants you, without saying how many.
+ *
+ * A disc, not a pill with a number in it: a 19px badge on a 19px glyph
+ * covers the thing it is badging, and the screen behind the tab says the
+ * count the moment you arrive.
+ */
+.dot {
+  position: absolute;
+  top: 0;
+  right: var(--ow-space-4);
+  width: 7px;
+  height: 7px;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-accent-btn);
 }

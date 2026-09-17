@@ -40,6 +40,21 @@ export interface Section {
  * **A section shows its count only when it is SHUT.** Open, the rows are
  * the count and a chevron beside them says nothing the rows do not. Shut,
  * both appear, so the fold is never a place things go to be forgotten.
+ *
+ * ## The map the Customers handoff settles
+ *
+ * Twenty-three rows in six groups, plus Today — from thirty-three. The two
+ * cuts this turn are the same cut twice: **Debtors** is Customers with a
+ * filter on it and **Creditors** is Suppliers with a filter on it, so both
+ * become lenses and their rows go. Compare prices folds into Pricing and
+ * Purchase analytics into Analysis. Sell 6 · Buy 2 · Catalogue 4 · Money 4 ·
+ * Insight 4 · Setup 3.
+ *
+ * **A badge counts obligations only.** Eight rows carry one — Today 8, Order
+ * tracking 5, Invoices 4, Customers 11, Messages 13, Sourcing 14, Suppliers
+ * 5, Pricing 14. Inventory's under-floor lines and Forecasts' buy
+ * suggestions are the plan's ADVICE, and a badge on advice teaches people to
+ * ignore badges.
  */
 export const TODAY: Destination = { id: 'today', label: 'Today', icon: 'sunrise', badge: 8 };
 
@@ -68,10 +83,10 @@ export const SECTIONS: readonly Section[] = [
     chipInk: 'var(--ow-color-buy-chip-ink)',
     openAtRest: false,
     items: [
-      { id: 'compare', label: 'Compare prices', icon: 'scale' },
-      { id: 'sourcing', label: 'Sourcing', icon: 'search' },
-      { id: 'suppliers', label: 'Suppliers', icon: 'truck' },
-      { id: 'purchase-analytics', label: 'Purchase analytics', icon: 'bar-chart-3' },
+      { id: 'sourcing', label: 'Sourcing', icon: 'search', badge: 14 },
+      // Creditors folds in as the You owe lens, the same cut as Debtors and
+      // for the same reason: a creditor is a supplier with a balance.
+      { id: 'suppliers', label: 'Suppliers', icon: 'truck', badge: 5 },
     ],
   },
   {
@@ -95,8 +110,9 @@ export const SECTIONS: readonly Section[] = [
     openAtRest: false,
     items: [
       { id: 'cashbook', label: 'Cash book', icon: 'wallet' },
-      { id: 'debtors', label: 'Debtors', icon: 'trending-down', badge: 9 },
-      { id: 'creditors', label: 'Creditors', icon: 'credit-card' },
+      // Debtors is gone. It was Customers with a filter on it, and the two
+      // had to be re-rendered together after every void and every payment.
+      // `resolveTab` keeps the words pointing here.
       { id: 'statements', label: 'Statements', icon: 'file-text' },
       { id: 'payroll', label: 'Payroll & rent', icon: 'users' },
       { id: 'assets', label: 'Assets & loans', icon: 'warehouse' },
@@ -109,9 +125,10 @@ export const SECTIONS: readonly Section[] = [
     chipInk: 'var(--ow-color-insight-chip-ink)',
     openAtRest: false,
     items: [
-      { id: 'analytics', label: 'Sales analytics', icon: 'line-chart' },
-      { id: 'map', label: 'Map', icon: 'map-pin' },
       { id: 'forecasts', label: 'Forecasts', icon: 'activity' },
+      { id: 'analysis', label: 'Analysis', icon: 'line-chart' },
+      { id: 'manager', label: 'Manager', icon: 'message-circle' },
+      { id: 'map', label: 'Map', icon: 'map-pin' },
     ],
   },
   {
@@ -128,12 +145,87 @@ export const SECTIONS: readonly Section[] = [
   },
 ];
 
+/**
+ * The words that used to reach a destination, pointing at the one that
+ * absorbed it.
+ *
+ * Cutting a screen is not finished when its row is deleted. Somebody types
+ * "debtors" into the search field because that is what the thing has been
+ * called for three years, and a cut that leaves them with no results has
+ * taken a screen away and given nothing back. Every word listed here reached
+ * something yesterday.
+ *
+ * `debtors` resolves to Customers, which opens on its Owing lens — the lens
+ * is armed by default whenever the badge is above zero, so the word lands on
+ * exactly the list it used to name.
+ */
+const KEYWORDS: readonly (readonly [string, string])[] = [
+  ['debtors', 'customers'],
+  ['who owes me', 'customers'],
+  ['owing', 'customers'],
+  ['aging', 'customers'],
+  ['ageing', 'customers'],
+  ['receivables', 'customers'],
+  ['credit', 'customers'],
+  ['creditors', 'suppliers'],
+  ['we owe', 'suppliers'],
+  ['payables', 'suppliers'],
+  ['compare prices', 'pricing'],
+  ['rivals', 'pricing'],
+  ['purchase analytics', 'analysis'],
+  ['sales analytics', 'analysis'],
+  ['whatsapp', 'messages'],
+  ['follow-ups', 'messages'],
+  ['media', 'products'],
+  ['photos', 'products'],
+  ['consignment', 'inventory'],
+];
+
+/**
+ * Which destination a typed phrase reaches, or `null` for none.
+ *
+ * Destination labels first, so "Invoices" always beats a keyword; then the
+ * keyword table, longest phrase first, so "who owes me" is not swallowed by
+ * a shorter entry that happens to appear earlier.
+ */
+export function resolveTab(query: string): string | null {
+  const q = query.trim().toLowerCase();
+  if (q === '') return null;
+
+  const destinations: readonly Destination[] = [
+    TODAY,
+    ...SECTIONS.flatMap((section) => section.items),
+  ];
+  const named = destinations.find((d) => d.label.toLowerCase() === q);
+  if (named !== undefined) return named.id;
+
+  const keyed = [...KEYWORDS]
+    .sort((a, b) => b[0].length - a[0].length)
+    .find(([word]) => q.includes(word));
+  if (keyed !== undefined) return keyed[1];
+
+  const partial = destinations.find((d) => d.label.toLowerCase().includes(q));
+  return partial?.id ?? null;
+}
+
 export interface RailProps {
   readonly current: string;
   readonly onNavigate: (id: string) => void;
+  /**
+   * Counts that come from the books, by destination id, replacing the
+   * literal above.
+   *
+   * The literals in `SECTIONS` are the frame's, and they stand in for
+   * screens that have not been built yet. A screen that HAS been built owns
+   * its own count and hands it here — the Customers handoff is explicit
+   * that "every figure shown twice — the rail badge, the strip, the panel —
+   * must come from one reckoning", and a rail saying 11 beside a list
+   * showing nine is the drift this whole rewrite is about.
+   */
+  readonly badges?: Readonly<Record<string, number>>;
 }
 
-export function Rail({ current, onNavigate }: RailProps): ReactElement {
+export function Rail({ current, onNavigate, badges }: RailProps): ReactElement {
   const [folded, setFolded] = useState<ReadonlySet<string>>(
     () => new Set(SECTIONS.filter((x) => !x.openAtRest).map((x) => x.name)),
   );
@@ -150,7 +242,8 @@ export function Rail({ current, onNavigate }: RailProps): ReactElement {
     <nav className={s.rail} aria-label="Sections">
       <div className={s.brand}>
         <span className={s.mark}>
-          <Icon name="warehouse" size={17} />
+          {/* A shop with a door, per `Rail.dc.html`. */}
+          <Icon name="home" size={17} />
         </span>
         <div className={s.brandText}>
           {/* A non-breaking hyphen: "Omni-Ware" must never wrap mid-name. */}
@@ -160,7 +253,7 @@ export function Rail({ current, onNavigate }: RailProps): ReactElement {
       </div>
 
       <div className={s.scroll}>
-        <Row item={TODAY} current={current} onNavigate={onNavigate} />
+        <Row item={withBadge(TODAY, badges)} current={current} onNavigate={onNavigate} />
 
         {SECTIONS.map((section) => {
           const open = !folded.has(section.name);
@@ -191,7 +284,12 @@ export function Rail({ current, onNavigate }: RailProps): ReactElement {
               </button>
               {open &&
                 section.items.map((item) => (
-                  <Row key={item.id} item={item} current={current} onNavigate={onNavigate} />
+                  <Row
+                    key={item.id}
+                    item={withBadge(item, badges)}
+                    current={current}
+                    onNavigate={onNavigate}
+                  />
                 ))}
             </div>
           );
@@ -207,6 +305,15 @@ export function Rail({ current, onNavigate }: RailProps): ReactElement {
       </div>
     </nav>
   );
+}
+
+/** A live count wins over the frame's literal; absence leaves it alone. */
+function withBadge(
+  item: Destination,
+  badges: Readonly<Record<string, number>> | undefined,
+): Destination {
+  const live = badges?.[item.id];
+  return live === undefined ? item : { ...item, badge: live };
 }
 
 function Row({
