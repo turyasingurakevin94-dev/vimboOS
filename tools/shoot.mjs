@@ -7,9 +7,22 @@
  * broken app.
  */
 import { chromium } from 'playwright';
+import { existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
+
+/**
+ * This sandbox pre-installs Chromium at a fixed path and blocks the download;
+ * CI installs it wherever Playwright's own cache lives. Name the sandbox path
+ * only when it is actually there, and otherwise let Playwright resolve it —
+ * a hardcoded path is green here and fails on the first CI run.
+ */
+const SANDBOX_CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const launchOptions = existsSync(SANDBOX_CHROME)
+  ? { executablePath: SANDBOX_CHROME }
+  : {};
+
 
 const ROOT = new URL('../apps/console/dist/', import.meta.url).pathname;
 const OUT = process.argv[2] ?? '/tmp/shots';
@@ -32,7 +45,7 @@ await new Promise((r) => server.listen(0, r));
 const url = `http://127.0.0.1:${server.address().port}/`;
 
 await mkdir(OUT, { recursive: true });
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const browser = await chromium.launch(launchOptions);
 
 const VIEWS = [
   { name: 'desktop-1440', width: 1440, height: 900 },

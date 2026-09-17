@@ -2,9 +2,22 @@
    everything else gets index.html. Then loads a DEEP path and asserts the
    app boots — the case a relative base would have broken. */
 import { chromium } from 'playwright';
+import { existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
+
+/**
+ * This sandbox pre-installs Chromium at a fixed path and blocks the download;
+ * CI installs it wherever Playwright's own cache lives. Name the sandbox path
+ * only when it is actually there, and otherwise let Playwright resolve it —
+ * a hardcoded path is green here and fails on the first CI run.
+ */
+const SANDBOX_CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const launchOptions = existsSync(SANDBOX_CHROME)
+  ? { executablePath: SANDBOX_CHROME }
+  : {};
+
 const ROOT = '/home/user/vimboos/apps/console/dist';
 const T = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css' };
 const server = createServer(async (req, res) => {
@@ -18,7 +31,7 @@ const server = createServer(async (req, res) => {
 });
 await new Promise(r => server.listen(0, r));
 const base = `http://127.0.0.1:${server.address().port}`;
-const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const b = await chromium.launch(launchOptions);
 let bad = 0;
 for (const path of ['/', '/customers', '/orders/OW-2291/lines']) {
   const ctx = await b.newContext({ viewport:{width:1440,height:900} });
