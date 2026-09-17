@@ -18,7 +18,15 @@ const launchOptions = existsSync(SANDBOX_CHROME)
   ? { executablePath: SANDBOX_CHROME }
   : {};
 
-const ROOT = '/home/user/vimboos/apps/console/dist';
+/**
+ * Relative to this file, NOT an absolute path to one machine's checkout.
+ *
+ * It WAS absolute, and that is worse than a crash: run from any other clone
+ * — CI, a fresh checkout, a verification that the thing about to deploy is
+ * sound — it silently served a different `dist` and reported green about a
+ * build it never opened.
+ */
+const ROOT = new URL('../apps/console/dist/', import.meta.url).pathname;
 const T = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css' };
 const server = createServer(async (req, res) => {
   const p = normalize(decodeURI((req.url ?? '/').split('?')[0]));
@@ -33,6 +41,27 @@ await new Promise(r => server.listen(0, r));
 const base = `http://127.0.0.1:${server.address().port}`;
 const b = await chromium.launch(launchOptions);
 let bad = 0;
+
+/**
+ * The deployed page has to say which repository and commit built it.
+ *
+ * Without this, "the live site is not loading the new edits" can only be
+ * argued from screenshots — and it once turned out that the domain was
+ * serving a DIFFERENT repository's app, close enough to look like a stale
+ * deploy. `/build.txt` settles it in one request.
+ */
+const stampRes = await fetch(base + '/build.txt');
+const stamp = (await stampRes.text()).trim();
+const expected = `${process.env.VERCEL_GIT_COMMIT_SHA ?? ''}`.slice(0, 7);
+if (!stampRes.ok || !/^[^@\s]+@[0-9a-f]{7}/.test(stamp)) {
+  console.log(`build stamp               MISSING — /build.txt was ${stampRes.status}: ${stamp.slice(0, 80)}`);
+  bad += 1;
+} else if (expected !== '' && !stamp.includes(`@${expected}`)) {
+  console.log(`build stamp               WRONG COMMIT — served ${stamp}, building ${expected}`);
+  bad += 1;
+} else {
+  console.log(`build stamp               ${stamp}`);
+}
 for (const path of ['/', '/customers', '/orders/OW-2291/lines']) {
   const ctx = await b.newContext({ viewport:{width:1440,height:900} });
   const pg = await ctx.newPage();

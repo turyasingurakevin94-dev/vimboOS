@@ -1,9 +1,10 @@
 import react from '@vitejs/plugin-react';
 import { owTokens } from '@ow/design/vite';
 import { defineConfig } from 'vite';
+import { buildStamp } from './build-stamp.js';
 
 export default defineConfig({
-  plugins: [react(), owTokens()],
+  plugins: [react(), owTokens(), buildStamp()],
   /**
    * Served from a domain root by default.
    *

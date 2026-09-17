@@ -108,9 +108,16 @@ export default tseslint.config(
   { files: ['**/*.test.ts', '**/*.test.tsx', 'tools/**'], rules: { 'no-console': 'off' } },
 
   // Build config and one-off scripts sit outside every tsconfig, so the
-  // type-aware rules have nothing to read. Lint them syntactically.
+  // type-aware rules have nothing to read. Lint them syntactically. Vite
+  // compiles these itself, so a type error in one fails the build rather
+  // than slipping through.
   {
-    files: ['**/*.config.{js,ts,mjs}', 'tools/**', 'eslint.config.js'],
+    files: [
+      '**/*.config.{js,ts,mjs}',
+      'apps/console/build-stamp.ts',
+      'tools/**',
+      'eslint.config.js',
+    ],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {
       parserOptions: { projectService: false, project: false },
