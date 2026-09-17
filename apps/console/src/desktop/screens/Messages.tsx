@@ -70,7 +70,8 @@ import {
   type TellingKind,
   type Tone,
 } from '@ow/domain';
-import { DEMO_TODAY, PICKED_LIST_CANDIDATES, demoDesk } from '@ow/data';
+import { PICKED_LIST_CANDIDATES } from '@ow/data';
+import { useDesk } from '../../app/useDesk.js';
 import s from './Messages.module.css';
 import { LinkWhatsApp } from './LinkWhatsApp.js';
 import { Icon, type IconName } from '../icons.js';
@@ -140,8 +141,43 @@ export interface MessagesProps {
 }
 
 export function Messages({ onTrail }: MessagesProps): ReactElement {
-  const now = DEMO_TODAY;
-  const base = useMemo(() => demoDesk(), []);
+  const got = useDesk();
+  if (got.at === 'loading') return <Bare say="Reading the desk…" />;
+  if (got.at === 'failed') return <Bare say={`The desk could not be read. ${got.why}`} />;
+  // Spread, not `onTrail={onTrail}`: under `exactOptionalPropertyTypes`
+  // passing an absent optional explicitly is passing `undefined`.
+  return <Deck got={got} {...(onTrail === undefined ? {} : { onTrail })} />;
+}
+
+/**
+ * The screen with no lenses under it.
+ *
+ * Reading and refused share a shape because they share a problem: there is
+ * no desk yet, and a lens row of zeroes would say the shop owes nobody a
+ * word — which is the one thing this screen exists to know.
+ */
+function Bare({ say }: { readonly say: string }): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div className={s.titles}>
+          <h1 className={s.title}>Messages</h1>
+          <p className={s.sub}>{say}</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+function Deck({
+  got,
+  onTrail,
+}: {
+  readonly got: Extract<ReturnType<typeof useDesk>, { at: 'ready' }>;
+} & MessagesProps): ReactElement {
+  const now = got.today;
+  const base = got.data.desk;
+  const { unreadable } = got.data;
 
   /**
    * Linking is the one thing on this screen that changes what the screen IS:
@@ -174,7 +210,15 @@ export function Messages({ onTrail }: MessagesProps): ReactElement {
       <header className={s.head}>
         <div className={s.titles}>
           <h1 className={s.title}>{TITLE[here]}</h1>
-          <p className={s.sub}>{sub(desk, here)}</p>
+          <p className={s.sub}>
+            {sub(desk, here)}
+            {/* What the desk could NOT work out, above the lenses it did —
+                because a lens reading zero and a lens that was never
+                computed look identical, and only one of them is news. */}
+            {unreadable.length > 0 && (
+              <span className={s.subNote}> · {unreadable.length} not worked out</span>
+            )}
+          </p>
         </div>
         <div className={s.lenses} role="tablist" aria-label="Lenses">
           {counts.map((c) => (

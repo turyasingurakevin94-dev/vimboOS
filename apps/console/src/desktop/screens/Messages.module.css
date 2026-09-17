@@ -65,6 +65,12 @@
   color: var(--ow-color-ink-2);
 }
 
+/* Warn, not bad: the desk works, part of it is not worked out yet. */
+.subNote {
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-warn-ink);
+}
+
 .subFig {
   composes: fig from './Messages.fig.css';
   font-size: var(--ow-size-13);

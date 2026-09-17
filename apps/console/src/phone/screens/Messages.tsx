@@ -51,7 +51,7 @@ import {
   type Telling,
   type Tone,
 } from '@ow/domain';
-import { DEMO_TODAY, demoDesk } from '@ow/data';
+import { useDesk } from '../../app/useDesk.js';
 import s from './Messages.module.css';
 import { Setup } from './Shop.js';
 import { Mark, PATH } from '../icons.js';
@@ -90,8 +90,34 @@ const clock = (d: Date): string =>
 type Pushed = 'setup' | 'link' | 'picked-list' | null;
 
 export function Messages(): ReactElement {
-  const now = DEMO_TODAY;
-  const base = useMemo(() => demoDesk(), []);
+  const got = useDesk();
+  if (got.at === 'loading') return <Bare say="Reading the desk…" />;
+  if (got.at === 'failed') return <Bare say={`The desk could not be read. ${got.why}`} />;
+  return <Deck got={got} />;
+}
+
+/** See the note on the console's `Bare`: a lens row of zeroes is a claim. */
+function Bare({ say }: { readonly say: string }): ReactElement {
+  return (
+    <div className={s.screen}>
+      <header className={`${s.header} ${s.headerShut}`}>
+        <div className={s.headTop}>
+          <span className={s.headTitle}>Messages</span>
+        </div>
+      </header>
+      <p className={s.saying}>{say}</p>
+    </div>
+  );
+}
+
+function Deck({
+  got,
+}: {
+  readonly got: Extract<ReturnType<typeof useDesk>, { at: 'ready' }>;
+}): ReactElement {
+  const now = got.today;
+  const base = got.data.desk;
+  const { unreadable } = got.data;
   const [linked, setLinked] = useState(base.link.linked);
   const desk: Desk = useMemo(
     () => ({ ...base, link: { ...base.link, linked } }),
@@ -107,7 +133,14 @@ export function Messages(): ReactElement {
   const here = counts.some((c) => c.lens === lens) ? lens : 'money';
 
   const tabs = (
-    <div className={s.tabs} role="tablist" aria-label="Lenses">
+    <>
+      {/* Above the lens row, because it qualifies every count in it — a lens
+          reading zero and a lens that was never computed look identical, and
+          only one of them is news. */}
+      {unreadable.length > 0 && (
+        <div className={s.tabsNote}>{unreadable.length} things not worked out</div>
+      )}
+      <div className={s.tabs} role="tablist" aria-label="Lenses">
       {counts.map((c) => {
         const on = c.lens === here;
         return (
@@ -126,7 +159,8 @@ export function Messages(): ReactElement {
           </button>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 
   return (

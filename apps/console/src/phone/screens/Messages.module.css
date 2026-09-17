@@ -614,6 +614,40 @@
   border-top: 1px solid var(--ow-color-rule);
 }
 
+/**
+ * What the desk could not work out, said on the navy above the lens row.
+ *
+ * `railInkWarn` because this line sits ON the header, where a warn ink
+ * meant for light ground would be unreadable — it is the token the owed
+ * cell's label already wears on this exact background.
+ */
+.tabsNote {
+  padding: 0 0 var(--ow-space-6);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-rail-ink-warn);
+}
+
+/**
+ * A sentence about the whole screen: why there is no desk yet, or what of it
+ * was not worked out. On the ground, not the navy header, because it is
+ * about the lenses below rather than the title above.
+ */
+.saying {
+  margin: 0;
+  padding: var(--ow-space-12);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+}
+
+/* Warn, not bad: the desk works, part of it is not worked out yet. */
+.sayingWarn {
+  composes: saying;
+  background: var(--ow-color-warn-fill);
+  border-bottom: 1px solid var(--ow-color-warn-edge);
+  color: var(--ow-color-warn-ink);
+}
+
 .noteSay {
   font-size: var(--ow-size-12);
   color: var(--ow-color-ink-2);
