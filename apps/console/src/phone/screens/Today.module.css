@@ -16,7 +16,7 @@
 
 .sectionNote {
   font-size: var(--ow-size-11);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .card {
@@ -73,7 +73,7 @@
 .moveWhy {
   margin-top: var(--ow-space-3);
   font-size: var(--ow-size-11-5);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .moveActions {
@@ -93,7 +93,7 @@
   padding: 0 var(--ow-space-12);
   border: 0;
   border-radius: var(--ow-radius-button);
-  background: var(--ow-color-accent-ink);
+  background: var(--ow-color-accent-btn);
   color: var(--ow-color-on-fill);
   font-family: var(--ow-font-ui);
   font-size: var(--ow-size-13-5);
@@ -138,7 +138,7 @@
 
 .watchNote {
   font-size: var(--ow-size-11);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .watchRow {
@@ -181,7 +181,7 @@
   display: block;
   margin-top: var(--ow-space-2);
   font-size: var(--ow-size-11);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .watchFig {
@@ -217,7 +217,7 @@
   font-size: var(--ow-size-10-5);
   font-weight: var(--ow-weight-semibold);
   letter-spacing: var(--ow-tracking-label);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .tileFig {

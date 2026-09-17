@@ -135,7 +135,7 @@
   font-size: var(--ow-size-11);
   font-weight: var(--ow-weight-semibold);
   flex: none;
-  background: var(--ow-color-accent-ink);
+  background: var(--ow-color-accent-btn);
   color: var(--ow-color-on-fill);
 }
 

@@ -127,24 +127,39 @@ describe('the accent is a fill and an icon, never a word', () => {
     ).toEqual([]);
   });
 
-  it('gives accentInk the job instead, and it clears the floor both ways', () => {
-    expect(contrast(color.accentInk, color.surface)).toBeGreaterThanOrEqual(FLOOR.body);
-    expect(contrast(color.onFill, color.accentInk)).toBeGreaterThanOrEqual(FLOOR.body);
-    expect(contrast(color.onFill, color.accentInkHover)).toBeGreaterThanOrEqual(FLOOR.body);
+  it('hands the button to accentBtn, which carries white', () => {
+    expect(contrast(color.onFill, color.accentBtn)).toBeGreaterThanOrEqual(FLOOR.body);
+    expect(contrast(color.onFill, color.accentBtnHover)).toBeGreaterThanOrEqual(FLOOR.body);
     // And the pressed state must be DARKER than the rest state, or the
     // button appears to light up when it is pushed down.
-    expect(contrast(color.accentInkHover, color.surface)).toBeGreaterThan(
-      contrast(color.accentInk, color.surface),
+    expect(contrast(color.accentBtnHover, color.surface)).toBeGreaterThan(
+      contrast(color.accentBtn, color.surface),
     );
   });
 
-  it('keeps accent and accentInk close enough to read as one colour', () => {
-    // They are the same red doing two jobs. If they drift apart, a button and
-    // the brand square beside it stop looking like the same system.
-    const [r1, g1, b1] = [parseHex(color.accent).r, parseHex(color.accent).g, parseHex(color.accent).b];
-    const { r: r2, g: g2, b: b2 } = parseHex(color.accentInk);
-    const distance = Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
-    expect(distance).toBeLessThan(80);
+  it('hands accent-coloured TYPE to accentInk, which is darker again', () => {
+    // Three reds, in one order: a fill you cannot read, a fill you can read
+    // white on, and an ink you can read on white. Each step is darker than
+    // the last, and a swap in either direction is a contrast failure.
+    expect(contrast(color.accentInk, color.surface)).toBeGreaterThanOrEqual(FLOOR.body);
+    expect(contrast(color.accentInk, color.surface)).toBeGreaterThan(
+      contrast(color.accentBtn, color.surface),
+    );
+    expect(contrast(color.accentBtn, color.surface)).toBeGreaterThan(
+      contrast(color.accent, color.surface),
+    );
+  });
+
+  it('keeps all three close enough to read as one colour', () => {
+    // They are the same red doing three jobs. If they drift apart, a button
+    // and the brand square beside it stop looking like the same system.
+    const far = (a: string, b: string): number => {
+      const x = parseHex(a);
+      const y = parseHex(b);
+      return Math.sqrt((x.r - y.r) ** 2 + (x.g - y.g) ** 2 + (x.b - y.b) ** 2);
+    };
+    expect(far(color.accent, color.accentBtn)).toBeLessThan(80);
+    expect(far(color.accent, color.accentInk)).toBeLessThan(90);
   });
 });
 
@@ -229,7 +244,8 @@ describe('type', () => {
       .map(Number.parseFloat)
       .sort((a, b) => a - b);
     expect(px).toEqual([
-      9.5, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 16, 16.5, 18, 22, 24,
+      9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 16, 16.5, 17, 18,
+      19, 20, 22, 24, 27,
     ]);
   });
 
@@ -248,7 +264,7 @@ describe('type', () => {
 describe('space and radius', () => {
   it('is exactly the space scale the design file uses', () => {
     expect(Object.values(space).map((v) => Number.parseFloat(v))).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 30,
     ]);
   });
 
@@ -257,7 +273,7 @@ describe('space and radius', () => {
     // "card" cannot be used on a chip by accident.
     expect(Object.keys(radius)).toEqual([
       'barTop', 'chipSquare', 'markSmall', 'iconChip', 'button',
-      'field', 'tile', 'card', 'frame', 'pill',
+      'field', 'tile', 'block', 'card', 'sheet', 'frame', 'pill',
     ]);
   });
 

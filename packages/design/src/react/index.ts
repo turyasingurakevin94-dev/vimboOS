@@ -1,1 +1,0 @@
-export { Figure, type FigureProps } from './Figure.js';

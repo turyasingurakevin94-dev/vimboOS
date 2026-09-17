@@ -70,7 +70,7 @@
   height: 19px;
   padding: 0 var(--ow-space-8);
   border-radius: var(--ow-radius-pill);
-  background: var(--ow-color-accent-ink);
+  background: var(--ow-color-accent-btn);
   color: var(--ow-color-on-fill);
   font-size: var(--ow-size-11);
   font-weight: var(--ow-weight-semibold);
@@ -191,7 +191,7 @@
   gap: var(--ow-space-3);
   border: 0;
   background: none;
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
   font-size: var(--ow-size-9-5);
   font-weight: var(--ow-weight-semibold);
 }

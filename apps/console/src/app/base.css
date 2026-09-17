@@ -54,7 +54,7 @@ button {
 /* The focus ring is never removed, and never the browser default: 2px of the
    accent ink at 2px offset, on everything you can reach with a keyboard. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: var(--ow-focus-width) solid var(--ow-color-accent-ink);
+  outline: var(--ow-focus-width) solid var(--ow-color-accent-btn);
   outline-offset: var(--ow-focus-offset);
   border-radius: var(--ow-radius-chip-square);
 }

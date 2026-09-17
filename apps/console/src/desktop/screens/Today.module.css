@@ -31,7 +31,7 @@
 .sub {
   margin-top: var(--ow-space-3);
   font-size: var(--ow-size-13);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .headActions {
@@ -60,11 +60,11 @@
  * carries words. The design file's own `.btn-p` is #c2311f for that reason.
  */
 .btnPrimary {
-  background: var(--ow-color-accent-ink);
+  background: var(--ow-color-accent-btn);
   color: var(--ow-color-on-fill);
 }
 .btnPrimary:hover {
-  background: var(--ow-color-accent-ink-hover);
+  background: var(--ow-color-accent-btn-hover);
 }
 
 .btnSecondary {
@@ -86,7 +86,7 @@
 
 .btnGhost {
   background: none;
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 .btnGhost:hover {
   background: var(--ow-color-rule);
@@ -152,7 +152,7 @@
   font-size: var(--ow-size-11);
   font-weight: var(--ow-weight-semibold);
   letter-spacing: var(--ow-tracking-label);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .metricFig {
@@ -175,7 +175,7 @@
 .metricBasis {
   margin-top: var(--ow-space-2);
   font-size: var(--ow-size-11-5);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .metricBasisTight {
@@ -247,7 +247,7 @@
 
 .sectionNote {
   font-size: var(--ow-size-12-5);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 /* ---------------------------------- card ---------------------------------- */
@@ -301,7 +301,7 @@
   font-weight: var(--ow-weight-semibold);
   letter-spacing: var(--ow-tracking-figure);
   font-size: var(--ow-size-11-5);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .grow {
@@ -316,7 +316,7 @@
   font-size: var(--ow-size-10-5);
   font-weight: var(--ow-weight-semibold);
   letter-spacing: var(--ow-tracking-label);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .moveWorthFig {
@@ -344,7 +344,7 @@
 .moveWhy {
   margin-top: var(--ow-space-5);
   font-size: var(--ow-size-13);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
   max-width: var(--ow-measure);
   text-wrap: pretty;
 }
@@ -364,7 +364,7 @@
   border-top: 1px solid var(--ow-color-rule);
   font-size: var(--ow-size-12-5);
   line-height: var(--ow-leading-prose);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
   max-width: var(--ow-measure);
 }
 
@@ -389,7 +389,7 @@
 
 .watchNote {
   font-size: var(--ow-size-12);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .watchRow {
@@ -434,7 +434,7 @@
   display: block;
   margin-top: var(--ow-space-2);
   font-size: var(--ow-size-11-5);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .watchFig {
@@ -448,7 +448,7 @@
 }
 
 .watchCaret {
-  color: var(--ow-color-ink-3);
+  color: var(--ow-color-ink-faint);
   flex: none;
 }
 
@@ -466,7 +466,7 @@
 .panelSub {
   margin-top: var(--ow-space-2);
   font-size: var(--ow-size-11-5);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .product {
@@ -520,12 +520,12 @@
   align-items: baseline;
   gap: var(--ow-space-8);
   font-size: var(--ow-size-12);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .weeks {
   background: var(--ow-color-good-fill);
-  border-color: var(--ow-color-margin-edge);
+  border-color: var(--ow-color-good-edge-soft);
 }
 
 .bars {
@@ -573,7 +573,7 @@
   font-size: var(--ow-size-11);
   font-weight: var(--ow-weight-semibold);
   letter-spacing: var(--ow-tracking-label);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .tileFig {

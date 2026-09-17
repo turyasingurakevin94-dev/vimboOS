@@ -42,11 +42,11 @@
 
 .crumbStart {
   font-size: var(--ow-size-12-5);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .crumbSep {
-  color: var(--ow-color-ink-3);
+  color: var(--ow-color-ink-faint);
 }
 
 .crumbHere {
@@ -65,7 +65,7 @@
   border-radius: var(--ow-radius-field);
   background: var(--ow-color-field);
   border: 1px solid var(--ow-color-hairline);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 .searchInput {
@@ -78,14 +78,14 @@
   outline: none;
 }
 .searchInput::placeholder {
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
 }
 
 /* The key cap. A physical-looking chip, so it reads as a key and not a tag. */
 .kbd {
   font-size: var(--ow-size-10-5);
   font-weight: var(--ow-weight-semibold);
-  color: var(--ow-color-ink-2);
+  color: var(--ow-color-ink-3);
   background: var(--ow-color-surface);
   border: 1px solid var(--ow-color-field-edge);
   border-radius: var(--ow-radius-chip-square);

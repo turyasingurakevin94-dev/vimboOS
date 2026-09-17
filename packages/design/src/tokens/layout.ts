@@ -33,6 +33,8 @@ export const space = {
   20: '20px',
   22: '22px',
   24: '24px',
+  /** The gutter of the mockup board, and a dialog's outer padding. */
+  30: '30px',
 } as const;
 
 /** Each radius names what wears it, because that is how it stays consistent. */
@@ -51,8 +53,12 @@ export const radius = {
   field: '10px',
   /** An inner tile inside a card. */
   tile: '11px',
+  /** A bordered block inside a card: a selectable option row, a notice. */
+  block: '12px',
   /** A card. */
   card: '14px',
+  /** A dialog panel, sitting inside the 18px frame. */
+  sheet: '16px',
   /** The frame the whole app sits in. */
   frame: '18px',
   pill: '999px',

@@ -38,9 +38,11 @@ export const weight = {
 /**
  * The size ramp, keyed by its pixel value: `size['13.5']`.
  *
- * Taken from the design FILE, not the README's token table: the file uses
- * 16 and 18 (a card title, and the worth figure on a move) and never uses
- * the 17 the prose lists. Where the two disagree the markup wins.
+ * Taken from the design FILES, not the document's token table, and it is the
+ * union of what they draw — not of what either lists. The document stops at
+ * `15 16 19 26 28`; Today draws 16.5 and 18, Quote draws 17, 20 and 27, and
+ * neither draws 26 or 28, so neither is here. A size nothing draws is a size
+ * nothing checks.
  *
  * **The key order here is not the ramp order, and cannot be.** JavaScript
  * hoists integer-like keys ('11', '12') ahead of the rest and sorts them
@@ -51,6 +53,7 @@ export const weight = {
  */
 export const size = {
   '9.5': '9.5px',
+  '10': '10px',
   '10.5': '10.5px',
   '11': '11px',
   '11.5': '11.5px',
@@ -63,9 +66,13 @@ export const size = {
   '15': '15px',
   '16': '16px',
   '16.5': '16.5px',
+  '17': '17px',
   '18': '18px',
+  '19': '19px',
+  '20': '20px',
   '22': '22px',
   '24': '24px',
+  '27': '27px',
 } as const;
 
 export const leading = {
