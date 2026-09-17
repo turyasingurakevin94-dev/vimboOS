@@ -68,7 +68,7 @@ for (const path of ['/', '/customers', '/orders/OW-2291/lines']) {
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e).slice(0,100)));
   pg.on('response', r => { if (!r.ok()) errs.push(`${r.status()} ${r.url().replace(base,'')}`); });
-  await pg.goto(base + path, { waitUntil: 'networkidle' });
+  await pg.goto(base + path + '?demo=1', { waitUntil: 'networkidle' });
   await pg.waitForTimeout(400);
   const booted = await pg.evaluate(() => !!document.querySelector('h1'));
   const railed = await pg.evaluate(() => !!document.querySelector('nav'));

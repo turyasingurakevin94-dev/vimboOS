@@ -1,0 +1,156 @@
+/**
+ * The door — and the ONE screen in this app with no mockup.
+ *
+ * The second rule says not to invent a layout to fill a gap, and this is
+ * the exception that proves why the rule is about product screens: nobody
+ * can see a designed screen without first getting through a door, so the
+ * door cannot wait for its own drawing. It is therefore built to be
+ * deliberately plain — tokens only, no idea of its own, nothing a mockup
+ * would have to argue with. **It should get one.**
+ *
+ * It lives in `app/` beside `Booting.tsx` because it is pre-design: before
+ * a session there is no console and no phone application, so the
+ * two-designs law has nothing to switch between yet.
+ */
+
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ow-space-24);
+  background: var(--ow-color-bg);
+}
+
+.panel {
+  width: 100%;
+  max-width: 380px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.mark {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.name {
+  font-size: var(--ow-size-16);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading-soft);
+}
+
+.card {
+  margin-top: var(--ow-space-16);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+  padding: var(--ow-space-20);
+}
+
+.title {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.sub {
+  margin-top: var(--ow-space-4);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+}
+
+.label {
+  display: block;
+  margin-top: var(--ow-space-16);
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-2);
+}
+
+.field {
+  width: 100%;
+  height: var(--ow-chrome-tap);
+  margin-top: var(--ow-space-6);
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  color: var(--ow-color-ink);
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--ow-color-navy);
+}
+
+.go {
+  width: 100%;
+  height: var(--ow-chrome-tap);
+  margin-top: var(--ow-space-20);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+}
+
+.go:disabled {
+  background: var(--ow-color-neutral-chip);
+  color: var(--ow-color-ink-4);
+}
+
+/* What went wrong, in the words the server used. */
+.problem {
+  margin-top: var(--ow-space-14);
+  padding: var(--ow-space-10) var(--ow-space-12);
+  background: var(--ow-color-bad-fill);
+  border: 1px solid var(--ow-color-bad-edge);
+  border-radius: var(--ow-radius-icon-chip);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-bad-ink);
+}
+
+/* Which books this build is pointed at. On the shop's real ones it says so
+   in plain words, because knowing is the whole point of showing it. */
+.target {
+  margin-top: var(--ow-space-14);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+  text-align: center;
+}
+
+.targetLive {
+  composes: target;
+  color: var(--ow-color-warn-ink);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.look {
+  color: var(--ow-color-accent-ink);
+  font-weight: var(--ow-weight-semibold);
+  text-decoration: none;
+}
+
+.look:hover {
+  text-decoration: underline;
+}

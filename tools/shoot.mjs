@@ -68,7 +68,7 @@ for (const v of VIEWS) {
     if (m.type() === 'error' && !network) errors.push(t);
   });
 
-  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.goto(url + '?demo=1', { waitUntil: 'networkidle' });
   await page.waitForTimeout(400);
 
   if (SECTION !== null) {
