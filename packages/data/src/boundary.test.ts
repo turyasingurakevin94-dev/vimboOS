@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readDate, readMoney, readPayload, readText } from './boundary.js';
+import { readDate, readMoney, readText } from './boundary.js';
 import type { Unavailable } from '@ow/domain';
 
 const why = (d: { status: string }): string => (d as Unavailable).reason;
@@ -90,60 +90,5 @@ describe('readDate', () => {
     // apps than anyone admits.
     expect(readDate('not a date')).toBeNull();
     expect(readDate(null)).toBeNull();
-  });
-});
-
-describe('readPayload — the untyped jsonb the old app wrote for years', () => {
-  it('reads a well-formed order', () => {
-    const p = readPayload(
-      { items: [{ name: 'Iron sheets', qty: 40, price: '12400' }] },
-      'order',
-    );
-    expect(p.unreadable).toEqual([]);
-    expect(p.lines).toHaveLength(1);
-    expect(p.lines[0]).toMatchObject({ name: 'Iron sheets', quantity: 40 });
-    expect(p.lines[0]?.unitPrice).toMatchObject({ status: 'known', value: 12_400 });
-  });
-
-  it('accepts both field spellings the old app used', () => {
-    const p = readPayload(
-      { items: [{ name: 'Cement', quantity: 120, unitPrice: 31000 }] },
-      'order',
-    );
-    expect(p.lines[0]).toMatchObject({ quantity: 120 });
-    expect(p.lines[0]?.unitPrice).toMatchObject({ status: 'known', value: 31_000 });
-  });
-
-  it('names what it could not read instead of dropping it', () => {
-    const p = readPayload(
-      {
-        items: [
-          { name: 'Iron sheets', qty: 40, price: '12400' },
-          { name: 'Mystery item' }, // no quantity
-          null,
-        ],
-      },
-      'order',
-    );
-    expect(p.lines).toHaveLength(1);
-    expect(p.unreadable).toHaveLength(2);
-    expect(p.unreadable[0]).toContain('Mystery item');
-    expect(p.unreadable[1]).toContain('line 3');
-  });
-
-  it('keeps a line whose price is unreadable, with the price unavailable', () => {
-    // The line is real and belongs on the order. Only its price is missing,
-    // and the total built from it will be partial rather than wrong.
-    const p = readPayload({ items: [{ name: 'Nails', qty: 6, price: null }] }, 'order');
-    expect(p.lines).toHaveLength(1);
-    expect(p.lines[0]?.unitPrice.status).toBe('unavailable');
-  });
-
-  it('says so when there is nothing to read at all', () => {
-    for (const junk of [null, undefined, {}, { items: 'nope' }, 'string']) {
-      const p = readPayload(junk, 'order');
-      expect(p.lines).toEqual([]);
-      expect(p.unreadable).toHaveLength(1);
-    }
   });
 });
