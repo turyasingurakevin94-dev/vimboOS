@@ -3,6 +3,27 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./tokens": "./src/tokens/index.ts" },
-  "scripts": { "build": "tsc --build" }
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens/index.ts",
+    "./vite": {
+      "types": "./dist/vite-plugin.d.ts",
+      "default": "./dist/vite-plugin.js"
+    },
+    "./react": "./src/react/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "devDependencies": {
+    "vite": "^6.0.5",
+    "@types/react": "^18.3.17",
+    "react": "^18.3.1"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1"
+  },
+  "dependencies": {
+    "@ow/domain": "workspace:*"
+  }
 }

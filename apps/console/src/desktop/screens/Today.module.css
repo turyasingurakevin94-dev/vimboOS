@@ -1,0 +1,298 @@
+/* The page header: name, one line of what it is, a hairline, the screen's
+   own action on the right. */
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-6);
+  padding-bottom: var(--ow-space-5);
+  border-bottom: 1px solid var(--ow-color-line);
+}
+
+.title {
+  font-size: var(--ow-size-20);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading);
+  line-height: var(--ow-leading-tight);
+}
+
+/* Never folded away: on Today this is the reading time, and hiding it would
+   conceal the one thing on the page that goes stale. */
+.sub {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+.headSpacer {
+  flex: 1;
+}
+
+/* THE accent. Once per screen — this is it. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-3);
+  height: 32px;
+  padding: 0 var(--ow-space-5);
+  border: 0;
+  border-radius: var(--ow-radius-md);
+  background: var(--ow-color-accent);
+  color: #fff;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  transition: background var(--ow-motion-instant) var(--ow-motion-ease);
+}
+.action:hover {
+  background: var(--ow-color-accent-deep);
+}
+
+.actionGhost {
+  height: 32px;
+  padding: 0 var(--ow-space-5);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-md);
+  background: var(--ow-color-paper);
+  color: var(--ow-color-ink-2);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-medium);
+}
+.actionGhost:hover {
+  background: var(--ow-color-fill);
+}
+
+/**
+ * The metric strip. ONE region with hairline dividers — not five cards.
+ * Per-tile borders turn a reading into a set of unrelated boxes and cost
+ * the row its comparability.
+ */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: var(--ow-space-6);
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+  overflow: hidden;
+}
+
+.metric {
+  padding: var(--ow-space-5) var(--ow-space-6);
+  border-left: 1px solid var(--ow-color-line-soft);
+  min-width: 0;
+}
+.metric:first-child {
+  border-left: 0;
+}
+
+.metricLabel {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+  margin-bottom: var(--ow-space-3);
+}
+
+.panel {
+  margin-top: var(--ow-space-6);
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+  overflow: hidden;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  height: 40px;
+  padding: 0 var(--ow-space-6);
+  border-bottom: 1px solid var(--ow-color-line);
+}
+
+.panelTitle {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.panelCount {
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+}
+
+/* The dense table. 40px rows: twenty visible at once is the point of the
+   desktop design. */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ow-size-13);
+  /* Fixed layout, with the widths declared in a colgroup. With `auto`, a
+     cell that truncates has to be given a max-width to truncate against,
+     and the only value that works is 0 — which collapses the text columns
+     to nothing while the table sits in acres of unused space. Fixed lets
+     the figure columns take exactly what they need and hands the rest to
+     the names, which is the rule: if something must be cut, cut the name. */
+  table-layout: fixed;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: var(--ow-layer-sticky);
+  background: var(--ow-color-paper);
+  padding: var(--ow-space-3) var(--ow-space-6);
+  text-align: left;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+  border-bottom: 1px solid var(--ow-color-line);
+  white-space: nowrap;
+}
+
+.table td {
+  height: 40px;
+  padding: var(--ow-space-4) var(--ow-space-6);
+  border-bottom: 1px solid var(--ow-color-line-soft);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr:hover {
+  background: var(--ow-color-paper-hover);
+}
+
+/* Money never truncates: the figure columns are sized to their content and
+   the name column is the one that gives way. */
+.numeric {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Three declarations or none. A `nowrap` plus `hidden` without `ellipsis`
+   is a hard cut with no sign that anything was removed. */
+.name {
+  font-weight: var(--ow-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.colOrder { width: 96px; }
+.colValue { width: 150px; }
+.colWaiting { width: 104px; }
+.colState { width: 132px; }
+
+.meta {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+/* Chips carry a word as well as a colour — never colour alone. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-2);
+  padding: 2px var(--ow-space-3);
+  border-radius: var(--ow-radius-sm);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+.chipGood {
+  background: var(--ow-color-good-tint);
+  color: var(--ow-color-good);
+}
+.chipWarn {
+  background: var(--ow-color-warn-tint);
+  color: var(--ow-color-warn);
+}
+.chipBad {
+  background: var(--ow-color-bad-tint);
+  color: var(--ow-color-bad);
+}
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+/* ------------------------------- context ------------------------------- */
+
+.contextTitle {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+  margin-bottom: var(--ow-space-4);
+  /* line the column up with the page title beside it */
+  padding-top: var(--ow-space-2);
+}
+
+.insight {
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  padding: var(--ow-space-5);
+  margin-bottom: var(--ow-space-4);
+  box-shadow: var(--ow-elevation-rest);
+}
+
+.insightHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-3);
+  margin-bottom: var(--ow-space-3);
+}
+
+.insightLabel {
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-2);
+}
+
+.insightBody {
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+  max-width: var(--ow-measure);
+}
+
+.insightLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-2);
+  margin-top: var(--ow-space-4);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-accent);
+}
+.insightLink svg {
+  width: 13px;
+  height: 13px;
+}
+
+.demoNote {
+  margin-top: var(--ow-space-6);
+  padding: var(--ow-space-5);
+  border: 1px dashed var(--ow-color-line);
+  border-radius: var(--ow-radius-md);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+  max-width: var(--ow-measure);
+}

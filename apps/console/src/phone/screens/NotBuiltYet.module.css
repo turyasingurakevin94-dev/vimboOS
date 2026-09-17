@@ -1,0 +1,8 @@
+.wrap { padding: var(--ow-space-9) 0; }
+.title { font-size: var(--ow-size-18); font-weight: var(--ow-weight-semibold); }
+.body {
+  margin-top: var(--ow-space-4);
+  font-size: var(--ow-size-15);
+  line-height: var(--ow-leading-normal);
+  color: var(--ow-color-ink-3);
+}

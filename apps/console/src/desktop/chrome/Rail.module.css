@@ -1,0 +1,138 @@
+/**
+ * The dark left rail. Desktop only — the phone has a tab bar and does not
+ * import this file, which a lint rule enforces.
+ */
+
+.rail {
+  grid-area: rail;
+  width: var(--rail-w, 232px);
+  background: var(--ow-color-nav);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: var(--ow-layer-rail);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  height: 56px;
+  padding: 0 var(--ow-space-5);
+  flex: none;
+}
+
+.mark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: var(--ow-radius-sm);
+  background: var(--ow-color-accent);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: var(--ow-weight-bold);
+  font-size: var(--ow-size-13);
+}
+
+.wordmark {
+  color: var(--ow-color-nav-text);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-heading);
+  white-space: nowrap;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ow-space-2) var(--ow-space-4) var(--ow-space-6);
+  scrollbar-width: thin;
+  scrollbar-color: var(--ow-color-nav-raised) transparent;
+}
+
+.group {
+  margin-top: var(--ow-space-5);
+}
+.group:first-child {
+  margin-top: 0;
+}
+
+.groupLabel {
+  padding: 0 var(--ow-space-3) var(--ow-space-2);
+  color: var(--ow-color-nav-section);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  width: 100%;
+  /* 32px of content plus padding: the desktop tap target. A pointer needs
+     far less than a thumb, and the density is the point of this design. */
+  min-height: 32px;
+  padding: var(--ow-space-3) var(--ow-space-3);
+  margin-bottom: 1px;
+  border: 0;
+  border-radius: var(--ow-radius-md);
+  background: transparent;
+  color: var(--ow-color-nav-text);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-medium);
+  text-align: left;
+  transition: background var(--ow-motion-instant) var(--ow-motion-ease);
+}
+
+.item:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/**
+ * The row you are on is INVERTED — white ground, nav ink. Never an accent
+ * fill: the rail is on screen on every page, so an accent here would
+ * permanently spend the screen's one accent on a row you are already
+ * standing on.
+ */
+.active {
+  background: var(--ow-color-nav-active-ground);
+  color: var(--ow-color-nav-active-ink);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.label {
+  flex: 1;
+  min-width: 0; /* or it refuses to shrink and shoves the count out of the rail */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  flex: none;
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-nav-muted);
+}
+
+.active .count {
+  color: var(--ow-color-ink-3);
+}
+
+/* A count that needs attention is the one thing allowed to carry colour in
+   the rail — and it carries it as a filled dot with the number beside it,
+   never as colour alone. */
+.countAlert {
+  color: var(--ow-color-bad);
+  font-weight: var(--ow-weight-semibold);
+}

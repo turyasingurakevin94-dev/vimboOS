@@ -1,0 +1,23 @@
+{
+  "name": "@ow/console",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @ow/design build && vite",
+    "build": "pnpm --filter @ow/design build && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ow/design": "workspace:*",
+    "@ow/domain": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.5"
+  }
+}

@@ -1,0 +1,130 @@
+.shell {
+  display: grid;
+  grid-template-areas:
+    'rail topbar'
+    'rail main';
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 56px 1fr;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  padding: 0 var(--ow-space-8);
+  background: var(--ow-color-paper);
+  border-bottom: 1px solid var(--ow-color-line);
+}
+
+.search {
+  flex: 1;
+  max-width: 420px;
+  height: 32px;
+  padding: 0 var(--ow-space-5);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-md);
+  background: var(--ow-color-canvas);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+}
+.search::placeholder {
+  color: var(--ow-color-ink-3);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.iconBtn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--ow-radius-md);
+  background: transparent;
+  color: var(--ow-color-ink-2);
+}
+.iconBtn:hover {
+  background: var(--ow-color-fill);
+}
+.iconBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  padding-left: var(--ow-space-5);
+  border-left: 1px solid var(--ow-color-line);
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-nav);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.whoName {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-medium);
+  line-height: var(--ow-leading-tight);
+}
+.whoRole {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+  line-height: var(--ow-leading-tight);
+}
+
+/**
+ * The work and the context beside it. 320px is the context column from the
+ * design spec — wide enough for an insight with a figure and a basis line,
+ * narrow enough that it never competes with the work for first read.
+ */
+.main {
+  grid-area: main;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.work {
+  overflow-y: auto;
+  padding: var(--ow-space-8);
+  max-width: 1600px;
+}
+
+.context {
+  overflow-y: auto;
+  padding: var(--ow-space-8) var(--ow-space-8) var(--ow-space-8) 0;
+}
+
+/* Below 1280 the context column would squeeze the table into uselessness.
+   It drops under the work — still the desktop design, still a pointer and a
+   keyboard, just one column instead of two. This is not the phone design
+   arriving early; nothing here changes size or target. */
+@media (max-width: 1279px) {
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: max-content;
+    overflow-y: auto;
+  }
+  .work,
+  .context {
+    overflow: visible;
+  }
+  .context {
+    padding: 0 var(--ow-space-8) var(--ow-space-8);
+  }
+}

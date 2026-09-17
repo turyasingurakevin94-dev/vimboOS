@@ -1,0 +1,211 @@
+/* Phone Today. Cards, 15px body, 44px targets. Nothing here is a smaller
+   version of the desktop screen — it is a different answer to the same
+   question. */
+
+.head {
+  margin-bottom: var(--ow-space-6);
+}
+
+.date {
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+/* The four figures as a 2×2 inside ONE card, with hairline dividers.
+   Four separate cards would be four things to read; this is one. */
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+  overflow: hidden;
+  margin-bottom: var(--ow-space-6);
+}
+
+.metric {
+  padding: var(--ow-space-5) var(--ow-space-5);
+  border-left: 1px solid var(--ow-color-line-soft);
+  border-top: 1px solid var(--ow-color-line-soft);
+  min-width: 0;
+}
+.metric:nth-child(-n + 2) {
+  border-top: 0;
+}
+.metric:nth-child(odd) {
+  border-left: 0;
+}
+
+.metricLabel {
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+  margin-bottom: var(--ow-space-3);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-3);
+  margin: var(--ow-space-8) 0 var(--ow-space-4);
+}
+
+.sectionName {
+  font-size: var(--ow-size-16);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.sectionCount {
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+/* A job is a card with its actions ON it. On a phone, an action hidden
+   behind a tap on the row is an action that does not exist. */
+.job {
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+  padding: var(--ow-space-5);
+  margin-bottom: var(--ow-space-4);
+}
+
+.jobTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  margin-bottom: var(--ow-space-3);
+}
+
+.jobId {
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+.jobSpacer {
+  flex: 1;
+}
+
+.jobWho {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+  line-height: var(--ow-leading-snug);
+  /* Three declarations or none — and min-width:0 so it can actually shrink. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobWhat {
+  margin-top: var(--ow-space-1);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+  line-height: var(--ow-leading-snug);
+}
+
+.jobFoot {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-4);
+  margin-top: var(--ow-space-5);
+  padding-top: var(--ow-space-5);
+  border-top: 1px solid var(--ow-color-line-soft);
+}
+
+.jobWaiting {
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+/* 44px, and the label says what will happen. */
+.jobAction {
+  min-height: 44px;
+  padding: 0 var(--ow-space-6);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-md);
+  background: var(--ow-color-paper);
+  color: var(--ow-color-ink);
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-2);
+  padding: 3px var(--ow-space-4);
+  border-radius: var(--ow-radius-sm);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+.chipGood {
+  background: var(--ow-color-good-tint);
+  color: var(--ow-color-good);
+}
+.chipWarn {
+  background: var(--ow-color-warn-tint);
+  color: var(--ow-color-warn);
+}
+.chipBad {
+  background: var(--ow-color-bad-tint);
+  color: var(--ow-color-bad);
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+/* The context column has nowhere to be on a phone, so it sits below the
+   work — never beside it, and never as a squeezed column. */
+.insight {
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+  padding: var(--ow-space-5);
+  margin-bottom: var(--ow-space-4);
+}
+
+.insightLabel {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+  line-height: var(--ow-leading-snug);
+}
+
+.insightBody {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+}
+
+.insightAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-2);
+  min-height: 44px;
+  margin-top: var(--ow-space-2);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-accent);
+}
+
+.demoNote {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+}

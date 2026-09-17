@@ -1,0 +1,16 @@
+.wrap {
+  grid-column: 1 / -1;
+  padding: var(--ow-space-11) var(--ow-space-8);
+  max-width: var(--ow-measure);
+}
+.title {
+  font-size: var(--ow-size-20);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading);
+}
+.body {
+  margin-top: var(--ow-space-4);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-normal);
+  color: var(--ow-color-ink-3);
+}

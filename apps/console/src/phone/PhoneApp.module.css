@@ -1,0 +1,138 @@
+/**
+ * The phone application. Not the console at a smaller size — a different
+ * shape: a 52px bar at the top, the work in one column, and five tabs
+ * under the thumb.
+ */
+
+.shell {
+  display: grid;
+  /* top bar · the work · the one action · the tabs */
+  grid-template-rows: auto 1fr auto auto;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  height: 52px;
+  padding: 0 var(--ow-space-6);
+  /* The dark chrome the desktop puts in a rail; on a phone there is no room
+     for a rail, so the identity lives in the bar. */
+  background: var(--ow-color-nav);
+  color: var(--ow-color-nav-text);
+  padding-top: env(safe-area-inset-top);
+  height: calc(52px + env(safe-area-inset-top));
+}
+
+.topTitle {
+  font-size: var(--ow-size-16);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-heading);
+  color: #fff;
+}
+
+.topSpacer {
+  flex: 1;
+}
+
+.topBtn {
+  display: grid;
+  place-items: center;
+  /* 44px. The thumb, whatever the mark inside looks like. */
+  width: 44px;
+  height: 44px;
+  margin-right: calc(var(--ow-space-4) * -1);
+  border: 0;
+  background: transparent;
+  color: var(--ow-color-nav-text);
+  border-radius: var(--ow-radius-md);
+}
+
+.scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--ow-space-6);
+  padding-bottom: var(--ow-space-8);
+}
+
+/**
+ * The thumb zone: the screen's one action, pinned above the tab bar.
+ *
+ * It sits in the SHELL, outside the scrolling content, and not as a sticky
+ * element inside it. A sticky child cannot escape its parent's padding box,
+ * so the same bar inside `.scroll` pinned itself 112px above the scrollport
+ * and sat on top of the cards — which is exactly what a primary action must
+ * never do. Out here it is chrome: always reachable, never covering work.
+ */
+.actionBar {
+  padding: var(--ow-space-4) var(--ow-space-6);
+  background: var(--ow-color-canvas);
+  border-top: 1px solid var(--ow-color-line);
+}
+
+.primary {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--ow-radius-md);
+  background: var(--ow-color-accent);
+  color: #fff;
+  font-size: var(--ow-size-16);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/* -------------------------------- tab bar ------------------------------- */
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--ow-color-paper);
+  border-top: 1px solid var(--ow-color-line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  /* 60px of bar, and the whole cell is the target. */
+  min-height: 60px;
+  border: 0;
+  background: transparent;
+  color: var(--ow-color-ink-3);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+}
+
+/* The active tab is the FILLED mark plus the accent. Two signals, because
+   in daylight one is not reliably enough. */
+.tabActive {
+  color: var(--ow-color-accent);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.tabBadge {
+  position: absolute;
+  transform: translate(12px, -12px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-bad);
+  color: #fff;
+  font-family: var(--ow-font-mono);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.tabIconWrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
