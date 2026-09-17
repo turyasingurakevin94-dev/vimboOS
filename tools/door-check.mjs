@@ -89,14 +89,18 @@ for (const [name, viewport] of [
 
   await page.goto(origin, { waitUntil: 'load' });
   // `resume()` has to lose its race with the network before the door shows.
-  await page.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 15_000 }).catch(() => {});
-
-  const door = await page.getByRole('button', { name: 'Sign in' }).count();
+  // Not showing up is the finding this harness exists for, so it is reported
+  // below rather than thrown.
+  const signIn = page.getByRole('button', { name: 'Sign in' });
+  const door = await signIn.waitFor({ timeout: 15_000 }).then(
+    () => true,
+    () => false,
+  );
   const says = (await page.locator('body').innerText()).split('\n').filter(Boolean);
   const reading = says.find((l) => l.startsWith('Reading the')) ?? '(does not say which database)';
-  if (door === 0 || errors.length > 0) bad += 1;
+  if (!door || errors.length > 0) bad += 1;
   console.log(
-    `${name.padEnd(14)} door=${door > 0} ${reading.padEnd(34)} errors=${errors.length}` +
+    `${name.padEnd(14)} door=${door} ${reading.padEnd(34)} errors=${errors.length}` +
       (offline > 0 ? ` (+${offline} off-site, unreachable from this sandbox)` : ''),
   );
   for (const e of errors.slice(0, 5)) console.log('   ', e.slice(0, 200));
