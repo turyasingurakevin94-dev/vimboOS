@@ -251,6 +251,13 @@ describe('the balance band', () => {
     expect(band.unpaidPurchases).toBe(3);
   });
 
+  it('treats a voided purchase as owing NOTHING, not as an unpaid balance', () => {
+    // It was withdrawn, not forgotten. Showing its balance invites paying it
+    // twice — the replacement is the one that is owed.
+    const dead = purchase({ total: m(180_000), voided: { replacedBy: 'PINV-0256', on: NOW } });
+    expect(stillToPay(dead)).toBe(0);
+  });
+
   it('does not count a purchase that is already paid', () => {
     const band = readBand([], [purchase({ total: m(220_000), paid: m(220_000) })], NOW);
     expect(band.weOweSuppliers).toBe(0);

@@ -1,0 +1,644 @@
+/**
+ * Invoices — the desktop console. Frame 1b of the Invoices handoff.
+ *
+ * ## The structure is the handoff's; the skin is this app's
+ *
+ * The frame is drawn in a second design language — Inter, Archivo Black,
+ * cool steel greys, oxide and verdigris, flat panes at radius 8. The owner's
+ * decision was to keep its STRUCTURE and use the app's existing idiom, so
+ * this screen sits beside Today and Quote without a seam. The mapping, so
+ * nobody has to re-derive it:
+ *
+ *   --ow-steel-050  #E9EBED  page ground  → bg            #f6f5f2
+ *   --ow-paper-2    #F7F9FB  header band  → surface-2 / row-hover
+ *   --ow-rule       #CFD5DA  strong rule  → divider       #dcdad4
+ *   --ow-rule-soft  #E3E7EA  soft rule    → hairline / rule
+ *   --ow-ink-600    #59626B  secondary    → ink-2         #535d70
+ *   --ow-ink-400    #8A939C  faint        → ink-4         #8a939c  (exact)
+ *   --ow-oxide      #B23A26  doc links    → accent-ink    #b2301f
+ *   --ow-oxide-soft #F6E7E3  picked row   → bad-fill      #fff1ec
+ *   --ow-verdigris  #1C6B58  money in     → good-ink      #0f7a56
+ *   --ow-amber-*             due today    → warn-fill / warn-ink
+ *   --ow-crimson    #7F1D1A  overdue      → bad-ink       #b2301f
+ *   --ow-steel-950  #14171B  the band     → navy          #17223c
+ *
+ * Panes become cards: radius 14 with the card shadow, not radius 8 flat.
+ */
+
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-20) var(--ow-space-22) var(--ow-space-24);
+}
+
+/* ------------------------------- page header ------------------------------ */
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-12);
+  padding-bottom: var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-divider);
+  flex-wrap: wrap;
+}
+
+.titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--ow-size-24);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading);
+}
+
+.sub {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+/* A control on the ground wears the heavier edge, not a card hairline. */
+.control {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 34px;
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.control:hover {
+  background: var(--ow-color-surface-2);
+}
+
+.search {
+  width: 230px;
+  font-weight: var(--ow-weight-regular);
+  color: var(--ow-color-ink-3);
+}
+
+.searchText {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --------------------------------- the band ------------------------------- */
+
+/**
+ * The navy band. Four figures and the page's two controls, on one ground.
+ *
+ * Navy rather than a white card because the band is a position, not a list —
+ * the same reason the phone header is navy. Its dividers and its ghost
+ * button edge are translucent white: no flat token can let the navy show
+ * through, which is exactly the exemption the rgb() rule carves out.
+ */
+.band {
+  margin-top: var(--ow-space-14);
+  display: flex;
+  align-items: stretch;
+  background: var(--ow-color-navy);
+  border-radius: var(--ow-radius-card);
+  overflow: hidden;
+}
+
+.bandCell {
+  flex: 1;
+  min-width: 0;
+  padding: var(--ow-space-12) var(--ow-space-16);
+  border-left: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.bandCell:first-child {
+  border-left: 0;
+}
+
+.bandLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-rail-head);
+}
+
+.bandFig {
+  composes: fig from './Invoices.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-20);
+  color: var(--ow-color-on-fill);
+  white-space: nowrap;
+}
+
+.bandFigGood {
+  composes: bandFig;
+  color: var(--ow-color-rail-ink-good);
+}
+
+.bandUnit {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-medium);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-rail-head);
+}
+
+.bandBasis {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.bandActions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  padding: var(--ow-space-12) var(--ow-space-16);
+  border-left: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.ghost {
+  height: 34px;
+  padding: 0 var(--ow-space-12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--ow-radius-button);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-on-fill);
+  white-space: nowrap;
+}
+
+.ghost:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Dark, not accent. The one accent fill on this screen belongs to the row
+   that actually needs collecting — see `.receiveOn`. */
+.bandPrimary {
+  composes: ghost;
+  background: var(--ow-color-surface);
+  border-color: var(--ow-color-surface);
+  color: var(--ow-color-navy);
+  font-weight: var(--ow-weight-bold);
+}
+
+.bandPrimary:hover {
+  background: var(--ow-color-surface-2);
+  border-color: var(--ow-color-surface-2);
+}
+
+/* -------------------------------- the ledgers ----------------------------- */
+
+.ledgers {
+  margin-top: var(--ow-space-12);
+  display: flex;
+  gap: var(--ow-space-16);
+  align-items: flex-start;
+}
+
+/**
+ * Money in gets the wider column. It is not a tie: the left ledger carries a
+ * customer name, a balance, a progress bar and an action; the right carries
+ * a supplier and a figure.
+ */
+.paneIn {
+  flex: 1.35;
+  min-width: 0;
+}
+
+.paneOut {
+  flex: 1;
+  min-width: 0;
+}
+
+/**
+ * Under ~1200 the two ledgers stack rather than squeeze.
+ *
+ * Money in needs 438px of fixed columns before the customer name gets a
+ * pixel; at 1200 its share is 565 and the name is down to 127. Stacked, both
+ * ledgers get the full width and nothing truncates. This is the desktop
+ * design reorganising for a laptop — no target moves and nothing resizes.
+ */
+@media (max-width: 1200px) {
+  .ledgers {
+    flex-direction: column;
+  }
+
+  .paneIn,
+  .paneOut {
+    width: 100%;
+    flex: none;
+  }
+}
+
+.pane {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+  overflow: hidden;
+}
+
+.paneHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  height: 47px;
+  padding: 0 var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-divider);
+}
+
+/* A 5px stripe, not a chip: it names the side without spending a word. */
+.stripe {
+  width: 5px;
+  height: 16px;
+  flex: none;
+  border-radius: 1px;
+}
+
+.paneTitle {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* A segmented control: one list, three lenses onto it. */
+.seg {
+  display: flex;
+  flex: none;
+  background: var(--ow-color-track);
+  border-radius: var(--ow-radius-icon-chip);
+  padding: var(--ow-space-2);
+}
+
+.lens {
+  height: 26px;
+  padding: 0 var(--ow-space-11);
+  border: 0;
+  border-radius: var(--ow-radius-chip-square);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.lensOn {
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  box-shadow: var(--ow-elevation-card);
+}
+
+/* ---------------------------------- rows ---------------------------------- */
+
+.colHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-12);
+  padding: var(--ow-space-6) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+}
+
+.colLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-2);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-12);
+  width: 100%;
+  padding: var(--ow-space-9) var(--ow-space-12);
+  border-top: 1px solid var(--ow-color-rule);
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  text-align: left;
+  font-family: var(--ow-font-ui);
+  color: var(--ow-color-ink);
+}
+
+.row:hover {
+  background: var(--ow-color-row-hover);
+}
+
+/**
+ * The row you picked: a tint and a 3px accent stripe down its left edge.
+ *
+ * `accent` #ef4b39 as a BORDER is the one non-fill job the palette allows it
+ * — the design system names "the 3px left border of the row that needs you"
+ * explicitly. It carries no text and nothing sits on it.
+ */
+.rowPicked {
+  composes: row;
+  background: var(--ow-color-bad-fill);
+  box-shadow: inset 3px 0 0 var(--ow-color-accent);
+}
+
+.rowPicked:hover {
+  background: var(--ow-color-bad-fill);
+}
+
+/**
+ * A row the selection does not touch.
+ *
+ * The frame draws this at `opacity:.42`, which puts body ink at about 2.7:1
+ * on white — under the floor, and a dimmed row is still clickable, so it is
+ * not the "inactive component" WCAG exempts. **0.6 is the nearest value that
+ * clears 4.5:1** and the separation still reads at a glance. Stated here
+ * rather than changed quietly.
+ */
+.rowDim {
+  opacity: 0.6;
+}
+
+.doc {
+  flex: none;
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  font-size: var(--ow-size-12-5);
+  letter-spacing: var(--ow-tracking-figure);
+  color: var(--ow-color-accent-ink);
+}
+
+.docIn {
+  composes: doc;
+  width: 74px;
+}
+
+.docOut {
+  composes: doc;
+  width: 82px;
+}
+
+/**
+ * The name survives; the basis gives way.
+ *
+ * The frame has 1356px of work area because it is drawn without the console
+ * chrome. With the 236px rail there are 1160 at 1440, and two facing ledgers
+ * leave the customer cell about 220 — so something has to trim. It must not
+ * be the name: "Mulongo Hard…" is not a customer, and the row's whole job is
+ * to say who owes. The basis after it is the part that degrades.
+ */
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-4);
+  font-size: var(--ow-size-13);
+}
+
+.whoName {
+  flex: none;
+  white-space: nowrap;
+  font-weight: var(--ow-weight-semibold);
+}
+
+.whoVoid {
+  composes: whoName;
+  text-decoration: line-through;
+  color: var(--ow-color-ink-4);
+}
+
+.whoBasis {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-4);
+}
+
+.due {
+  flex: none;
+  width: 110px;
+  text-align: right;
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-bold);
+}
+
+.dueLate {
+  composes: due;
+  color: var(--ow-color-bad-ink);
+}
+
+.owed {
+  composes: due;
+  width: 92px;
+}
+
+.owedDueToday {
+  composes: owed;
+  color: var(--ow-color-warn-ink);
+}
+
+.owedNil {
+  composes: owed;
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-4);
+}
+
+/* ------------------------------- paid-off bar ----------------------------- */
+
+.progress {
+  flex: none;
+  width: 86px;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+}
+
+.bar {
+  width: 44px;
+  height: 4px;
+  flex: none;
+  background: var(--ow-color-rule);
+  border-radius: var(--ow-radius-pill);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  background: var(--ow-color-good-ink);
+}
+
+.barFillLate {
+  composes: barFill;
+  background: var(--ow-color-bad-ink);
+}
+
+.share {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-2);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 var(--ow-space-6);
+  border-radius: var(--ow-radius-chip-square);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+/* --------------------------------- actions -------------------------------- */
+
+.actions {
+  flex: none;
+  width: 96px;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ow-space-6);
+}
+
+.actionsOut {
+  composes: actions;
+  width: 66px;
+}
+
+.receive {
+  height: 26px;
+  padding: 0 var(--ow-space-9);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-chip-square);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.receive:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/**
+ * The one accent-filled control on the screen.
+ *
+ * The frame fills three — `New invoice`, `Receive` on the picked row and
+ * `Pay` on the purchase due today — against the design system's "one accent,
+ * one next action" and the handoff's own checklist item 4. The next action
+ * on a register of debts is collecting the money you are looking at, so the
+ * picked row keeps the fill; `New invoice` went white-on-navy and `Pay` is a
+ * plain secondary.
+ */
+.receiveOn {
+  composes: receive;
+  background: var(--ow-color-accent-btn);
+  border-color: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+}
+
+.receiveOn:hover {
+  background: var(--ow-color-accent-btn-hover);
+  border-color: var(--ow-color-accent-btn-hover);
+}
+
+.kebab {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-chip-square);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+}
+
+.kebab:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/* --------------------------------- the foot ------------------------------- */
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-12);
+  padding: var(--ow-space-9) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.footSay {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-bold);
+}
+
+.footFig {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  text-align: right;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-bold);
+}
+
+.footFigIn {
+  composes: footFig;
+  width: 110px;
+}
+
+.footFigOut {
+  composes: footFig;
+  width: 92px;
+}
+
+.footPad {
+  flex: none;
+  width: 86px;
+}
+
+.footPadActions {
+  flex: none;
+  width: 96px;
+}
+
+.footPadActionsOut {
+  flex: none;
+  width: 66px;
+}
+
+.unit {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-medium);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-4);
+}

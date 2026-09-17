@@ -89,9 +89,16 @@ export const receivedSoFar = (inv: SalesInvoice): Amount =>
 export const balanceDue = (inv: SalesInvoice): Amount =>
   Money.max(Money.ZERO, Money.subtract(inv.total, receivedSoFar(inv)));
 
-/** What is still owed on a purchase. */
+/**
+ * What is still owed on a purchase.
+ *
+ * Zero once it is voided, whatever the figures say. A voided document is not
+ * a debt someone forgot to pay — it was withdrawn, usually because it was
+ * replaced — and a ledger that showed its balance would be inviting someone
+ * to pay it twice.
+ */
 export const stillToPay = (p: PurchaseInvoice): Amount =>
-  Money.max(Money.ZERO, Money.subtract(p.total, p.paid));
+  p.voided !== undefined ? Money.ZERO : Money.max(Money.ZERO, Money.subtract(p.total, p.paid));
 
 /**
  * The share of an invoice that has been paid off, as the whole number the
@@ -135,17 +142,23 @@ export const daysOld = (inv: SalesInvoice, now: Date): number =>
 /**
  * How much attention the money needs, worst first.
  *
- * The ledger groups by this and the handoff says so: overdue, then open,
- * then settled. An invoice whose state cannot be derived sorts with the
- * overdue — an unknown is not a reason to bury something.
+ * The handoff names **three** groups, not four: "overdue first, then open,
+ * then settled". So `part` and `open` share a tier — part-paid is a state a
+ * row DISPLAYS (a progress bar instead of a tag), not a rung on the ladder
+ * of who to chase. A customer who has paid most of it and one who has paid
+ * none of it are both simply unsettled and not yet late, and ranking the
+ * part-payer below the other would quietly reward paying a token amount.
+ *
+ * An invoice whose state cannot be derived sorts with the overdue: an
+ * unknown is not a reason to bury something.
  */
 const ATTENTION: Readonly<Record<InvoiceState | 'unknown', number>> = {
   late: 0,
   unknown: 1,
   part: 2,
-  open: 3,
-  settled: 4,
-  voided: 5,
+  open: 2,
+  settled: 3,
+  voided: 4,
 };
 
 export const attentionRank = (inv: SalesInvoice, now: Date): number => {

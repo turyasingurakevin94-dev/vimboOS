@@ -13,6 +13,7 @@ import { Icon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 import { Quote } from './screens/Quote.js';
+import { Invoices } from './screens/Invoices.js';
 
 /** The order-stage chips in the top bar. They replace the old status bar. */
 const STAGES = [
@@ -107,6 +108,8 @@ export default function DesktopApp(): ReactElement {
             <Today />
           ) : section === 'quote' ? (
             <Quote />
+          ) : section === 'invoices' ? (
+            <Invoices />
           ) : (
             <NotBuiltYet name={NAMES.get(section) ?? section} />
           )}

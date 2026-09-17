@@ -300,8 +300,16 @@
   height: 19px;
   padding: 0 var(--ow-space-8);
   border-radius: var(--ow-radius-pill);
-  background: var(--ow-color-accent-btn);
-  color: var(--ow-color-on-fill);
+  /* A count, not a control.
+   *
+   * This was an accent-FILLED pill, which made it a second "one thing to do
+   * next" beside the move's own button — and the strengthened rule in
+   * `architecture.test.ts` caught it. §4 of the design system gives the
+   * recipe for a count that means something wants you: a `#ffe1dc` pill with
+   * `#b2301f` type, which is `badChip` over `accentInk` at 5.11:1. Worth
+   * re-checking against screen 2b when that file is to hand. */
+  background: var(--ow-color-bad-chip);
+  color: var(--ow-color-accent-ink);
   font-size: var(--ow-size-11);
   font-weight: var(--ow-weight-semibold);
   flex: none;

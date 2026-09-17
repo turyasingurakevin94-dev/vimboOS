@@ -117,9 +117,15 @@ describe('the palette is the only source of colour', () => {
   });
 
   it('has no rgb()/hsl() literal either — the same hole, differently spelled', () => {
+    // Comments are stripped first. This rule used to read its own prose and
+    // fail on the sentence explaining WHY translucency over navy is exempt —
+    // the same mistake the spacing rule already made once, about a phone
+    // being 390px wide. A rule that fails on its own documentation teaches
+    // people to delete the documentation.
     const offenders: string[] = [];
     for (const f of files(['.css'])) {
-      for (const [i, line] of read(f).split('\n').entries()) {
+      const source = read(f).replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+      for (const [i, line] of source.split('\n').entries()) {
         // rgba() is legal: a rail hover and the phone's tinted header cells
         // have to let the navy show through, and no flat token can do that.
         // A SOLID rgb()/hsl() has no such excuse — it is a colour smuggled
@@ -207,7 +213,19 @@ describe('the accent appears once per screen', () => {
   it.each(files(['.css'], 'desktop/screens').concat(files(['.css'], 'phone/screens')))(
     '%s fills the accent at most once',
     (file) => {
-      const fills = (read(file).match(/background:\s*var\(--ow-color-accent\)/g) ?? [])
+      /**
+       * It is `--ow-color-accent-btn` that matters, not `--ow-color-accent`.
+       *
+       * This rule used to count the raw coral, and had been watching the one
+       * token a filled button never wears since the accent split three ways:
+       * every primary on every screen went past it unseen. The raw accent is
+       * a brand square, a bar segment or a 3px border — `neverCarriesText`
+       * already governs it, and none of those is "the thing to do next".
+       *
+       * Counting the button token instead immediately found a second filled
+       * control on the phone's Today.
+       */
+      const fills = (read(file).match(/background:\s*var\(--ow-color-accent-btn\)/g) ?? [])
         .length;
       expect(
         fills,
@@ -215,6 +233,39 @@ describe('the accent appears once per screen', () => {
       ).toBeLessThanOrEqual(1);
     },
   );
+});
+
+describe('no rule sets the same property twice', () => {
+  /**
+   * The later declaration silently wins, which is how a badge ends up with
+   * `color: accentInk` immediately above `color: onFill` and renders white
+   * on a pale pink chip at 1.6:1.
+   *
+   * Nothing else here would see it. The contrast test reads `legalPairings`,
+   * not stylesheets; the token test reads tokens. A duplicate property is a
+   * declaration that looks present, is present, and does nothing — the same
+   * shape as the undefined custom property and the unresolved className that
+   * both shipped before.
+   */
+  const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  it.each(files(['.css']))('%s', (file) => {
+    const offenders: string[] = [];
+    for (const block of stripComments(read(file)).matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+      const seen = new Map<string, number>();
+      for (const decl of (block[2] ?? '').split(';')) {
+        const prop = /^\s*([a-z-]+)\s*:/.exec(decl)?.[1];
+        if (prop === undefined) continue;
+        seen.set(prop, (seen.get(prop) ?? 0) + 1);
+      }
+      for (const [prop, n] of seen) {
+        // A shorthand followed by its own longhand is a deliberate idiom
+        // (`padding` then `padding-bottom`); the same property twice is not.
+        if (n > 1) offenders.push(`${show(file)}: ${(block[1] ?? '').trim()} sets ${prop} ${n} times`);
+      }
+    }
+    expect(offenders, offenders.join('\n')).toEqual([]);
+  });
 });
 
 describe('every className resolves to a real rule', () => {
