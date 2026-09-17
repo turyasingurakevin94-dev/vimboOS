@@ -1,0 +1,807 @@
+/**
+ * Quote — the phone. Frames 4b and 4c of the Quote handoff.
+ *
+ * Not the desktop screen narrowed. The desktop puts the client's side and the
+ * shop's side on one row, divided by a pixel; at 390 there is no such row, so
+ * the two become **two tabs**: *The lines* and *Client & stock*. The second
+ * tab is the desktop's whole right column plus its client strip, and the
+ * handoff says in words not to leave it unbuilt.
+ *
+ * The shop's side of a line does not vanish either — it collapses to one
+ * summary row at the foot of the list, which opens the shop-side sheet.
+ */
+
+.screen {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --------------------------------- header --------------------------------- */
+
+.header {
+  flex: none;
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-10) var(--ow-space-12) 0;
+  padding-top: calc(var(--ow-space-10) + env(safe-area-inset-top));
+}
+
+.headTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+/* The accent as a fill behind a glyph — never behind a word. */
+.mark {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--ow-radius-segment);
+  background: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headTitles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-7);
+}
+
+.headTitle {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+}
+
+.headWho {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-rail-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headBtn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+}
+
+/* ---------------------------------- tabs ---------------------------------- */
+
+/**
+ * A two-way switch, not a lens bar: these are not filters over one list, they
+ * are the two halves of the screen. The active one is white at 700 over a 2px
+ * accent rule — the accent as a line under a word, which is legal, rather
+ * than a ground behind one, which is not.
+ */
+.switch {
+  margin-top: var(--ow-space-9);
+  display: flex;
+}
+
+.switchTab {
+  flex: 1;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-6);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.switchOn {
+  border-bottom-color: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-bold);
+}
+
+.switchCount {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-rail-ink-2);
+}
+
+/* -------------------------------- add item -------------------------------- */
+
+.addBand {
+  flex: none;
+  background: var(--ow-color-surface);
+  border-bottom: 1px solid var(--ow-color-hairline);
+  padding: var(--ow-space-8) var(--ow-space-12);
+}
+
+.addField {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-field);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  color: var(--ow-color-ink-3);
+  text-align: left;
+}
+
+.addFieldText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --------------------------------- the list -------------------------------- */
+
+/* The list is a white sheet edge to edge: at 390 a card would spend 24px of
+   the width on a border that separates it from nothing. */
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--ow-color-surface);
+}
+
+.listHead {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  column-gap: var(--ow-space-8);
+  padding: var(--ow-space-6) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.colLabel {
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  column-gap: var(--ow-space-8);
+  row-gap: var(--ow-space-1);
+  padding: var(--ow-space-8) var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+/* The line being edited. */
+.rowOpen {
+  composes: row;
+  background: var(--ow-color-row-alt);
+}
+
+.rowCharge {
+  composes: row;
+  background: var(--ow-color-row-alt);
+  padding: var(--ow-space-9) var(--ow-space-12);
+}
+
+.num {
+  composes: fig from './Quote.fig.css';
+  grid-row: span 2;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.name {
+  min-width: 0;
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameSupplier {
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-regular);
+  color: var(--ow-color-ink-3);
+}
+
+.chargeName {
+  composes: name;
+  font-weight: var(--ow-weight-medium);
+}
+
+.total {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-13-5);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* An amount that is typed rather than worked out wears a dotted rule, so a
+   figure you may change looks different from one you may not. */
+.typed {
+  text-decoration: underline dotted var(--ow-color-ink-faint);
+  text-underline-offset: 3px;
+}
+
+/* The line at rest: quantity, price and where it comes from, in one line. */
+.sub {
+  grid-column: 2 / span 2;
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-6);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.subFig {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink);
+  text-decoration: underline dotted var(--ow-color-ink-faint);
+  text-underline-offset: 3px;
+}
+
+.subSpacer {
+  flex: 1;
+}
+
+.subFrom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subShort {
+  color: var(--ow-color-bad-ink);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+/* ------------------------------ the open line ----------------------------- */
+
+.edit {
+  grid-column: 2 / span 2;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  margin-top: var(--ow-space-5);
+}
+
+/**
+ * A stepper, because the commonest edit on a call is "make it two".
+ * 32px cells — under the 44px floor, but this is not the tap target of last
+ * resort: the figure between them opens the keypad, and the row itself is
+ * 44px of hit area.
+ */
+.stepper {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  flex: none;
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-segment);
+  overflow: hidden;
+}
+
+.step {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ow-color-ink-3);
+}
+
+.stepUp {
+  composes: step;
+  border-left: 1px solid var(--ow-color-rule);
+}
+
+.stepDown {
+  composes: step;
+  border-right: 1px solid var(--ow-color-rule);
+}
+
+.qty {
+  composes: fig from './Quote.fig.css';
+  min-width: 46px;
+  text-align: center;
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-medium);
+}
+
+.qtyUnit {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.times {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-3);
+}
+
+/* Navy, not accent: this is where you are, not what to do next. */
+.priceField {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--ow-space-10);
+  border: 1px solid var(--ow-color-navy);
+  border-radius: var(--ow-radius-segment);
+  background: none;
+}
+
+.priceFig {
+  composes: fig from './Quote.fig.css';
+  flex: 1;
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-medium);
+  text-align: left;
+  color: var(--ow-color-ink);
+  border: 0;
+  background: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.priceEach {
+  flex: none;
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-ink-3);
+}
+
+/* ------------------------------ the next line ----------------------------- */
+
+.nextLine {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  padding: var(--ow-space-10) var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-rule);
+  overflow: hidden;
+}
+
+.nextMark {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 1px dashed var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-chip-square);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ow-color-ink-3);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  flex: none;
+  height: 24px;
+  padding: 0 var(--ow-space-10);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.pillOpen {
+  border-style: dashed;
+  color: var(--ow-color-ink-3);
+}
+
+.pillFig {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-11);
+}
+
+/* ------------------------------- the shop side ---------------------------- */
+
+/**
+ * Everything the desktop puts right of the one-pixel divider, on one row.
+ * It is a row and not a card because it is the same information, folded —
+ * and it opens rather than expands, so the list never reorders under a thumb.
+ */
+.shopSide {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  width: 100%;
+  padding: var(--ow-space-9) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border: 0;
+  border-bottom: 1px solid var(--ow-color-rule);
+  text-align: left;
+}
+
+.shopSay {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.shopFig {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-medium);
+}
+
+.shopKeep {
+  composes: shopFig;
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--ow-space-6);
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.chip19 {
+  composes: chip;
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+}
+
+.shopCaret {
+  flex: none;
+  color: var(--ow-color-ink-faint);
+}
+
+/* ------------------------------ the second tab ---------------------------- */
+
+.cards {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--ow-space-10) var(--ow-space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-9);
+}
+
+.card {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+  padding: var(--ow-space-12) var(--ow-space-13);
+}
+
+.noticeWarn {
+  background: var(--ow-color-warn-fill);
+  border: 1px solid var(--ow-color-warn-edge);
+  border-radius: var(--ow-radius-card);
+  padding: var(--ow-space-12) var(--ow-space-13);
+}
+
+.clientTop {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--ow-space-2) var(--ow-space-8);
+}
+
+.clientName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clientPhone {
+  composes: fig from './Quote.fig.css';
+  flex: none;
+  white-space: nowrap;
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.tiles {
+  margin-top: var(--ow-space-10);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ow-space-8);
+}
+
+.tile {
+  background: var(--ow-color-surface-2);
+  border-radius: var(--ow-radius-tile);
+  padding: var(--ow-space-8) var(--ow-space-9);
+}
+
+.tileGood {
+  composes: tile;
+  background: var(--ow-color-good-fill);
+}
+
+.tileLabel {
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.tileGood .tileLabel {
+  color: var(--ow-color-good-panel-ink);
+}
+
+.tileFig {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-15);
+}
+
+.behaviour {
+  margin-top: var(--ow-space-8);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.cardMark {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-warn-chip);
+  color: var(--ow-color-warn-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardTitle {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.cardRight {
+  margin-left: auto;
+}
+
+.cardWhen {
+  margin-left: auto;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.noticeBody {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.noticeItem {
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noticeMeta {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-warn-meta);
+}
+
+.noticeFig {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-14);
+  color: var(--ow-color-warn-ink);
+}
+
+/* 44px, and that floor does not move — this one is pressed in a yard. */
+.noticeAction {
+  margin-top: var(--ow-space-10);
+  width: 100%;
+  height: var(--ow-chrome-tap);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.lineList {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+}
+
+.lineRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.lineName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineShort {
+  composes: lineName;
+  color: var(--ow-color-bad-ink);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.lineFig {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-12-5);
+}
+
+.lineFigShort {
+  composes: lineFig;
+  color: var(--ow-color-bad-ink);
+}
+
+.orderIn {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-medium);
+}
+
+.cardFoot {
+  margin-top: var(--ow-space-10);
+  padding-top: var(--ow-space-9);
+  border-top: 1px solid var(--ow-color-rule);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.pillWrap {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ow-space-7);
+}
+
+/* The suggestion pills grow to 34px here: a thumb, not a pointer. */
+.pillTall {
+  composes: pill;
+  height: 34px;
+}
+
+.pastRow {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.pastRow + .pastRow {
+  margin-top: var(--ow-space-7);
+}
+
+/* ---------------------------------- dock ---------------------------------- */
+
+/* 64px that never scrolls, on both tabs — the figure is the same figure. */
+.dock {
+  flex: none;
+  height: 64px;
+  background: var(--ow-color-surface);
+  border-top: 1px solid var(--ow-color-hairline);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  padding: 0 var(--ow-space-12);
+}
+
+.dockFirst {
+  flex: 1;
+  min-width: 0;
+}
+
+.dockLabel {
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-dock);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.dockFig {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-20);
+  white-space: nowrap;
+}
+
+.dockUnit {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.dockSquare {
+  width: var(--ow-chrome-tap);
+  height: var(--ow-chrome-tap);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+}
+
+/* The one accent-filled control on the screen. */
+.dockSave {
+  flex: none;
+  height: var(--ow-chrome-tap);
+  padding: 0 var(--ow-space-16);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+  white-space: nowrap;
+}

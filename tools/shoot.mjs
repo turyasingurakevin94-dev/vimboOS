@@ -28,6 +28,8 @@ const ROOT = new URL('../apps/console/dist/', import.meta.url).pathname;
 const OUT = process.argv[2] ?? '/tmp/shots';
 /** Which screen to shoot. Clicked by its visible name in the rail / tab bar. */
 const SECTION = process.argv[3] ?? null;
+/** A control to press once the screen is open — a tab, a lens, a switch. */
+const THEN = process.argv[4] ?? null;
 const TYPES = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.svg':'image/svg+xml' };
 
 const server = createServer(async (req, res) => {
@@ -70,8 +72,14 @@ for (const v of VIEWS) {
   await page.waitForTimeout(400);
 
   if (SECTION !== null) {
-    // Not exact: a rail row's accessible name carries its count too.
-    const tab = page.getByRole('button', { name: SECTION }).first();
+    // Scoped to the navigation, and exact.
+    //
+    // An unscoped substring match sends "Sell" to a Today card reading
+    // "Nsubuga sells at 11% against 19%", which clicks the wrong thing and
+    // screenshots the right-looking wrong screen. Not exact on the name,
+    // because a rail row's accessible name carries its count too.
+    const nav = page.locator('nav[aria-label="Sections"]');
+    const tab = nav.getByRole('button', { name: SECTION }).first();
     if ((await tab.count()) === 0) {
       console.log(`${v.name.padEnd(16)} SKIPPED — no "${SECTION}" in this design`);
       await ctx.close();
@@ -80,7 +88,19 @@ for (const v of VIEWS) {
     await tab.click();
     await page.waitForTimeout(300);
   }
-  await page.screenshot({ path: join(OUT, `${SECTION === null ? '' : SECTION.toLowerCase() + '-'}${v.name}.png`), fullPage: v.full === true });
+
+  if (THEN !== null) {
+    const control = page.getByRole('tab', { name: THEN }).or(page.getByRole('button', { name: THEN })).first();
+    if ((await control.count()) === 0) {
+      console.log(`${v.name.padEnd(16)} SKIPPED — no "${THEN}" on this screen`);
+      await ctx.close();
+      continue;
+    }
+    await control.click();
+    await page.waitForTimeout(300);
+  }
+  const stem = [SECTION, THEN].filter((x) => x !== null).join('-').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  await page.screenshot({ path: join(OUT, `${stem === '' ? '' : stem + '-'}${v.name}.png`), fullPage: v.full === true });
 
   const design = await page.evaluate(() => {
     if (document.querySelector('nav[aria-label="Sections"] + header')) return 'desktop';

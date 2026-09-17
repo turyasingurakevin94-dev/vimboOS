@@ -228,3 +228,169 @@
   letter-spacing: var(--ow-tracking-figure);
   font-size: var(--ow-size-14);
 }
+
+/* ======================== the Today header ========================= */
+
+/* Today is header then scroll: no dock, nothing pinned to the foot. */
+.screen {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--ow-space-10) var(--ow-space-10) var(--ow-space-12);
+}
+
+.header {
+  flex: none;
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-10) var(--ow-space-12) var(--ow-space-12);
+  padding-top: calc(var(--ow-space-10) + env(safe-area-inset-top));
+}
+
+.headTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+.mark {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ow-radius-segment);
+  background: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.headTitles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-7);
+}
+
+.headTitle {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+}
+
+.headWhen {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-rail-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo {
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 var(--ow-space-8);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  flex: none;
+}
+
+.headBtn {
+  display: grid;
+  place-items: center;
+  width: var(--ow-chrome-tap);
+  height: var(--ow-chrome-tap);
+  margin: calc(var(--ow-space-10) * -1) calc(var(--ow-space-10) * -1)
+    calc(var(--ow-space-10) * -1) 0;
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+}
+
+/**
+ * One 4-across figure strip.
+ *
+ * Abbreviated money (`8.42M`) is used ONLY here, where the full figure is
+ * one tap away. Everywhere else the figure is written in full — a clipped
+ * or rounded figure in a list would be a wrong figure.
+ */
+.strip {
+  margin-top: var(--ow-space-10);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: var(--ow-radius-field);
+  overflow: hidden;
+}
+
+.cell {
+  padding: var(--ow-space-7) var(--ow-space-9);
+  border-right: 1px solid rgba(255, 255, 255, 0.09);
+  min-width: 0;
+}
+.cell:last-child {
+  border-right: 0;
+}
+
+.cellBad {
+  background: rgba(239, 75, 57, 0.18);
+}
+.cellGood {
+  background: rgba(26, 143, 102, 0.22);
+}
+
+.cellLabel {
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: 0.02em;
+  color: var(--ow-color-rail-ink-2);
+}
+.cellLabelBad {
+  color: var(--ow-color-rail-ink-bad);
+}
+.cellLabelGood {
+  color: var(--ow-color-rail-ink-good);
+}
+
+.cellFig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-13-5);
+  color: var(--ow-color-on-fill);
+}
+
+.cellUnit {
+  font-size: var(--ow-size-9-5);
+  color: var(--ow-color-rail-ink-2);
+}
+.cellUnitBad {
+  color: var(--ow-color-rail-ink-bad);
+}
+.cellUnitGood {
+  color: var(--ow-color-rail-ink-good);
+}
+
+/* The detail the cells dropped. Nothing is lost, it is just moved. */
+.headMeta {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-rail-ink-2);
+}
+.headMetaBad {
+  color: var(--ow-color-rail-ink-bad);
+}
+

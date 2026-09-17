@@ -96,6 +96,8 @@ export const tracking = {
   /** A table's column heading: 10px, 600, uppercase, and wider than a label
    * because at ten pixels the letters close up. */
   column: '0.07em',
+  /** The phone dock's label, at 9.5px — a hair wider again. */
+  dock: '0.08em',
   /** Section heads: 700, uppercase. */
   section: '0.12em',
   normal: '0',

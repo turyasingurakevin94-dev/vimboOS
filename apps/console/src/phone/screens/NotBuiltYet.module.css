@@ -1,4 +1,9 @@
-.wrap { padding: var(--ow-space-20) var(--ow-space-2); }
+.wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-20) var(--ow-space-12);
+}
 .title { font-size: var(--ow-size-14-5); font-weight: var(--ow-weight-bold); }
 .body {
   margin-top: var(--ow-space-8);

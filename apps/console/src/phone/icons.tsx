@@ -137,4 +137,10 @@ export const PATH = {
   users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8',
   layers:
     'm12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z',
+  /* The quote's own marks. */
+  plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
+  down: 'M16 17h6v-6M22 17l-8.5-8.5-5 5L2 7',
+  dots: 'M12 12h.01M19 12h.01M5 12h.01',
+  chevronDown: 'm6 9 6 6 6-6',
 } as const;

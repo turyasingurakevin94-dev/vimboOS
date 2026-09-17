@@ -1,0 +1,14 @@
+/**
+ * The figure face, alone in its own file so that every rule that varies it
+ * can `composes` it and no variant's weight is decided by file order.
+ *
+ * Every number that is money, a count, a percentage, a quantity or a document
+ * number wears this. A distinct face is the signal that a figure is money,
+ * and tabular numerals are what let a column of it be read at all.
+ */
+.fig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+}

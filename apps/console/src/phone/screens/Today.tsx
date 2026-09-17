@@ -13,6 +13,14 @@ import type { ReactElement } from 'react';
 import s from './Today.module.css';
 import { Mark, PATH } from '../icons.js';
 
+/** Abbreviated money is used ONLY here — the full figure is one tap away. */
+const CELLS = [
+  { label: 'CASH', fig: '8.42', unit: 'M', tone: 'plain' },
+  { label: 'OWED YOU', fig: '23.65', unit: 'M', tone: 'bad' },
+  { label: 'YOU OWE', fig: '11.2', unit: 'M', tone: 'plain' },
+  { label: 'MARGIN', fig: '18.6', unit: '%', tone: 'good' },
+] as const;
+
 const v = (t: string): string => `var(--ow-color-${t})`;
 
 const MOVES = [
@@ -97,89 +105,145 @@ const WATCH = [
 
 export function Today(): ReactElement {
   return (
-    <>
-      <div className={s.sectionHead}>
-        <span className={s.sectionTitle}>What to do today</span>
-        <span className={s.sectionNote}>3 moves · 5 flags</span>
-      </div>
-
-      {MOVES.map((m) => (
-        <article
-          key={m.chip}
-          className={`${s.card} ${s.move} ${'waiting' in m ? s.moveWaiting : ''}`}
-        >
-          <div className={s.moveTop}>
-            <span
-              className={s.chip}
-              style={{ background: v('study-chip'), color: v('study-ink') }}
-            >
-              {m.chip}
-            </span>
-            <span
-              className={`${s.chip} ${s.worth}`}
-              style={{ background: m.worthFill, color: m.worthInk }}
-            >
-              {m.worth}
-            </span>
+    <div className={s.screen}>
+      <header className={s.header}>
+        <div className={s.headTop}>
+          <span className={s.mark} aria-hidden="true">
+            <Mark
+              d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35"
+              size={14}
+            />
+          </span>
+          <div className={s.headTitles}>
+            <span className={s.headTitle}>Today</span>
+            <span className={s.headWhen}>Mon 15 Sept · 07:42</span>
           </div>
-          <h2 className={s.moveTitle}>{m.title}</h2>
-          <p className={s.moveWhy}>{m.why}</p>
-          <div className={s.moveActions}>
-            <button
-              type="button"
-              className={`${s.primary} ${'dark' in m ? s.dark : ''}`}
-            >
-              {'actIcon' in m && <Mark d={m.actIcon} size={16} />}
-              {m.act}
-            </button>
-            <button type="button" className={s.door} aria-label="Open">
-              <Mark d={PATH.arrow} size={18} />
-            </button>
-          </div>
-        </article>
-      ))}
-
-      <section className={`${s.card} ${s.watch}`} aria-label="What the books flagged">
-        <div className={s.watchHead}>
-          <span className={s.watchTitle}>What the books flagged</span>
-          <span className={s.watchNote}>five of five</span>
-        </div>
-        {WATCH.map((a) => (
-          <button type="button" className={s.watchRow} key={a.first}>
-            <span
-              className={s.watchIcon}
-              style={{ background: a.chip, color: a.ink }}
-              aria-hidden="true"
-            >
-              <Mark d={a.icon} size={14} />
-            </span>
-            <span className={s.watchBody}>
-              <span className={s.watchFirst}>{a.first}</span>
-              <span className={s.watchSecond}>{a.second}</span>
-            </span>
-            <span className={s.watchFig} style={{ color: 'figInk' in a ? a.figInk : undefined }}>
-              {a.fig}
-            </span>
+          <span className={s.todo}>8 to do</span>
+          <button type="button" className={s.headBtn} aria-label="Search">
+            <Mark d={PATH.search} size={18} />
           </button>
-        ))}
-      </section>
+        </div>
 
-      {/* Yesterday reduces to two tiles on the phone. */}
-      <section className={`${s.card} ${s.yesterday}`}>
-        <span className={s.watchTitle}>Yesterday</span>
-        <div className={s.tiles}>
-          <div className={s.tile} style={{ background: v('surface-2') }}>
-            <div className={s.tileLabel}>Sold</div>
-            <div className={s.tileFig}>4,186,000</div>
+        <div className={s.strip} aria-label="The position">
+          {CELLS.map((c) => (
+            <div
+              key={c.label}
+              className={`${s.cell} ${
+                c.tone === 'bad' ? s.cellBad : c.tone === 'good' ? s.cellGood : ''
+              }`}
+            >
+              <div
+                className={`${s.cellLabel} ${
+                  c.tone === 'bad' ? s.cellLabelBad : c.tone === 'good' ? s.cellLabelGood : ''
+                }`}
+              >
+                {c.label}
+              </div>
+              <div className={s.cellFig}>
+                {c.fig}
+                <span
+                  className={`${s.cellUnit} ${
+                    c.tone === 'bad' ? s.cellUnitBad : c.tone === 'good' ? s.cellUnitGood : ''
+                  }`}
+                >
+                  {c.unit}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* The detail the cells dropped. Nothing is lost, only moved. */}
+        <div className={s.headMeta}>
+          2.4 months of cover · <span className={s.headMetaBad}>6.9M over 60 days</span> ·
+          margin &#8722;1.4 pts
+        </div>
+      </header>
+
+      <main className={s.scroll}>
+        <div className={s.sectionHead}>
+          <span className={s.sectionTitle}>What to do today</span>
+          <span className={s.sectionNote}>3 moves · 5 flags</span>
+        </div>
+
+        {MOVES.map((m) => (
+          <article
+            key={m.chip}
+            className={`${s.card} ${s.move} ${'waiting' in m ? s.moveWaiting : ''}`}
+          >
+            <div className={s.moveTop}>
+              <span
+                className={s.chip}
+                style={{ background: v('study-chip'), color: v('study-ink') }}
+              >
+                {m.chip}
+              </span>
+              <span
+                className={`${s.chip} ${s.worth}`}
+                style={{ background: m.worthFill, color: m.worthInk }}
+              >
+                {m.worth}
+              </span>
+            </div>
+            <h2 className={s.moveTitle}>{m.title}</h2>
+            <p className={s.moveWhy}>{m.why}</p>
+            <div className={s.moveActions}>
+              <button type="button" className={`${s.primary} ${'dark' in m ? s.dark : ''}`}>
+                {'actIcon' in m && <Mark d={m.actIcon} size={16} />}
+                {m.act}
+              </button>
+              <button type="button" className={s.door} aria-label="Open">
+                <Mark d={PATH.arrow} size={18} />
+              </button>
+            </div>
+          </article>
+        ))}
+
+        <section className={`${s.card} ${s.watch}`} aria-label="What the books flagged">
+          <div className={s.watchHead}>
+            <span className={s.watchTitle}>What the books flagged</span>
+            <span className={s.watchNote}>five of five</span>
           </div>
-          <div className={s.tile} style={{ background: v('good-fill') }}>
-            <div className={s.tileLabel}>Collected</div>
-            <div className={s.tileFig} style={{ color: v('good-ink') }}>
-              2,940,000
+          {WATCH.map((a) => (
+            <button type="button" className={s.watchRow} key={a.first}>
+              <span
+                className={s.watchIcon}
+                style={{ background: a.chip, color: a.ink }}
+                aria-hidden="true"
+              >
+                <Mark d={a.icon} size={14} />
+              </span>
+              <span className={s.watchBody}>
+                <span className={s.watchFirst}>{a.first}</span>
+                <span className={s.watchSecond}>{a.second}</span>
+              </span>
+              <span
+                className={s.watchFig}
+                style={{ color: 'figInk' in a ? a.figInk : undefined }}
+              >
+                {a.fig}
+              </span>
+            </button>
+          ))}
+        </section>
+
+        {/* Yesterday reduces to two tiles on the phone. */}
+        <section className={`${s.card} ${s.yesterday}`}>
+          <span className={s.watchTitle}>Yesterday</span>
+          <div className={s.tiles}>
+            <div className={s.tile} style={{ background: v('surface-2') }}>
+              <div className={s.tileLabel}>Sold</div>
+              <div className={s.tileFig}>4,186,000</div>
+            </div>
+            <div className={s.tile} style={{ background: v('good-fill') }}>
+              <div className={s.tileLabel}>Collected</div>
+              <div className={s.tileFig} style={{ color: v('good-ink') }}>
+                2,940,000
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-    </>
+        </section>
+      </main>
+    </div>
   );
 }
