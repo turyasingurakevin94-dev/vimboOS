@@ -1,0 +1,259 @@
+/**
+ * Orders — the phone design.
+ *
+ * The desktop shows five lanes at once because it can. A phone cannot, and
+ * pretending otherwise is how you get five columns 70px wide. So the phone
+ * shows ONE lane at a time, chosen from a row of chips, and the chips carry
+ * the counts so the choice is informed before it is made.
+ *
+ * The one decision waiting sits at the top, in words. Its ACTION is not here
+ * — it is in the thumb bar the shell renders, because a yard, one hand, and
+ * a screen you are holding at arm's length means the thing you press must be
+ * at the bottom.
+ */
+
+.decision {
+  padding: var(--ow-space-5);
+  margin-bottom: var(--ow-space-6);
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-left: 3px solid var(--ow-color-bad);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+}
+
+.decisionWarn {
+  border-left-color: var(--ow-color-warn);
+}
+
+.decisionLabel {
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.decisionAsk {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-16);
+  font-weight: var(--ow-weight-semibold);
+  line-height: var(--ow-leading-snug);
+}
+
+.decisionWhy {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+}
+
+.decisionRest {
+  margin-top: var(--ow-space-4);
+  padding-top: var(--ow-space-4);
+  border-top: 1px solid var(--ow-color-line-soft);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+.clear {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  padding: var(--ow-space-5);
+  margin-bottom: var(--ow-space-6);
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  font-size: var(--ow-size-15);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-2);
+}
+
+/* ---------------------------------- lanes --------------------------------- */
+
+/**
+ * The lane chips scroll sideways. Five lanes will not fit at 390px and
+ * shrinking them to fit is how a label becomes "Prep…". A row that scrolls
+ * is honest about there being more.
+ */
+.lanes {
+  display: flex;
+  gap: var(--ow-space-3);
+  margin: 0 calc(var(--ow-space-6) * -1) var(--ow-space-6);
+  padding: 0 var(--ow-space-6);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.lanes::-webkit-scrollbar {
+  display: none;
+}
+
+.lane {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-3);
+  flex: none;
+  /* 44px. Every one of these is a thumb target. */
+  min-height: 44px;
+  padding: 0 var(--ow-space-5);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-paper);
+  color: var(--ow-color-ink-2);
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-medium);
+  white-space: nowrap;
+}
+
+/* The chosen lane inverts — ink ground, paper text. Never the accent: the
+   accent is the one thing to DO, and a filter is not a thing to do. */
+.laneOn {
+  background: var(--ow-color-ink);
+  border-color: var(--ow-color-ink);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.laneCount {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+.laneOn .laneCount {
+  color: var(--ow-color-on-fill);
+}
+
+/* The lane's rule and what its money is, under the chips — the same two
+   facts the desktop puts in the lane head. */
+.laneAbout {
+  margin-bottom: var(--ow-space-5);
+}
+
+.laneMoney {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-3);
+}
+
+.laneMoneyWord {
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+.laneRule {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+}
+
+.empty {
+  padding: var(--ow-space-8) var(--ow-space-5);
+  border: 1px dashed var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  font-size: var(--ow-size-15);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+  text-align: center;
+}
+
+/* ---------------------------------- cards --------------------------------- */
+
+.card {
+  padding: var(--ow-space-5);
+  margin-bottom: var(--ow-space-4);
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  margin-bottom: var(--ow-space-3);
+}
+
+.ref {
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.who {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+  line-height: var(--ow-leading-snug);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.what {
+  margin-top: var(--ow-space-1);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+}
+
+.figures {
+  display: flex;
+  gap: var(--ow-space-8);
+  margin-top: var(--ow-space-5);
+  padding-top: var(--ow-space-5);
+  border-top: 1px solid var(--ow-color-line-soft);
+}
+
+.figureLabel {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-3);
+  margin-bottom: var(--ow-space-2);
+}
+
+/* A word as well as a colour — daylight and colour blindness both defeat
+   colour on its own. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-2);
+  padding: var(--ow-space-2) var(--ow-space-4);
+  border-radius: var(--ow-radius-sm);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+.chipBad {
+  background: var(--ow-color-bad-tint);
+  color: var(--ow-color-bad);
+}
+.chipWarn {
+  background: var(--ow-color-warn-tint);
+  color: var(--ow-color-warn);
+}
+.chipPlain {
+  background: var(--ow-color-fill);
+  color: var(--ow-color-ink-3);
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.note {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+}

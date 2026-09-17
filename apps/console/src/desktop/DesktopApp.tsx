@@ -14,6 +14,7 @@ import s from './DesktopApp.module.css';
 import { Rail } from './chrome/Rail.js';
 import { Icon } from './icons.js';
 import { Today } from './screens/Today.js';
+import { Orders } from './screens/Orders.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
 export default function DesktopApp(): ReactElement {
@@ -49,6 +50,8 @@ export default function DesktopApp(): ReactElement {
       <div className={s.main}>
         {section === 'today' ? (
           <Today />
+        ) : section === 'orders' ? (
+          <Orders />
         ) : (
           <NotBuiltYet section={section} />
         )}

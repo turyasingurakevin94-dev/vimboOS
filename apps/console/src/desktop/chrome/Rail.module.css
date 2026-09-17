@@ -76,7 +76,7 @@
      far less than a thumb, and the density is the point of this design. */
   min-height: 32px;
   padding: var(--ow-space-3) var(--ow-space-3);
-  margin-bottom: 1px;
+  margin-bottom: var(--ow-space-1);
   border: 0;
   border-radius: var(--ow-radius-md);
   background: transparent;

@@ -14,7 +14,7 @@
 
 import type { ReactElement } from 'react';
 
-export type TabIcon = 'today' | 'sell' | 'money' | 'stock' | 'more';
+export type TabIcon = 'today' | 'orders' | 'money' | 'stock' | 'more';
 
 const STROKED: Record<TabIcon, ReactElement> = {
   today: (
@@ -23,10 +23,11 @@ const STROKED: Record<TabIcon, ReactElement> = {
       <path d="M12 3v3M4.8 7.8l2 2M19.2 7.8l-2 2" />
     </>
   ),
-  sell: (
+  // A board with lanes on it: where the orders have got to.
+  orders: (
     <>
-      <path d="M11.6 3.6 20 12l-8 8-8.4-8.4V3.6z" />
-      <circle cx="7.6" cy="7.6" r="1.4" />
+      <path d="M4 5.5h16v13H4z" />
+      <path d="M9.3 5.5v13M14.7 5.5v13" />
     </>
   ),
   money: (
@@ -60,10 +61,14 @@ const FILLED: Record<TabIcon, ReactElement> = {
       <path d="M2.8 18.6h18.4" strokeWidth={1.9} />
     </>
   ),
-  sell: (
+  orders: (
     <>
-      <path d="M11.6 3.6 20 12l-8 8-8.4-8.4V3.6z" fill="currentColor" stroke="none" />
-      <circle cx="7.6" cy="7.6" r="1.5" fill="var(--ow-color-paper)" stroke="none" />
+      <path d="M4 5.5h16v13H4z" fill="currentColor" stroke="none" />
+      <path
+        d="M9.3 5.5v13M14.7 5.5v13"
+        stroke="var(--ow-color-paper)"
+        strokeWidth={1.6}
+      />
     </>
   ),
   money: (

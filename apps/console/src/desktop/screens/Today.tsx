@@ -16,6 +16,7 @@
 import type { ReactElement } from 'react';
 import { Figure } from '@ow/design/react';
 import { Money, known, partial, unavailable, type Derived } from '@ow/domain';
+import layout from '../DesktopApp.module.css';
 import s from './Today.module.css';
 import { Icon } from '../icons.js';
 
@@ -102,7 +103,7 @@ const CHIP = { good: s.chipGood, warn: s.chipWarn, bad: s.chipBad } as const;
 export function Today(): ReactElement {
   return (
     <>
-      <div className={s.work}>
+      <div className={layout.work}>
         <header className={s.head}>
           <div>
             <h1 className={s.title}>Today</h1>
@@ -197,7 +198,7 @@ export function Today(): ReactElement {
         </p>
       </div>
 
-      <aside className={s.context} aria-label="What this means">
+      <aside className={layout.context} aria-label="What this means">
         <div className={s.contextTitle}>What this means</div>
 
         <Insight

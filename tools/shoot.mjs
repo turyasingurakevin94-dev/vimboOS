@@ -13,6 +13,8 @@ import { extname, join, normalize } from 'node:path';
 
 const ROOT = new URL('../apps/console/dist/', import.meta.url).pathname;
 const OUT = process.argv[2] ?? '/tmp/shots';
+/** Which screen to shoot. Clicked by its visible name in the rail / tab bar. */
+const SECTION = process.argv[3] ?? null;
 const TYPES = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.svg':'image/svg+xml' };
 
 const server = createServer(async (req, res) => {
@@ -53,7 +55,19 @@ for (const v of VIEWS) {
 
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(400);
-  await page.screenshot({ path: join(OUT, `${v.name}.png`), fullPage: v.full === true });
+
+  if (SECTION !== null) {
+    // Not exact: a rail row's accessible name carries its count too.
+    const tab = page.getByRole('button', { name: SECTION }).first();
+    if ((await tab.count()) === 0) {
+      console.log(`${v.name.padEnd(16)} SKIPPED — no "${SECTION}" in this design`);
+      await ctx.close();
+      continue;
+    }
+    await tab.click();
+    await page.waitForTimeout(300);
+  }
+  await page.screenshot({ path: join(OUT, `${SECTION === null ? '' : SECTION.toLowerCase() + '-'}${v.name}.png`), fullPage: v.full === true });
 
   const design = await page.evaluate(() => {
     if (document.querySelector('nav[aria-label="Sections"] + header')) return 'desktop';

@@ -38,6 +38,9 @@ importers:
 
   apps/console:
     dependencies:
+      '@ow/data':
+        specifier: workspace:*
+        version: link:../../packages/data
       '@ow/design':
         specifier: workspace:*
         version: link:../../packages/design

@@ -1,0 +1,386 @@
+/**
+ * Orders — the desktop design.
+ *
+ * The old board was five columns of cards in five hues. Two things were
+ * wrong with it, and this screen fixes both.
+ *
+ * It scrolled sideways past its fifth lane, which on a work console is the
+ * opposite of density: you could see five orders at once where a table shows
+ * twenty. So the board is a TABLE GROUPED BY LANE. The grouping keeps the
+ * one thing a flat table loses — where an order has got to — and the lane
+ * head carries what the column head used to: the step, the count, the rule,
+ * and what that lane's money is.
+ *
+ * And the five hues said nothing. A lane is a POSITION, not a judgement: an
+ * order in Buying is not worse than one in Preparing, it is earlier. So
+ * lanes are ink, and colour is spent only on orders that actually need the
+ * owner. That is the palette's meaning rule, and it is why this screen has
+ * a red on it at all.
+ */
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-6);
+  padding-bottom: var(--ow-space-5);
+  border-bottom: 1px solid var(--ow-color-line);
+}
+
+.title {
+  font-size: var(--ow-size-20);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading);
+  line-height: var(--ow-leading-tight);
+}
+
+.sub {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+.headSpacer {
+  flex: 1;
+}
+
+.btn {
+  height: 32px;
+  padding: 0 var(--ow-space-5);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-md);
+  background: var(--ow-color-paper);
+  color: var(--ow-color-ink-2);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-medium);
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--ow-color-fill);
+}
+
+/**
+ * THE accent — and the only one on this screen.
+ *
+ * It is a modifier rather than a second button class, because which control
+ * deserves it MOVES. When the dock is serving a decision, the one thing to
+ * do next is that decision. When the dock is empty, it is taking the next
+ * order. Two buttons that could both be accent would be two "one things to
+ * do next", and one of them would be wrong.
+ */
+.primary {
+  border-color: transparent;
+  background: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-semibold);
+  transition: background var(--ow-motion-instant) var(--ow-motion-ease);
+}
+.primary:hover {
+  background: var(--ow-color-accent-deep);
+}
+
+/* ---------------------------------- dock ---------------------------------- */
+
+/**
+ * One decision at a time.
+ *
+ * A list of twenty decisions is not twenty decisions — it is a reason to
+ * make none of them. The dock shows the most pressing one, says why it is
+ * being asked, and says how many are behind it without listing them.
+ */
+.dock {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  margin-top: var(--ow-space-6);
+  padding: var(--ow-space-5) var(--ow-space-6);
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-left: 3px solid var(--ow-color-bad);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+}
+
+/* The left edge is the only place a lane-ish colour appears, and it is not
+   a lane — it is how pressing this one decision is. */
+.dockWarn {
+  border-left-color: var(--ow-color-warn);
+}
+
+.dockBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.dockAsk {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+  line-height: var(--ow-leading-snug);
+}
+
+.dockWhy {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-3);
+  max-width: var(--ow-measure);
+}
+
+.dockRest {
+  flex: none;
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.dockClear {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  margin-top: var(--ow-space-6);
+  padding: var(--ow-space-5) var(--ow-space-6);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  background: var(--ow-color-paper);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-2);
+}
+
+.dockClearMark {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--ow-color-good);
+}
+
+/* --------------------------------- board ---------------------------------- */
+
+.board {
+  margin-top: var(--ow-space-6);
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ow-size-13);
+  /* Fixed, so the figure columns take exactly what a full-length figure
+     needs and the names give way. Money never truncates. */
+  table-layout: fixed;
+}
+
+/**
+ * The figure columns take what a full-length figure needs and no more; the
+ * customer takes a share of what is left, and the goods give way first.
+ *
+ * That order is deliberate. The customer name is the row's identity — cut it
+ * and the row reads as a different shop. The goods line is a reminder of
+ * what the order is, and a reader who needs all of it opens the order.
+ */
+.colRef {
+  width: 80px;
+}
+.colCustomer {
+  width: 30%;
+}
+.colValue {
+  width: 116px;
+}
+.colMargin {
+  width: 116px;
+}
+.colWaiting {
+  width: 100px;
+}
+
+.table th {
+  padding: var(--ow-space-3) var(--ow-space-5);
+  text-align: left;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+  border-bottom: 1px solid var(--ow-color-line);
+  white-space: nowrap;
+  background: var(--ow-color-paper);
+}
+
+.numeric {
+  text-align: right;
+}
+
+/**
+ * The lane head, as a row in the table.
+ *
+ * It says everything the old column head said — step, name, count, what
+ * this lane's money is — plus the one sentence that answers the question
+ * the owner actually has, which is "why is this still here".
+ */
+.laneHead td {
+  padding: var(--ow-space-5) var(--ow-space-5) var(--ow-space-3);
+  border-bottom: 1px solid var(--ow-color-line);
+  background: var(--ow-color-fill);
+}
+
+.laneTop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-4);
+}
+
+.laneStep {
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+}
+
+.laneName {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.laneCount {
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-3);
+}
+
+.laneSpacer {
+  flex: 1;
+}
+
+.laneMoney {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-3);
+}
+
+/* What this lane's money IS — and it is never the same word twice. Money
+   quoted is not money owed and neither is money on a lorry. */
+.laneMoneyWord {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.laneRule {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+}
+
+.laneEmpty td {
+  padding: var(--ow-space-5) var(--ow-space-5);
+  border-bottom: 1px solid var(--ow-color-line-soft);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-3);
+  font-style: italic;
+}
+
+.row td {
+  height: 40px;
+  padding: var(--ow-space-4) var(--ow-space-5);
+  border-bottom: 1px solid var(--ow-color-line-soft);
+  vertical-align: middle;
+}
+
+.row:hover td {
+  background: var(--ow-color-paper-hover);
+}
+
+.ref {
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.who {
+  font-weight: var(--ow-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.what {
+  color: var(--ow-color-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.waiting {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+/* The two things on a row that are genuinely about the owner. A word, not
+   only a colour — daylight and colour blindness both defeat colour alone. */
+.late {
+  color: var(--ow-color-bad);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.unknown {
+  color: var(--ow-color-warn);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/* -------------------------------- context --------------------------------- */
+
+.contextTitle {
+  padding-top: var(--ow-space-2);
+  margin-bottom: var(--ow-space-4);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.insight {
+  padding: var(--ow-space-5);
+  margin-bottom: var(--ow-space-4);
+  background: var(--ow-color-paper);
+  border: 1px solid var(--ow-color-line);
+  border-radius: var(--ow-radius-lg);
+  box-shadow: var(--ow-elevation-rest);
+}
+
+.insightLabel {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+  margin-bottom: var(--ow-space-3);
+}
+
+.insightHead {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+  line-height: var(--ow-leading-snug);
+}
+
+.insightBody {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-snug);
+  color: var(--ow-color-ink-3);
+  max-width: var(--ow-measure);
+}
+
+.insightGood {
+  color: var(--ow-color-good);
+}
+.insightBad {
+  color: var(--ow-color-bad);
+}
+.insightWarn {
+  color: var(--ow-color-warn);
+}

@@ -15,6 +15,7 @@ import { useState, type ReactElement } from 'react';
 import s from './PhoneApp.module.css';
 import { TabMark, type TabIcon } from './icons.js';
 import { Today } from './screens/Today.js';
+import { Orders, ordersThumbAction } from './screens/Orders.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
 interface Tab {
@@ -26,13 +27,17 @@ interface Tab {
    * than by the screen itself — so it is always reachable and can never sit
    * on top of the work. A tab with no single obvious next action has none,
    * and shows no bar; an invented one would spend the accent on nothing.
+   *
+   * A function, because on some screens the one thing to do next DEPENDS on
+   * the books: Orders offers the pressing decision when there is one and
+   * "Take an order" when there is not. The accent follows the work.
    */
-  readonly action?: string;
+  readonly action?: () => string;
 }
 
 const TABS: readonly Tab[] = [
-  { id: 'today', label: 'Today', action: 'Take an order' },
-  { id: 'sell', label: 'Sell', action: 'Start a sale' },
+  { id: 'today', label: 'Today', action: () => 'Take an order' },
+  { id: 'orders', label: 'Orders', action: ordersThumbAction },
   { id: 'money', label: 'Money', badge: 7 },
   { id: 'stock', label: 'Stock', badge: 3 },
   { id: 'more', label: 'More' },
@@ -40,7 +45,7 @@ const TABS: readonly Tab[] = [
 
 const TITLES: Record<TabIcon, string> = {
   today: 'Today',
-  sell: 'Sell',
+  orders: 'Orders',
   money: 'Money',
   stock: 'Stock',
   more: 'More',
@@ -48,7 +53,7 @@ const TITLES: Record<TabIcon, string> = {
 
 export default function PhoneApp(): ReactElement {
   const [tab, setTab] = useState<TabIcon>('today');
-  const action = TABS.find((t) => t.id === tab)?.action;
+  const action = TABS.find((t) => t.id === tab)?.action?.();
 
   return (
     <div className={s.shell}>
@@ -73,7 +78,13 @@ export default function PhoneApp(): ReactElement {
       </header>
 
       <main className={s.scroll}>
-        {tab === 'today' ? <Today /> : <NotBuiltYet name={TITLES[tab]} />}
+        {tab === 'today' ? (
+          <Today />
+        ) : tab === 'orders' ? (
+          <Orders />
+        ) : (
+          <NotBuiltYet name={TITLES[tab]} />
+        )}
       </main>
 
       {action !== undefined && (
