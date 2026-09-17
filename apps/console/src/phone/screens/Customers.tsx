@@ -49,7 +49,7 @@ import {
   type Customer,
   type Standing,
 } from '@ow/domain';
-import { DEMO_TODAY, demoCustomers } from '@ow/data';
+import { useRegister } from '../../app/useRegister.js';
 import s from './Customers.module.css';
 import { Mark, PATH } from '../icons.js';
 
@@ -68,13 +68,51 @@ type Tab = 'owing' | 'all' | 'quiet';
 const IN_TIME_SHOWN = 2;
 
 export function Customers(): ReactElement {
-  const now = DEMO_TODAY;
-  const all = useMemo(() => demoCustomers(), []);
+  // Not `read` — that name belongs to the domain's book reckoning imported
+  // above, which the register below calls.
+  const got = useRegister();
+  if (got.at === 'loading') return <Bare say="Reading the accounts…" />;
+  if (got.at === 'failed') return <Bare say={`The accounts could not be read. ${got.why}`} />;
+  return <Register got={got} />;
+}
+
+/**
+ * The header with no figures under it.
+ *
+ * Reading and refused share a shape because they share a problem: there is
+ * no register yet, and a zero owed would be a claim that nobody owes
+ * anything — the one claim this screen must never make by accident.
+ */
+function Bare({ say }: { readonly say: string }): ReactElement {
+  return (
+    <div className={s.screen}>
+      <header className={s.head}>
+        <div className={s.brand}>
+          <span className={s.mark}>
+            <Mark d={PATH.home} size={14} />
+          </span>
+          <span className={s.title}>Customers</span>
+        </div>
+      </header>
+      <p className={s.saying}>{say}</p>
+    </div>
+  );
+}
+
+function Register({
+  got,
+}: {
+  readonly got: Extract<ReturnType<typeof useRegister>, { at: 'ready' }>;
+}): ReactElement {
+  const now = got.today;
+  const all = got.data.customers;
+  const { unreadable } = got.data;
   const book = useMemo(() => read(all, now), [all, now]);
 
   const [tab, setTab] = useState<Tab>('owing');
   const [showAllInTime, setShowAllInTime] = useState(false);
-  const [pickedId, setPickedId] = useState<string | null>('c-mulongo');
+  /** The frame's card. On real books nothing is picked until somebody taps. */
+  const [pickedId, setPickedId] = useState<string | null>(got.live ? null : 'c-mulongo');
   const picked = all.find((c) => c.id === pickedId) ?? null;
 
   const bands = agingBands(book.owing, now);
@@ -133,6 +171,13 @@ export function Customers(): ReactElement {
       </header>
 
       <div className={s.list}>
+        {/* Said once, above every figure it qualifies. */}
+        {unreadable.length > 0 && (
+          <p className={s.sayingWarn}>
+            {unreadable.length} {unreadable.length === 1 ? 'account' : 'accounts'} could not be read
+            in full. What is owed above leaves out whatever they could not say.
+          </p>
+        )}
         {tab === 'owing' && (
           <>
             <Band

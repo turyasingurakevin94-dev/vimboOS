@@ -125,7 +125,7 @@ function Register({
   readonly read: Extract<ReturnType<typeof useLedgers>, { at: 'ready' }>;
 }): ReactElement {
   const now = read.today;
-  const { sales, purchases, unreadable } = read.ledgers;
+  const { sales, purchases, unreadable } = read.data;
   const band = readBand(sales, purchases, now);
 
   /**

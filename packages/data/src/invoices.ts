@@ -89,18 +89,36 @@ export async function readLedgers(shopId: string, now: Date): Promise<Derived<Le
 
   // A refusal is not an absence. Say which failed rather than drawing a shop
   // that has never traded.
-  const failed = [
+  //
+  // Only two of the three are fatal. Without sales or purchases there is no
+  // ledger to draw and a figure would be invented. Without CUSTOMERS there
+  // is a ledger — every invoice, every balance — and the one thing missing
+  // is the terms that make lateness derivable, which the register already
+  // knows how to say it does not have. Sinking the whole screen over it
+  // would turn "I cannot tell you which of these are late" into "I cannot
+  // tell you anything", and the second is a far worse answer to a shop
+  // asking who owes it money.
+  //
+  // This is not hypothetical: `terms_days` arrived in migration 0096, so a
+  // database that has not run it answers this query with an error, and RLS
+  // on `customers` can refuse independently of `saved_quotes`.
+  const fatal = [
     salesRes.error === null ? null : `sales invoices: ${salesRes.error.message}`,
     purchasesRes.error === null ? null : `purchase invoices: ${purchasesRes.error.message}`,
-    customersRes.error === null ? null : `customers: ${customersRes.error.message}`,
   ].filter((x): x is string => x !== null);
 
-  if (failed.length > 0) return unavailable(failed.join('; '));
+  if (fatal.length > 0) return unavailable(fatal.join('; '));
 
   const ledgers = assemble({
     sales: salesRes.data ?? [],
     purchases: purchasesRes.data ?? [],
     customers: customersRes.data ?? [],
+    // Named against the ledger rather than logged, so the count under the
+    // totals says it and nobody has to wonder why every row reads "No terms".
+    termsUnreadable:
+      customersRes.error === null
+        ? null
+        : `customer terms could not be read (${customersRes.error.message}), so no invoice here can be called late`,
   });
 
   return known(
@@ -118,6 +136,8 @@ export async function readLedgers(shopId: string, now: Date): Promise<Derived<Le
  * rows shaped like the shop's real ones, on a machine with no network.
  */
 export function assemble(rows: {
+  /** Why terms are missing for every row, when they are. */
+  readonly termsUnreadable?: string | null;
   /**
    * Everything arrives as `unknown`, not as whatever shape the client's
    * generics guessed. PostgREST returns what the database HAS, which on a
@@ -137,6 +157,7 @@ export function assemble(rows: {
   }
 
   const unreadable: string[] = [];
+  if (rows.termsUnreadable != null) unreadable.push(rows.termsUnreadable);
   const sales: SalesInvoice[] = [];
 
   for (const raw of rows.sales) {

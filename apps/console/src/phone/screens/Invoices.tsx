@@ -93,7 +93,7 @@ function Register({
   readonly read: Extract<ReturnType<typeof useLedgers>, { at: 'ready' }>;
 }): ReactElement {
   const now = read.today;
-  const { sales, purchases, unreadable } = read.ledgers;
+  const { sales, purchases, unreadable } = read.data;
   const band = readBand(sales, purchases, now);
   const [side, setSide] = useState<'in' | 'out'>('in');
   /** Which invoice's Receive screen is open. Null is the ledger. */

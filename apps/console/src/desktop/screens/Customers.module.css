@@ -58,6 +58,12 @@
   color: var(--ow-color-ink-2);
 }
 
+/* Warn, not bad: the register is readable, some of what it says is not. */
+.subNote {
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-warn-ink);
+}
+
 /* ------------------------------- the lenses ------------------------------- */
 
 /* A lens is not a new screen. Owing, All, Best and Gone quiet are four

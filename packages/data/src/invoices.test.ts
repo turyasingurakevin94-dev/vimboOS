@@ -170,3 +170,31 @@ describe('a row that will not fully parse', () => {
     expect(unreadable.every((u) => u.startsWith('INV-0301: '))).toBe(true);
   });
 });
+
+describe('when the customers table cannot be read', () => {
+  // Terms arrived in migration 0096. A database that has not run it answers
+  // that query with an error, and RLS on `customers` can refuse on its own.
+  it('still draws the ledger, and says why nothing can be called late', () => {
+    const { sales, unreadable } = assemble({
+      sales: [KEN],
+      purchases: [PINV],
+      customers: [],
+      termsUnreadable: 'customer terms could not be read (permission denied)',
+    });
+
+    expect(sales).toHaveLength(1);
+    expect(balanceDue(sales[0]!)).toBe(165_000);
+    expect(sales[0]?.dueOn).toBeNull();
+    expect(unreadable[0]).toMatch(/terms could not be read/);
+  });
+
+  it('says nothing extra when they read fine', () => {
+    const { unreadable } = assemble({
+      sales: [KEN],
+      purchases: [],
+      customers: [{ id: 'c', name: 'Ken Bwaise', terms_days: 30 }],
+      termsUnreadable: null,
+    });
+    expect(unreadable).toEqual([]);
+  });
+});
