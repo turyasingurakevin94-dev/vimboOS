@@ -1,0 +1,939 @@
+/**
+ * Customers — the desktop console, to frame 1a's measurements.
+ *
+ * The frame is drawn in the app's own idiom this time, so there is no
+ * mapping table at the head of this file as there is on Invoices: every
+ * value below is the frame's, taken from its markup rather than from a
+ * reading of its look.
+ *
+ * Two things the frame settles that the design system's prose does not:
+ *
+ *  - the lens group is a WHITE pill on a warm trough (`lensTrack`), not the
+ *    navy segment §5 describes;
+ *  - the picked row is the studied violet, which is this app's "the thing
+ *    you are looking at" and not a meaning tint — nothing about Mulongo is
+ *    violet, the CURSOR is.
+ */
+
+/* --------------------------------- the page ------------------------------- */
+
+/**
+ * The page does not scroll. The list and the panel do, separately, because
+ * the strip is the answer to "where do I stand" and scrolling it away to
+ * read row forty is the opposite of what it is for.
+ */
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ------------------------------- page header ------------------------------ */
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-16);
+  flex-wrap: wrap;
+  padding: var(--ow-space-18) var(--ow-space-22) 0;
+}
+
+.titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--ow-size-24);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading);
+}
+
+.sub {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-2);
+}
+
+/* ------------------------------- the lenses ------------------------------- */
+
+/* A lens is not a new screen. Owing, All, Best and Gone quiet are four
+   questions about one list, which is the whole argument for cutting the
+   Debtors screen. */
+.lenses {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  flex: none;
+  padding: var(--ow-space-4);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-lens-track);
+}
+
+.lens {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 32px;
+  padding: 0 var(--ow-space-13);
+  border: 0;
+  border-radius: var(--ow-radius-icon-chip);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.lens:hover {
+  color: var(--ow-color-ink);
+}
+
+.lensOn {
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  box-shadow: var(--ow-elevation-lens);
+}
+
+.lensCount {
+  composes: fig from './Customers.fig.css';
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--ow-space-6);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+}
+
+/* ---------------------------- the position strip -------------------------- */
+
+.strip {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ow-space-12);
+  padding: var(--ow-space-14) var(--ow-space-22) 0;
+}
+
+.card {
+  padding: var(--ow-space-12) var(--ow-space-14);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  background: var(--ow-color-surface);
+}
+
+/* The debt card is the only tinted one that carries a bar; the tint and the
+   bar say the same thing at two distances. */
+.cardBad {
+  border-color: var(--ow-color-bad-edge);
+  background: var(--ow-color-bad-fill);
+}
+
+.cardGood {
+  border-color: var(--ow-color-good-edge-soft);
+  background: var(--ow-color-good-fill);
+}
+
+.cardLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.cardLabelBad {
+  color: var(--ow-color-bad-meta);
+}
+
+.cardLabelGood {
+  color: var(--ow-color-good-panel-ink);
+}
+
+.cardFig {
+  composes: fig from './Customers.fig.css';
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-20);
+}
+
+.cardFigWarn {
+  color: var(--ow-color-warn-ink);
+}
+
+.cardFigGood {
+  color: var(--ow-color-good-ink);
+}
+
+.cardBasis {
+  margin-top: var(--ow-space-1);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.cardBasisBad {
+  margin-top: var(--ow-space-4);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-bad-meta);
+}
+
+.cardBasisGood {
+  margin-top: var(--ow-space-1);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-good-panel-ink);
+}
+
+/* ---------------------------------- bars ---------------------------------- */
+
+/**
+ * One bar, two jobs: the four ages of the debt on the strip, and the three
+ * fates of a customer's money in a row. Same geometry, because they are the
+ * same kind of statement — a whole, divided by how bad it is.
+ */
+.bar {
+  display: flex;
+  height: 6px;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-rule);
+  overflow: hidden;
+}
+
+.cardBad .bar {
+  margin-top: var(--ow-space-6);
+}
+
+.barPart {
+  display: block;
+  height: 6px;
+}
+
+/* --------------------------------- the work ------------------------------- */
+
+.work {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  gap: var(--ow-space-16);
+  padding: var(--ow-space-14) var(--ow-space-22) var(--ow-space-22);
+  overflow: hidden;
+}
+
+.list {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  background: var(--ow-color-surface);
+  box-shadow: var(--ow-elevation-card);
+}
+
+.listHead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-10) var(--ow-space-14);
+}
+
+.listTitle {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+/* The order the list is in, stated rather than implied. Sort changes it. */
+.listWhy {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 28px;
+  padding: 0 var(--ow-space-9);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.ghost:hover {
+  background: var(--ow-color-track);
+  color: var(--ow-color-ink);
+}
+
+/* ------------------------------- the columns ------------------------------ */
+
+/**
+ * One grid, shared by the column header and every row. Two grids is how a
+ * header stops lining up with its table the first time a column changes.
+ */
+.cols {
+  flex: none;
+  display: grid;
+  grid-template-columns: 30px minmax(180px, 1fr) 104px 88px 132px 66px;
+  align-items: center;
+  column-gap: var(--ow-space-10);
+  padding: var(--ow-space-7) var(--ow-space-14);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.col {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.right {
+  text-align: right;
+}
+
+.rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* -------------------------------- the groups ------------------------------ */
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-8) var(--ow-space-14);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.groupChip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--ow-space-9);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.groupCount {
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.groupFig {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+/* A group with nothing in it says so and says what to do instead. */
+.empty {
+  padding: var(--ow-space-14);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* --------------------------------- a row ---------------------------------- */
+
+.row {
+  display: grid;
+  grid-template-columns: 30px minmax(180px, 1fr) 104px 88px 132px 66px;
+  align-items: center;
+  column-gap: var(--ow-space-10);
+  width: 100%;
+  padding: var(--ow-space-9) var(--ow-space-14);
+  border-bottom: 1px solid var(--ow-color-rule);
+  text-align: left;
+}
+
+.row:hover {
+  background: var(--ow-color-row-hover);
+}
+
+/* The cursor, not a meaning. */
+.rowOn {
+  background: var(--ow-color-study-fill);
+}
+
+/**
+ * A quiet account is drawn back, not hidden.
+ *
+ * 0.7 is the frame's figure and it holds: body ink on white at 70% still
+ * measures well over the floor, and the row is a live target — an inactive
+ * control is exempt from the contrast rule, a clickable one is not.
+ */
+.rowQuiet {
+  opacity: 0.7;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-bold);
+}
+
+.avatarLarge {
+  width: 32px;
+  height: 32px;
+  font-size: var(--ow-size-12);
+}
+
+.identity {
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marks {
+  margin-top: var(--ow-space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  overflow: hidden;
+}
+
+.pill {
+  composes: fig from './Customers.fig.css';
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-10-5);
+  white-space: nowrap;
+  flex: none;
+}
+
+.fact {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owes {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-13-5);
+  text-align: right;
+}
+
+.owesBad {
+  color: var(--ow-color-bad-ink);
+}
+
+.age {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-13);
+  text-align: right;
+}
+
+.ageBad {
+  color: var(--ow-color-bad-ink);
+}
+
+.ageWarn {
+  color: var(--ow-color-warn-ink);
+}
+
+.ageCalm {
+  color: var(--ow-color-ink-2);
+}
+
+/* The sentence that turns a bar into a fact. */
+.reading {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-ink-2);
+}
+
+/* An account with no place in the order says so, rather than wearing a rank
+   nobody should act on. */
+.dash {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+/* -------------------------------- the panel ------------------------------- */
+
+.panel {
+  width: 390px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ow-space-12);
+  overflow-y: auto;
+}
+
+.pane {
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  background: var(--ow-color-surface);
+  box-shadow: var(--ow-elevation-card);
+}
+
+.pane2 {
+  composes: pane;
+  padding: var(--ow-space-12) var(--ow-space-14);
+}
+
+.paneHead {
+  padding: var(--ow-space-12) var(--ow-space-14);
+  background: var(--ow-color-navy);
+}
+
+.paneWho {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+.paneNames {
+  flex: 1;
+  min-width: 0;
+}
+
+.paneName {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-on-fill);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paneSince {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-rail-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kebab {
+  flex: none;
+  color: var(--ow-color-rail-ink);
+}
+
+.paneChips {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  gap: var(--ow-space-7);
+}
+
+/* Translucent, not a flat token: nothing solid can let the navy through, and
+   a second navy would read as a panel rather than a chip. */
+.onNavyChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  height: 20px;
+  padding: 0 var(--ow-space-8);
+  border-radius: var(--ow-radius-pill);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--ow-color-on-fill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.paneBody {
+  padding: var(--ow-space-12) var(--ow-space-14);
+}
+
+.figures {
+  display: flex;
+  gap: var(--ow-space-12);
+}
+
+.figure {
+  flex: 1;
+}
+
+.paneFig {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-17);
+}
+
+.paneFigBad {
+  color: var(--ow-color-bad-ink);
+}
+
+/* The block is stated here and enforced at the till. This screen says what
+   is blocked and by how much; it does not do the blocking. */
+.caution {
+  margin-top: var(--ow-space-10);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-9) var(--ow-space-11);
+  border: 1px solid var(--ow-color-warn-panel-edge);
+  border-radius: var(--ow-radius-tile);
+  background: var(--ow-color-warn-panel);
+}
+
+.cautionMark {
+  flex: none;
+  margin-top: var(--ow-space-1);
+  color: var(--ow-color-warn-ink);
+}
+
+.cautionWords {
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-warn-panel-ink);
+  text-wrap: pretty;
+}
+
+/* ---------------------------- what the debt is ---------------------------- */
+
+/* The drift check Debtors used to run where nobody could see it now sits
+   under the invoices it is checking. */
+.debt {
+  padding: var(--ow-space-11) var(--ow-space-14);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.debtHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.debtCount {
+  margin-left: auto;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.debtRows {
+  margin-top: var(--ow-space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+}
+
+.debtRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.debtWhen {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debtWhenCalm {
+  color: var(--ow-color-ink-2);
+}
+
+.debtFig {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-12-5);
+}
+
+.debtFigBad {
+  color: var(--ow-color-bad-ink);
+}
+
+.debtFigCalm {
+  color: var(--ow-color-ink-2);
+}
+
+.checkRow {
+  margin-top: var(--ow-space-10);
+  padding-top: var(--ow-space-9);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.checkRow .pill {
+  margin-left: auto;
+}
+
+/* -------------------------------- the actions ----------------------------- */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-11) var(--ow-space-14);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+/**
+ * The one accent-filled control on this screen.
+ *
+ * `accentBtn`, not the raw accent: white on #ef4b39 is 3.66:1 and this
+ * button is the single thing the owner should do next, so it is the last
+ * place to be illegible.
+ */
+.chase {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 36px;
+  padding: 0 var(--ow-space-13);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.chase:hover {
+  background: var(--ow-color-accent-btn-hover);
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 36px;
+  padding: 0 var(--ow-space-13);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.secondary:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/* --------------------------- what they buy -------------------------------- */
+
+.paneTitle {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.tiles {
+  margin-top: var(--ow-space-9);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ow-space-9);
+}
+
+.tile {
+  padding: var(--ow-space-9) var(--ow-space-10);
+  border-radius: var(--ow-radius-tile);
+  background: var(--ow-color-surface-2);
+}
+
+.tileLabel {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.tileFig {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-15);
+}
+
+.tileFigGood {
+  color: var(--ow-color-good-ink);
+}
+
+.tileBasis {
+  margin-top: var(--ow-space-1);
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-ink-2);
+}
+
+.products {
+  margin-top: var(--ow-space-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+}
+
+.product {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-7) 0;
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.productFirst {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.productName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productShare {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.productMargin {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-good-ink);
+}
+
+/* The insight, in a sentence a person can check against the rows above it. */
+.paneReading {
+  margin-top: var(--ow-space-9);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* ------------------------------ last five months -------------------------- */
+
+.months {
+  margin-top: var(--ow-space-10);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-8);
+  height: 64px;
+}
+
+.month {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ow-space-5);
+}
+
+.monthBar {
+  width: 100%;
+  border-radius: var(--ow-radius-bar-small);
+  background: var(--ow-color-money-chip);
+}
+
+/* A month they stopped buying in is drawn as an absence, not a small sale. */
+.monthBarQuiet {
+  background: var(--ow-color-rule);
+}
+
+.monthName {
+  font-size: var(--ow-size-10);
+  color: var(--ow-color-ink-2);
+}
+
+/* ------------------------- the desktop, on a laptop ----------------------- */
+
+/**
+ * Under 1366px the panel moves below the work column.
+ *
+ * This is the desktop reorganising for a smaller desk, which §3 of the
+ * design system describes and allows — not the phone design arriving early.
+ * Nothing resizes, no target changes, and the register keeps all six of its
+ * columns.
+ *
+ * The number is arithmetic, not taste. The grid needs
+ * 30 + 180 + 104 + 88 + 132 + 66 and five 10px gaps = 650px; the card adds
+ * 28 of padding and 2 of border, the work row adds a 16px gap and the 390px
+ * panel, and the page adds 44 of gutter on top of a 236px rail. That is
+ * 1366. Below it, something has to give, and the thing that must NOT give is
+ * a column of the register — a clipped `Ask` column is a screen that has
+ * stopped saying who to ask first, which is its entire job.
+ */
+@media (max-width: 1365px) {
+  .work {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* The list stops owning a scroll box of its own and lets the page scroll,
+     because two nested scrolls on one screen is a wheel that does nothing
+     the first time you turn it. */
+  .list {
+    flex: none;
+  }
+
+  .rows {
+    overflow-y: visible;
+  }
+
+  .panel {
+    width: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    overflow-y: visible;
+  }
+
+  /* The identity card is the tall one; it takes the left half and the two
+     readings stack beside it rather than under a column of white. */
+  .pane {
+    grid-row: span 2;
+  }
+}

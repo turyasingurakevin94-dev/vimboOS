@@ -144,4 +144,6 @@ export const PATH = {
   dots: 'M12 12h.01M19 12h.01M5 12h.01',
   chevronDown: 'm6 9 6 6 6-6',
   trash: 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6',
+  /* The brand square's mark: a shop with a door. Two subpaths, one `d`. */
+  home: 'M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21v-6h6v6',
 } as const;

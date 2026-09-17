@@ -1,0 +1,10 @@
+/**
+ * The figure face, alone so every variant can `composes` it and no weight is
+ * decided by which rule happens to sit lower in the file.
+ */
+.fig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+}

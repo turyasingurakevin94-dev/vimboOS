@@ -18,10 +18,19 @@ import { TabMark, type TabIcon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
+import { Customers } from './screens/Customers.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
-const TABS: readonly { readonly id: TabIcon; readonly label: string }[] = [
-  { id: 'today', label: 'Today' },
+/**
+ * A dot rather than a count.
+ *
+ * The rail on the desktop has room to say EIGHT things want you. A tab bar
+ * has room to say that something does, and the screen behind it says how
+ * many the moment you arrive. A 19px pill on a 19px glyph is a badge that
+ * covers the thing it is badging.
+ */
+const TABS: readonly { readonly id: TabIcon; readonly label: string; readonly dot?: boolean }[] = [
+  { id: 'today', label: 'Today', dot: true },
   { id: 'sell', label: 'Sell' },
   { id: 'money', label: 'Money' },
   { id: 'manager', label: 'Manager' },
@@ -61,6 +70,17 @@ export default function PhoneApp(): ReactElement {
          * reachable while the owner decides which of the two owns slot two.
          */
         <Invoices />
+      ) : tab === 'more' ? (
+        /**
+         * More lands on Customers, which is what frame 1b draws.
+         *
+         * When the More sheet is built — generated from the rail's own index,
+         * never a second hand-kept list — Customers becomes a row in it and
+         * this becomes a push. Until then the destination the frame shows
+         * under this tab is the destination this tab reaches, rather than a
+         * sheet nobody has designed standing between them.
+         */
+        <Customers />
       ) : (
         <NotBuiltYet name={TITLES[tab]} />
       )}
@@ -78,6 +98,7 @@ export default function PhoneApp(): ReactElement {
             >
               <span className={s.tabPill}>
                 <TabMark name={t.id} active={on} />
+                {t.dot === true && !on && <span className={s.dot} />}
               </span>
               {t.label}
             </button>
