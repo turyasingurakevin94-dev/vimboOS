@@ -1,16 +1,15 @@
 .wrap {
-  grid-column: 1 / -1;
-  padding: var(--ow-space-11) var(--ow-space-8);
+  padding: var(--ow-space-24) 0;
   max-width: var(--ow-measure);
 }
 .title {
-  font-size: var(--ow-size-20);
+  font-size: var(--ow-size-24);
   font-weight: var(--ow-weight-bold);
   letter-spacing: var(--ow-tracking-heading);
 }
 .body {
-  margin-top: var(--ow-space-4);
+  margin-top: var(--ow-space-10);
   font-size: var(--ow-size-13);
-  line-height: var(--ow-leading-normal);
-  color: var(--ow-color-ink-3);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
 }

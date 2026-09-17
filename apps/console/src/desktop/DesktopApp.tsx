@@ -1,60 +1,104 @@
 /**
  * The desktop console.
  *
- * A dense work console for someone sitting in front of it for hours: a
- * persistent rail, a 56px top bar, the work in the main column and the
- * context that supports a decision in a 320px column beside it.
- *
- * This tree never asks how wide the screen is. It is already the answer to
+ * Built to the Today handoff (`design_handoff_dashboard_today`), §1.1–1.2.
+ * This tree never asks how wide the screen is — it is already the answer to
  * that question.
  */
 
-import { useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import s from './DesktopApp.module.css';
-import { Rail } from './chrome/Rail.js';
+import { Rail, SECTIONS, TODAY } from './chrome/Rail.js';
 import { Icon } from './icons.js';
 import { Today } from './screens/Today.js';
-import { Orders } from './screens/Orders.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
+
+/** The order-stage chips in the top bar. They replace the old status bar. */
+const STAGES = [
+  { id: 'quoted', label: 'quoted', n: 12, bg: 'info-chip', ink: 'info-ink' },
+  { id: 'packing', label: 'packing', n: 5, bg: 'warn-fill', ink: 'warn-ink' },
+  { id: 'out', label: 'out', n: 3, bg: 'good-chip-light', ink: 'good-ink' },
+] as const;
+
+const NAMES = new Map<string, string>([
+  [TODAY.id, TODAY.label],
+  ...SECTIONS.flatMap((sec) => sec.items.map((i) => [i.id, i.label] as [string, string])),
+]);
 
 export default function DesktopApp(): ReactElement {
   const [section, setSection] = useState('today');
+  const search = useRef<HTMLInputElement>(null);
+
+  // Ctrl/Cmd + K focuses the field. Escape gives it up.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        search.current?.focus();
+      }
+      if (e.key === 'Escape' && document.activeElement === search.current) {
+        search.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <div className={s.shell}>
       <Rail current={section} onNavigate={setSection} />
 
-      <header className={s.topbar}>
-        <input
-          className={s.search}
-          type="search"
-          placeholder="Search orders, customers, products…"
-          aria-label="Search"
-        />
-        <div className={s.spacer} />
-        <button type="button" className={s.iconBtn} aria-label="Notifications">
-          <Icon name="bell" />
-        </button>
-        <div className={s.who}>
-          <span className={s.avatar} aria-hidden="true">
-            KT
-          </span>
-          <span>
-            <span className={s.whoName}>Kevin T.</span>
-            <br />
-            <span className={s.whoRole}>Owner</span>
-          </span>
-        </div>
-      </header>
+      <div className={s.work}>
+        <header className={s.topbar}>
+          <div className={s.crumbs}>
+            <span className={s.crumbStart}>Start</span>
+            <Icon name="chevron-right" size={14} className={s.crumbSep} />
+            <span className={s.crumbHere}>{NAMES.get(section) ?? 'Today'}</span>
+          </div>
 
-      <div className={s.main}>
-        {section === 'today' ? (
-          <Today />
-        ) : section === 'orders' ? (
-          <Orders />
-        ) : (
-          <NotBuiltYet section={section} />
-        )}
+          <div className={s.search}>
+            <Icon name="search" size={15} />
+            <input
+              ref={search}
+              className={s.searchInput}
+              type="search"
+              placeholder="Search a screen, customer or product"
+              aria-label="Search"
+            />
+            <span className={s.kbd} aria-hidden="true">
+              Ctrl K
+            </span>
+          </div>
+
+          <div className={s.spacer} />
+
+          <div className={s.stages}>
+            {STAGES.map((st) => (
+              <span
+                key={st.id}
+                className={s.stage}
+                style={{
+                  background: `var(--ow-color-${st.bg})`,
+                  color: `var(--ow-color-${st.ink})`,
+                }}
+                title={`${st.label}: ${st.n}`}
+              >
+                <span className={s.stageFig}>{st.n}</span>
+                <span className={s.stageLabel}>{st.label}</span>
+              </span>
+            ))}
+          </div>
+
+          <div className={s.avatar}>KT</div>
+        </header>
+
+        <div className={s.body}>
+          {section === 'today' ? (
+            <Today />
+          ) : (
+            <NotBuiltYet name={NAMES.get(section) ?? section} />
+          )}
+        </div>
       </div>
     </div>
   );

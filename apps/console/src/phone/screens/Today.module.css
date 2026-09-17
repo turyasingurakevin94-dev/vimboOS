@@ -1,211 +1,230 @@
-/* Phone Today. Cards, 15px body, 44px targets. Nothing here is a smaller
-   version of the desktop screen — it is a different answer to the same
-   question. */
+/**
+ * Today — the phone (screen 2b, drawn at 390×844). Compact by request.
+ */
 
-.head {
-  margin-bottom: var(--ow-space-6);
-}
-
-.date {
-  font-size: var(--ow-size-13);
-  color: var(--ow-color-ink-3);
-}
-
-/* The four figures as a 2×2 inside ONE card, with hairline dividers.
-   Four separate cards would be four things to read; this is one. */
-.metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: var(--ow-color-paper);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-lg);
-  box-shadow: var(--ow-elevation-rest);
-  overflow: hidden;
-  margin-bottom: var(--ow-space-6);
-}
-
-.metric {
-  padding: var(--ow-space-5) var(--ow-space-5);
-  border-left: 1px solid var(--ow-color-line-soft);
-  border-top: 1px solid var(--ow-color-line-soft);
-  min-width: 0;
-}
-.metric:nth-child(-n + 2) {
-  border-top: 0;
-}
-.metric:nth-child(odd) {
-  border-left: 0;
-}
-
-.metricLabel {
-  font-size: var(--ow-size-12);
-  font-weight: var(--ow-weight-semibold);
-  color: var(--ow-color-ink-3);
-  margin-bottom: var(--ow-space-3);
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  padding: var(--ow-space-2) var(--ow-space-2) var(--ow-space-8);
 }
 
 .sectionTitle {
-  display: flex;
-  align-items: baseline;
-  gap: var(--ow-space-3);
-  margin: var(--ow-space-8) 0 var(--ow-space-4);
-}
-
-.sectionName {
-  font-size: var(--ow-size-16);
-  font-weight: var(--ow-weight-semibold);
-}
-
-.sectionCount {
-  font-family: var(--ow-font-mono);
   font-size: var(--ow-size-13);
-  color: var(--ow-color-ink-3);
+  font-weight: var(--ow-weight-bold);
 }
 
-/* A job is a card with its actions ON it. On a phone, an action hidden
-   behind a tap on the row is an action that does not exist. */
-.job {
-  background: var(--ow-color-paper);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-lg);
-  box-shadow: var(--ow-elevation-rest);
-  padding: var(--ow-space-5);
-  margin-bottom: var(--ow-space-4);
+.sectionNote {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
 }
 
-.jobTop {
+.card {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+}
+
+/* ---------------------------------- moves --------------------------------- */
+
+.move {
+  padding: var(--ow-space-10) var(--ow-space-11);
+  border-left: 3px solid var(--ow-color-study-ink);
+  margin-bottom: var(--ow-space-8);
+}
+
+.moveWaiting {
+  border-left-color: var(--ow-color-study-muted);
+}
+
+.moveTop {
   display: flex;
   align-items: center;
-  gap: var(--ow-space-4);
-  margin-bottom: var(--ow-space-3);
-}
-
-.jobId {
-  font-family: var(--ow-font-mono);
-  font-size: var(--ow-size-13);
-  color: var(--ow-color-ink-3);
-}
-
-.jobSpacer {
-  flex: 1;
-}
-
-.jobWho {
-  font-size: var(--ow-size-15);
-  font-weight: var(--ow-weight-semibold);
-  line-height: var(--ow-leading-snug);
-  /* Three declarations or none — and min-width:0 so it can actually shrink. */
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.jobWhat {
-  margin-top: var(--ow-space-1);
-  font-size: var(--ow-size-13);
-  color: var(--ow-color-ink-3);
-  line-height: var(--ow-leading-snug);
-}
-
-.jobFoot {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--ow-space-4);
-  margin-top: var(--ow-space-5);
-  padding-top: var(--ow-space-5);
-  border-top: 1px solid var(--ow-color-line-soft);
-}
-
-.jobWaiting {
-  font-size: var(--ow-size-13);
-  color: var(--ow-color-ink-3);
-}
-
-/* 44px, and the label says what will happen. */
-.jobAction {
-  min-height: 44px;
-  padding: 0 var(--ow-space-6);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-md);
-  background: var(--ow-color-paper);
-  color: var(--ow-color-ink);
-  font-size: var(--ow-size-15);
-  font-weight: var(--ow-weight-semibold);
+  gap: var(--ow-space-7);
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--ow-space-2);
-  padding: var(--ow-space-2) var(--ow-space-4);
-  border-radius: var(--ow-radius-sm);
-  font-size: var(--ow-size-12);
+  gap: var(--ow-space-5);
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
   font-weight: var(--ow-weight-semibold);
   white-space: nowrap;
 }
-.chipGood {
-  background: var(--ow-color-good-tint);
-  color: var(--ow-color-good);
+
+/* The worth is an inline chip here, not a block. Less air, same fact. */
+.worth {
+  margin-left: auto;
 }
-.chipWarn {
-  background: var(--ow-color-warn-tint);
-  color: var(--ow-color-warn);
+
+.moveTitle {
+  margin-top: var(--ow-space-7);
+  font-size: var(--ow-size-14-5);
+  font-weight: var(--ow-weight-semibold);
+  line-height: 1.25;
+  letter-spacing: var(--ow-tracking-heading-soft);
+  text-wrap: pretty;
 }
-.chipBad {
-  background: var(--ow-color-bad-tint);
-  color: var(--ow-color-bad);
+
+.moveWhy {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
 }
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+
+.moveActions {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  gap: var(--ow-space-7);
+}
+
+/* Every action is at least 44px and sits in the thumb zone. */
+.primary {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-7);
+  height: var(--ow-chrome-tap);
+  padding: 0 var(--ow-space-12);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-ink);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.dark {
+  background: var(--ow-color-navy);
+}
+
+.door {
+  width: 46px;
+  height: var(--ow-chrome-tap);
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+}
+
+/* ---------------------------------- watch --------------------------------- */
+
+.watch {
+  margin-top: var(--ow-space-12);
+  padding: var(--ow-space-4) var(--ow-space-4) var(--ow-space-6);
+}
+
+.watchHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-7);
+  padding: var(--ow-space-8) var(--ow-space-7) var(--ow-space-6);
+}
+
+.watchTitle {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-bold);
+}
+
+.watchNote {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.watchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  width: 100%;
+  padding: var(--ow-space-8);
+  border: 0;
+  border-radius: var(--ow-radius-tile);
+  background: none;
+  text-align: left;
+}
+
+.watchRow:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.watchIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--ow-radius-icon-chip);
+  display: grid;
+  place-items: center;
   flex: none;
 }
 
-/* The context column has nowhere to be on a phone, so it sits below the
-   work — never beside it, and never as a squeezed column. */
-.insight {
-  background: var(--ow-color-paper);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-lg);
-  box-shadow: var(--ow-elevation-rest);
-  padding: var(--ow-space-5);
-  margin-bottom: var(--ow-space-4);
+.watchBody {
+  flex: 1;
+  min-width: 0;
 }
 
-.insightLabel {
+.watchFirst {
+  display: block;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.watchSecond {
+  display: block;
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.watchFig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-12-5);
+  flex: none;
+  white-space: nowrap;
+}
+
+/* -------------------------------- yesterday ------------------------------- */
+
+.yesterday {
+  margin-top: var(--ow-space-12);
+  padding: var(--ow-space-11);
+}
+
+.tiles {
+  margin-top: var(--ow-space-9);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ow-space-9);
+}
+
+.tile {
+  border-radius: var(--ow-radius-tile);
+  padding: var(--ow-space-9) var(--ow-space-10);
+}
+
+.tileLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-2);
+}
+
+.tileFig {
   margin-top: var(--ow-space-3);
-  font-size: var(--ow-size-15);
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: var(--ow-weight-semibold);
-  line-height: var(--ow-leading-snug);
-}
-
-.insightBody {
-  margin-top: var(--ow-space-2);
-  font-size: var(--ow-size-13);
-  line-height: var(--ow-leading-snug);
-  color: var(--ow-color-ink-3);
-}
-
-.insightAction {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ow-space-2);
-  min-height: 44px;
-  margin-top: var(--ow-space-2);
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-size: var(--ow-size-15);
-  font-weight: var(--ow-weight-semibold);
-  color: var(--ow-color-accent);
-}
-
-.demoNote {
-  margin-top: var(--ow-space-6);
-  font-size: var(--ow-size-13);
-  line-height: var(--ow-leading-snug);
-  color: var(--ow-color-ink-3);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-14);
 }

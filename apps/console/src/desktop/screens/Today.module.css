@@ -1,298 +1,586 @@
-/* The page header: name, one line of what it is, a hairline, the screen's
-   own action on the right. */
+/**
+ * Today — the desktop console (handoff §1.3–1.7, screen 2a, drawn at 1440).
+ *
+ * Every measurement here is the design file's, read out of its markup rather
+ * than approximated from its prose. Where the README and the file disagreed,
+ * the file won.
+ */
+
+/* ------------------------------- page header ------------------------------ */
+
 .head {
   display: flex;
-  align-items: flex-start;
-  gap: var(--ow-space-6);
-  padding-bottom: var(--ow-space-5);
-  border-bottom: 1px solid var(--ow-color-line);
+  align-items: flex-end;
+  gap: var(--ow-space-18);
+  flex-wrap: wrap;
+}
+
+.greeting {
+  flex: 1;
+  min-width: 0;
 }
 
 .title {
-  font-size: var(--ow-size-20);
+  font-size: var(--ow-size-24);
   font-weight: var(--ow-weight-bold);
   letter-spacing: var(--ow-tracking-heading);
-  line-height: var(--ow-leading-tight);
 }
 
-/* Never folded away: on Today this is the reading time, and hiding it would
-   conceal the one thing on the page that goes stale. */
+/* Never folded: the reading time is the one thing on this page that goes
+   stale, and hiding it would conceal exactly that. */
 .sub {
-  margin-top: var(--ow-space-2);
+  margin-top: var(--ow-space-3);
   font-size: var(--ow-size-13);
-  color: var(--ow-color-ink-3);
+  color: var(--ow-color-ink-2);
 }
 
-.headSpacer {
-  flex: 1;
+.headActions {
+  display: flex;
+  gap: var(--ow-space-9);
+  flex: none;
 }
 
-/* THE accent. Once per screen — this is it. */
-.action {
+/* --------------------------------- buttons -------------------------------- */
+
+.btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--ow-space-3);
-  height: 32px;
-  padding: 0 var(--ow-space-5);
+  gap: var(--ow-space-7);
   border: 0;
-  border-radius: var(--ow-radius-md);
-  background: var(--ow-color-accent);
-  color: var(--ow-color-on-fill);
-  font-size: var(--ow-size-13);
+  border-radius: var(--ow-radius-button);
+  font-family: var(--ow-font-ui);
   font-weight: var(--ow-weight-semibold);
-  transition: background var(--ow-motion-instant) var(--ow-motion-ease);
-}
-.action:hover {
-  background: var(--ow-color-accent-deep);
-}
-
-.actionGhost {
-  height: 32px;
-  padding: 0 var(--ow-space-5);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-md);
-  background: var(--ow-color-paper);
-  color: var(--ow-color-ink-2);
-  font-size: var(--ow-size-13);
-  font-weight: var(--ow-weight-medium);
-}
-.actionGhost:hover {
-  background: var(--ow-color-fill);
+  white-space: nowrap;
 }
 
 /**
- * The metric strip. ONE region with hairline dividers — not five cards.
- * Per-tile borders turn a reading into a set of unrelated boxes and cost
- * the row its comparability.
+ * The primary — and the only accent-filled control on the screen.
+ *
+ * `accentInk`, not `accent`: white on #ef4b39 is 3.66:1 and this button
+ * carries words. The design file's own `.btn-p` is #c2311f for that reason.
  */
-.strip {
+.btnPrimary {
+  background: var(--ow-color-accent-ink);
+  color: var(--ow-color-on-fill);
+}
+.btnPrimary:hover {
+  background: var(--ow-color-accent-ink-hover);
+}
+
+.btnSecondary {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-field-edge);
+  color: var(--ow-color-ink);
+}
+.btnSecondary:hover {
+  background: var(--ow-color-surface-2);
+}
+
+.btnDark {
+  background: var(--ow-color-navy);
+  color: var(--ow-color-on-fill);
+}
+.btnDark:hover {
+  background: var(--ow-color-navy-hover);
+}
+
+.btnGhost {
+  background: none;
+  color: var(--ow-color-ink-2);
+}
+.btnGhost:hover {
+  background: var(--ow-color-rule);
+  color: var(--ow-color-ink);
+}
+
+.btnLg {
+  height: 38px;
+  padding: 0 var(--ow-space-13);
+  font-size: var(--ow-size-13-5);
+}
+.btnMd {
+  height: 36px;
+  padding: 0 var(--ow-space-13);
+  font-size: var(--ow-size-13);
+}
+
+/* ------------------------------ metric strip ------------------------------ */
+
+.metrics {
+  margin-top: var(--ow-space-16);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: var(--ow-space-6);
-  background: var(--ow-color-paper);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-lg);
-  box-shadow: var(--ow-elevation-rest);
-  overflow: hidden;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--ow-space-12);
+}
+
+/* The grid drops to three-up then two-up as width allows. Still the desktop
+   design — nothing resizes and no target changes. */
+@media (max-width: 1279px) {
+  .metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 899px) {
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .metric {
-  padding: var(--ow-space-5) var(--ow-space-6);
-  border-left: 1px solid var(--ow-color-line-soft);
+  border-radius: var(--ow-radius-card);
+  padding: var(--ow-space-13) var(--ow-space-14);
   min-width: 0;
 }
-.metric:first-child {
-  border-left: 0;
+
+.metricTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.metricIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--ow-radius-icon-chip);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
 }
 
 .metricLabel {
   font-size: var(--ow-size-11);
   font-weight: var(--ow-weight-semibold);
   letter-spacing: var(--ow-tracking-label);
-  text-transform: uppercase;
-  color: var(--ow-color-ink-3);
-  margin-bottom: var(--ow-space-3);
+  color: var(--ow-color-ink-2);
 }
 
-.panel {
-  margin-top: var(--ow-space-6);
-  background: var(--ow-color-paper);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-lg);
-  box-shadow: var(--ow-elevation-rest);
+.metricFig {
+  margin-top: var(--ow-space-8);
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-22);
+  color: var(--ow-color-navy);
+}
+
+.metricFigRow {
+  margin-top: var(--ow-space-8);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-7);
+}
+
+.metricBasis {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.metricBasisTight {
+  margin-top: var(--ow-space-4);
+}
+
+.metricBad {
+  color: var(--ow-color-bad-ink);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/* The aging bar. Widths come from the real split, never from a guess. */
+.aging {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  height: 6px;
+  border-radius: var(--ow-radius-pill);
   overflow: hidden;
+  gap: var(--ow-space-2);
 }
 
-.panelHead {
+/* ---------------------------------- split --------------------------------- */
+
+.split {
+  margin-top: var(--ow-space-18);
+  display: flex;
+  gap: var(--ow-space-16);
+  align-items: flex-start;
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-12);
+}
+
+.insightRail {
+  width: var(--ow-chrome-insight-rail-width);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-12);
+}
+
+/* Under ~1200px the insight rail moves below the work column. */
+@media (max-width: 1199px) {
+  .split {
+    flex-direction: column;
+  }
+  .insightRail {
+    width: 100%;
+  }
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-10);
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: var(--ow-size-16);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading-soft);
+}
+
+.sectionNote {
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+}
+
+/* ---------------------------------- card ---------------------------------- */
+
+.card {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+}
+
+/* ---------------------------------- moves --------------------------------- */
+
+.move {
+  padding: var(--ow-space-16);
+  /* Violet when the move is actionable now; pale when it waits on another. */
+  border-left: 3px solid var(--ow-color-study-ink);
+}
+
+.moveWaiting {
+  border-left-color: var(--ow-color-study-muted);
+}
+
+.moveTop {
   display: flex;
   align-items: center;
-  gap: var(--ow-space-4);
-  height: 40px;
-  padding: 0 var(--ow-space-6);
-  border-bottom: 1px solid var(--ow-color-line);
+  gap: var(--ow-space-9);
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  height: 22px;
+  padding: 0 var(--ow-space-9);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.chipSm {
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+}
+
+.movePos {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.grow {
+  flex: 1;
+}
+
+.moveWorth {
+  text-align: right;
+}
+
+.moveWorthLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-2);
+}
+
+.moveWorthFig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-18);
+}
+
+/* A gain is green and signed. Money tied up or at risk is plain ink — a
+   figure is a size, not a warning. */
+.gain {
+  color: var(--ow-color-good-ink);
+}
+
+.moveTitle {
+  margin-top: var(--ow-space-9);
+  font-size: var(--ow-size-16-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-heading-soft);
+  line-height: var(--ow-leading-title);
+}
+
+.moveWhy {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-2);
+  max-width: var(--ow-measure);
+  text-wrap: pretty;
+}
+
+.moveActions {
+  margin-top: var(--ow-space-12);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  flex-wrap: wrap;
+}
+
+/* The derivation, folded. Never permanently in the way. */
+.derivation {
+  margin-top: var(--ow-space-11);
+  padding-top: var(--ow-space-11);
+  border-top: 1px solid var(--ow-color-rule);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  max-width: var(--ow-measure);
+}
+
+/* ---------------------------------- watch --------------------------------- */
+
+.watch {
+  padding: var(--ow-space-6) var(--ow-space-8) var(--ow-space-8);
+}
+
+.watchHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-10) var(--ow-space-6) var(--ow-space-8);
+  flex-wrap: wrap;
+}
+
+.watchTitle {
+  font-size: var(--ow-size-14-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.watchNote {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.watchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-13);
+  width: 100%;
+  padding: var(--ow-space-12) var(--ow-space-14);
+  border-radius: var(--ow-radius-tile);
+  background: none;
+  border: 0;
+  text-align: left;
+}
+
+.watchRow:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.watchIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ow-radius-button);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.watchBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.watchFirst {
+  display: block;
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/* The arithmetic, both ends of it, so the row can be checked not believed. */
+.watchSecond {
+  display: block;
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.watchFig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-15);
+  flex: none;
+  white-space: nowrap;
+}
+
+.watchCaret {
+  color: var(--ow-color-ink-3);
+  flex: none;
+}
+
+/* ------------------------------ insight rail ------------------------------ */
+
+.panel {
+  padding: var(--ow-space-15) var(--ow-space-16);
 }
 
 .panelTitle {
-  font-size: var(--ow-size-13);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+}
+
+.panelSub {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.product {
+  margin-top: var(--ow-space-12);
+}
+
+.productTop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.productName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
   font-weight: var(--ow-weight-semibold);
-}
-
-.panelCount {
-  font-family: var(--ow-font-mono);
-  font-size: var(--ow-size-11);
-  color: var(--ow-color-ink-3);
-}
-
-/* The dense table. 40px rows: twenty visible at once is the point of the
-   desktop design. */
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--ow-size-13);
-  /* Fixed layout, with the widths declared in a colgroup. With `auto`, a
-     cell that truncates has to be given a max-width to truncate against,
-     and the only value that works is 0 — which collapses the text columns
-     to nothing while the table sits in acres of unused space. Fixed lets
-     the figure columns take exactly what they need and hands the rest to
-     the names, which is the rule: if something must be cut, cut the name. */
-  table-layout: fixed;
-}
-
-.table th {
-  position: sticky;
-  top: 0;
-  z-index: var(--ow-layer-sticky);
-  background: var(--ow-color-paper);
-  padding: var(--ow-space-3) var(--ow-space-6);
-  text-align: left;
-  font-size: var(--ow-size-11);
-  font-weight: var(--ow-weight-semibold);
-  letter-spacing: var(--ow-tracking-label);
-  text-transform: uppercase;
-  color: var(--ow-color-ink-3);
-  border-bottom: 1px solid var(--ow-color-line);
-  white-space: nowrap;
-}
-
-.table td {
-  height: 40px;
-  padding: var(--ow-space-4) var(--ow-space-6);
-  border-bottom: 1px solid var(--ow-color-line-soft);
-  vertical-align: middle;
-}
-
-.table tr:last-child td {
-  border-bottom: 0;
-}
-
-.table tbody tr:hover {
-  background: var(--ow-color-paper-hover);
-}
-
-/* Money never truncates: the figure columns are sized to their content and
-   the name column is the one that gives way. */
-.numeric {
-  text-align: right;
-  white-space: nowrap;
-}
-
-/* Three declarations or none. A `nowrap` plus `hidden` without `ellipsis`
-   is a hard cut with no sign that anything was removed. */
-.name {
-  font-weight: var(--ow-weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.colOrder { width: 96px; }
-.colValue { width: 152px; }
-.colWaiting { width: 104px; }
-.colState { width: 132px; }
-
-.meta {
-  font-size: var(--ow-size-11);
-  color: var(--ow-color-ink-3);
-  white-space: nowrap;
-}
-
-/* Chips carry a word as well as a colour — never colour alone. */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ow-space-2);
-  padding: var(--ow-space-1) var(--ow-space-3);
-  border-radius: var(--ow-radius-sm);
-  font-size: var(--ow-size-11);
+.productFig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: var(--ow-weight-semibold);
-  white-space: nowrap;
-}
-.chipGood {
-  background: var(--ow-color-good-tint);
-  color: var(--ow-color-good);
-}
-.chipWarn {
-  background: var(--ow-color-warn-tint);
-  color: var(--ow-color-warn);
-}
-.chipBad {
-  background: var(--ow-color-bad-tint);
-  color: var(--ow-color-bad);
-}
-.dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-12-5);
   flex: none;
 }
 
-/* ------------------------------- context ------------------------------- */
-
-.contextTitle {
-  font-size: var(--ow-size-11);
-  font-weight: var(--ow-weight-semibold);
-  letter-spacing: var(--ow-tracking-label);
-  text-transform: uppercase;
-  color: var(--ow-color-ink-3);
-  margin-bottom: var(--ow-space-4);
-  /* line the column up with the page title beside it */
-  padding-top: var(--ow-space-2);
+.productBarTrack {
+  margin-top: var(--ow-space-6);
+  height: 7px;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-rule);
+  overflow: hidden;
 }
 
-.insight {
-  background: var(--ow-color-paper);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-lg);
-  padding: var(--ow-space-5);
-  margin-bottom: var(--ow-space-4);
-  box-shadow: var(--ow-elevation-rest);
+.productBar {
+  height: 100%;
+  border-radius: var(--ow-radius-pill);
 }
 
-.insightHead {
+/* Truncating a list says how many were cut. */
+.notListed {
+  margin-top: var(--ow-space-12);
+  padding-top: var(--ow-space-10);
+  border-top: 1px solid var(--ow-color-rule);
   display: flex;
-  align-items: center;
-  gap: var(--ow-space-3);
-  margin-bottom: var(--ow-space-3);
-}
-
-.insightLabel {
+  align-items: baseline;
+  gap: var(--ow-space-8);
   font-size: var(--ow-size-12);
-  font-weight: var(--ow-weight-semibold);
   color: var(--ow-color-ink-2);
 }
 
-.insightBody {
-  font-size: var(--ow-size-12);
-  line-height: var(--ow-leading-snug);
-  color: var(--ow-color-ink-3);
-  max-width: var(--ow-measure);
+.weeks {
+  background: var(--ow-color-good-fill);
+  border-color: var(--ow-color-margin-edge);
 }
 
-.insightLink {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ow-space-2);
-  margin-top: var(--ow-space-4);
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-size: var(--ow-size-12);
-  font-weight: var(--ow-weight-semibold);
-  color: var(--ow-color-accent);
-}
-.insightLink svg {
-  width: 12px;
-  height: 12px;
+.bars {
+  margin-top: var(--ow-space-12);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-5);
+  height: 76px;
 }
 
-.demoNote {
+.bar {
+  flex: 1;
+  border-radius: var(--ow-radius-bar-top) var(--ow-radius-bar-top) 0 0;
+}
+
+.axis {
   margin-top: var(--ow-space-6);
-  padding: var(--ow-space-5);
-  border: 1px dashed var(--ow-color-line);
-  border-radius: var(--ow-radius-md);
-  font-size: var(--ow-size-12);
-  line-height: var(--ow-leading-snug);
-  color: var(--ow-color-ink-3);
-  max-width: var(--ow-measure);
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-good-panel-ink);
+}
+
+.weeksReading {
+  margin-top: var(--ow-space-10);
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-good-panel-ink);
+}
+
+.tiles {
+  margin-top: var(--ow-space-12);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ow-space-9);
+}
+
+.tile {
+  border-radius: var(--ow-radius-tile);
+  padding: var(--ow-space-10) var(--ow-space-11);
+}
+
+.tileLabel {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-2);
+}
+
+.tileFig {
+  margin-top: var(--ow-space-4);
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-14-5);
 }

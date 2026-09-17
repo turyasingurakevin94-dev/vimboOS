@@ -11,11 +11,36 @@
  * says so, because a hand-typed `#1D4ED8` is how a 24th colour is born.
  */
 
-import { color } from './tokens/color.js';
-import { elevation, focusRing, layer, motion, radius, scrim, space } from './tokens/layout.js';
+import { color, greenRamp, violetRamp } from './tokens/color.js';
+import {
+  chrome,
+  elevation,
+  focusRing,
+  layer,
+  motion,
+  radius,
+  scrim,
+  space,
+} from './tokens/layout.js';
 import { font, leading, measure, size, tracking, weight } from './tokens/type.js';
 
-const kebab = (s: string): string => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+/**
+ * `cashFill` → `cash-fill`, and `14.5` → `14-5`.
+ *
+ * The dot has to go: a custom property named `--ow-size-14.5` must be
+ * escaped as `--ow-size-14\.5` at every single use site, and one missed
+ * backslash is a silently unstyled element.
+ */
+const kebab = (s: string): string =>
+  s
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    // `ink2` → `ink-2`. Without this the digit stays welded on and the
+    // generated name is `--ow-color-ink2` while every stylesheet asks for
+    // `--ow-color-ink-2` — which is not an error, it is an undefined
+    // variable, so the text silently falls back to whatever it inherited.
+    .replace(/([a-z])(\d)/g, '$1-$2')
+    .replace(/\./g, '-')
+    .toLowerCase();
 
 const group = (
   prefix: string,
@@ -32,6 +57,7 @@ export function cssVariables(): Record<string, string> {
     ...group('space', space),
     ...group('radius', radius),
     ...group('elevation', elevation),
+    ...group('chrome', chrome),
     ...group('font', font),
     ...group('weight', weight),
     ...group('size', size),
@@ -39,6 +65,8 @@ export function cssVariables(): Record<string, string> {
     ...group('tracking', tracking),
     ...group('motion', motion),
     ...group('layer', layer),
+    ...Object.fromEntries(greenRamp.map((v, i) => [`--ow-green-${i + 1}`, v])),
+    ...Object.fromEntries(violetRamp.map((v, i) => [`--ow-violet-${i + 1}`, v])),
     '--ow-scrim': scrim,
     '--ow-measure': measure,
     '--ow-focus-width': focusRing.width,

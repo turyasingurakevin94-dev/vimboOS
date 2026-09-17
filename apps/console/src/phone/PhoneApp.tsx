@@ -1,120 +1,129 @@
 /**
- * The phone application.
+ * The phone application — screen 2b of the Today handoff.
  *
- * Held in one hand, outdoors, in daylight, while doing something else. That
- * is a different product from the console, and this tree is written as one:
- * larger type, 44px targets, cards instead of tables, one thing at a time,
- * and the five things worth a tab under the thumb.
+ * A navy header carrying the brand, the title, the day, an "8 to do" chip
+ * and one 4-across figure strip; then the work; then a 56px tab bar whose
+ * active state is a FILLED glyph in a tinted pill.
  *
- * The desktop's sixteen rail items do not appear here and are not meant to.
- * Everything beyond the five lives under More. A phone that offered all
- * sixteen would be the console with a scrollbar.
+ * The five tabs are Today, Sell, Money, Manager and More. Everything else
+ * lives in the More sheet, which is generated from the rail's own index —
+ * never a second hand-kept list.
  */
 
 import { useState, type ReactElement } from 'react';
 import s from './PhoneApp.module.css';
-import { TabMark, type TabIcon } from './icons.js';
+import { Mark, PATH, TabMark, type TabIcon } from './icons.js';
 import { Today } from './screens/Today.js';
-import { Orders, ordersThumbAction } from './screens/Orders.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
-interface Tab {
-  readonly id: TabIcon;
-  readonly label: string;
-  readonly badge?: number;
-  /**
-   * The screen's one action, rendered by the shell in the thumb zone rather
-   * than by the screen itself — so it is always reachable and can never sit
-   * on top of the work. A tab with no single obvious next action has none,
-   * and shows no bar; an invented one would spend the accent on nothing.
-   *
-   * A function, because on some screens the one thing to do next DEPENDS on
-   * the books: Orders offers the pressing decision when there is one and
-   * "Take an order" when there is not. The accent follows the work.
-   */
-  readonly action?: () => string;
-}
-
-const TABS: readonly Tab[] = [
-  { id: 'today', label: 'Today', action: () => 'Take an order' },
-  { id: 'orders', label: 'Orders', action: ordersThumbAction },
-  { id: 'money', label: 'Money', badge: 7 },
-  { id: 'stock', label: 'Stock', badge: 3 },
+const TABS: readonly { readonly id: TabIcon; readonly label: string }[] = [
+  { id: 'today', label: 'Today' },
+  { id: 'sell', label: 'Sell' },
+  { id: 'money', label: 'Money' },
+  { id: 'manager', label: 'Manager' },
   { id: 'more', label: 'More' },
 ];
 
 const TITLES: Record<TabIcon, string> = {
   today: 'Today',
-  orders: 'Orders',
+  sell: 'Sell',
   money: 'Money',
-  stock: 'Stock',
+  manager: 'Manager',
   more: 'More',
 };
 
+/** Abbreviated money is used ONLY here — the full figure is one tap away. */
+const CELLS = [
+  { label: 'CASH', fig: '8.42', unit: 'M', tone: 'plain' },
+  { label: 'OWED YOU', fig: '23.65', unit: 'M', tone: 'bad' },
+  { label: 'YOU OWE', fig: '11.2', unit: 'M', tone: 'plain' },
+  { label: 'MARGIN', fig: '18.6', unit: '%', tone: 'good' },
+] as const;
+
 export default function PhoneApp(): ReactElement {
   const [tab, setTab] = useState<TabIcon>('today');
-  const action = TABS.find((t) => t.id === tab)?.action?.();
 
   return (
     <div className={s.shell}>
-      <header className={s.topbar}>
-        <span className={s.topTitle}>{TITLES[tab]}</span>
-        <div className={s.topSpacer} />
-        <button type="button" className={s.topBtn} aria-label="Search">
-          <svg
-            viewBox="0 0 24 24"
-            width={22}
-            height={22}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.75}
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="6.5" />
-            <path d="m16 16 5 5" />
-          </svg>
-        </button>
+      <header className={s.header}>
+        <div className={s.headTop}>
+          <span className={s.mark} aria-hidden="true">
+            <Mark
+              d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35"
+              size={14}
+            />
+          </span>
+          <div className={s.headTitles}>
+            <span className={s.headTitle}>{TITLES[tab]}</span>
+            <span className={s.headWhen}>Mon 15 Sept · 07:42</span>
+          </div>
+          <span className={s.todo}>8 to do</span>
+          <button type="button" className={s.headBtn} aria-label="Search">
+            <Mark d={PATH.search} size={18} />
+          </button>
+        </div>
+
+        <div className={s.strip} aria-label="The position">
+          {CELLS.map((c) => (
+            <div
+              key={c.label}
+              className={`${s.cell} ${
+                c.tone === 'bad' ? s.cellBad : c.tone === 'good' ? s.cellGood : ''
+              }`}
+            >
+              <div
+                className={`${s.cellLabel} ${
+                  c.tone === 'bad'
+                    ? s.cellLabelBad
+                    : c.tone === 'good'
+                      ? s.cellLabelGood
+                      : ''
+                }`}
+              >
+                {c.label}
+              </div>
+              <div className={s.cellFig}>
+                {c.fig}
+                <span
+                  className={`${s.cellUnit} ${
+                    c.tone === 'bad'
+                      ? s.cellUnitBad
+                      : c.tone === 'good'
+                        ? s.cellUnitGood
+                        : ''
+                  }`}
+                >
+                  {c.unit}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* The detail the cells dropped. Nothing is lost, only moved. */}
+        <div className={s.headMeta}>
+          2.4 months of cover · <span className={s.headMetaBad}>6.9M over 60 days</span> ·
+          margin −1.4 pts
+        </div>
       </header>
 
       <main className={s.scroll}>
-        {tab === 'today' ? (
-          <Today />
-        ) : tab === 'orders' ? (
-          <Orders />
-        ) : (
-          <NotBuiltYet name={TITLES[tab]} />
-        )}
+        {tab === 'today' ? <Today /> : <NotBuiltYet name={TITLES[tab]} />}
       </main>
-
-      {action !== undefined && (
-        <div className={s.actionBar}>
-          {/* The one accent on the screen. */}
-          <button type="button" className={s.primary}>
-            {action}
-          </button>
-        </div>
-      )}
 
       <nav className={s.tabs} aria-label="Sections">
         {TABS.map((t) => {
-          const active = t.id === tab;
+          const on = t.id === tab;
           return (
             <button
               key={t.id}
               type="button"
-              className={`${s.tab} ${active ? s.tabActive : ''}`}
-              aria-current={active ? 'page' : undefined}
+              className={`${s.tab} ${on ? s.tabOn : ''}`}
+              aria-current={on ? 'page' : undefined}
               onClick={() => setTab(t.id)}
             >
-              <span className={s.tabIconWrap}>
-                <TabMark name={t.id} active={active} />
-                {t.badge !== undefined && (
-                  <span className={s.tabBadge}>
-                    {t.badge}
-                    <span className="ow-sr-only"> needing attention</span>
-                  </span>
-                )}
+              <span className={s.tabPill}>
+                <TabMark name={t.id} active={on} />
               </span>
               {t.label}
             </button>

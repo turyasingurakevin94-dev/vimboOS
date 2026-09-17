@@ -1,130 +1,154 @@
+/**
+ * The desktop console shell — handoff §1.2.
+ *
+ * Two columns at the top level: a 236px rail and the work area. The work
+ * area is a 58px top bar, then a scrolling body with 20/22/24 padding.
+ */
+
 .shell {
-  display: grid;
-  grid-template-areas:
-    'rail topbar'
-    'rail main';
-  grid-template-columns: auto 1fr;
-  grid-template-rows: 56px 1fr;
+  display: flex;
   height: 100dvh;
+  overflow: hidden;
+  background: var(--ow-color-bg);
+}
+
+.work {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
+/* --------------------------------- top bar -------------------------------- */
+
 .topbar {
-  grid-area: topbar;
+  flex: none;
+  height: var(--ow-chrome-top-bar-height);
+  background: var(--ow-color-surface);
+  border-bottom: 1px solid var(--ow-color-hairline);
   display: flex;
   align-items: center;
-  gap: var(--ow-space-5);
-  padding: 0 var(--ow-space-8);
-  background: var(--ow-color-paper);
-  border-bottom: 1px solid var(--ow-color-line);
+  gap: var(--ow-space-16);
+  padding: 0 var(--ow-space-22);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  flex: none;
+}
+
+.crumbStart {
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+}
+
+.crumbSep {
+  color: var(--ow-color-ink-3);
+}
+
+.crumbHere {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
 }
 
 .search {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
   flex: 1;
-  max-width: 420px;
-  height: 32px;
-  padding: 0 var(--ow-space-5);
-  border: 1px solid var(--ow-color-line);
-  border-radius: var(--ow-radius-md);
-  background: var(--ow-color-canvas);
+  max-width: 400px;
+  height: 36px;
+  padding: 0 var(--ow-space-12);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-field);
+  border: 1px solid var(--ow-color-hairline);
+  color: var(--ow-color-ink-2);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
   font-size: var(--ow-size-13);
   color: var(--ow-color-ink);
+  outline: none;
 }
-.search::placeholder {
-  color: var(--ow-color-ink-3);
+.searchInput::placeholder {
+  color: var(--ow-color-ink-2);
+}
+
+/* The key cap. A physical-looking chip, so it reads as a key and not a tag. */
+.kbd {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-2);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-chip-square);
+  padding: var(--ow-space-2) var(--ow-space-6);
+  flex: none;
 }
 
 .spacer {
   flex: 1;
 }
 
-.iconBtn {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: var(--ow-radius-md);
-  background: transparent;
-  color: var(--ow-color-ink-2);
-}
-.iconBtn:hover {
-  background: var(--ow-color-fill);
-}
-.iconBtn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.who {
+.stages {
   display: flex;
   align-items: center;
-  gap: var(--ow-space-4);
-  padding-left: var(--ow-space-5);
-  border-left: 1px solid var(--ow-color-line);
+  gap: var(--ow-space-7);
+  flex: none;
+}
+
+.stage {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  height: 22px;
+  padding: 0 var(--ow-space-9);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.stageFig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ow-size-12);
+  letter-spacing: var(--ow-tracking-figure);
+}
+
+/* The labels give way first below 1400px; the counts are never dropped. */
+@media (max-width: 1399px) {
+  .stageLabel {
+    display: none;
+  }
 }
 
 .avatar {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
+  flex: none;
   border-radius: var(--ow-radius-pill);
-  background: var(--ow-color-nav);
+  background: var(--ow-color-navy);
   color: var(--ow-color-on-fill);
-  display: grid;
-  place-items: center;
-  font-size: var(--ow-size-11);
-  font-weight: var(--ow-weight-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-bold);
 }
 
-.whoName {
-  font-size: var(--ow-size-13);
-  font-weight: var(--ow-weight-medium);
-  line-height: var(--ow-leading-tight);
-}
-.whoRole {
-  font-size: var(--ow-size-11);
-  color: var(--ow-color-ink-3);
-  line-height: var(--ow-leading-tight);
-}
+/* ---------------------------------- body ---------------------------------- */
 
-/**
- * The work and the context beside it. 320px is the context column from the
- * design spec — wide enough for an insight with a figure and a basis line,
- * narrow enough that it never competes with the work for first read.
- */
-.main {
-  grid-area: main;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-}
-
-.work {
+.body {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: var(--ow-space-8);
-  max-width: 1600px;
-}
-
-.context {
-  overflow-y: auto;
-  padding: var(--ow-space-8) var(--ow-space-8) var(--ow-space-8) 0;
-}
-
-/* Below 1280 the context column would squeeze the table into uselessness.
-   It drops under the work — still the desktop design, still a pointer and a
-   keyboard, just one column instead of two. This is not the phone design
-   arriving early; nothing here changes size or target. */
-@media (max-width: 1279px) {
-  .main {
-    grid-template-columns: minmax(0, 1fr);
-    grid-auto-rows: max-content;
-    overflow-y: auto;
-  }
-  .work,
-  .context {
-    overflow: visible;
-  }
-  .context {
-    padding: 0 var(--ow-space-8) var(--ow-space-8);
-  }
+  padding: var(--ow-space-20) var(--ow-space-22) var(--ow-space-24);
 }

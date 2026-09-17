@@ -1,258 +1,538 @@
 /**
- * Today — the desktop design.
+ * Today — the desktop console. Built to screen 2a of the Today handoff.
  *
- * A decision-making workspace, not a place that displays data. What reads
- * first is the four figures that decide whether today is going well; what
- * reads second is the queue of things waiting on the owner; and the column
- * beside it is the reading of all that, which is the part the old dashboard
- * never did.
+ * The three things this screen does that the old one did not:
  *
- * Every figure here is a `Derived<Money>`, and one of them is deliberately
- * `unavailable` — the margin, because two of this morning's orders have no
- * supplier cost yet. It renders as the reason, not as a dash and not as
- * zero. That is the law working, visible on screen.
+ * 1. **One ranked list, not two.** The Manager's numbered moves first, then
+ *    the watch beneath as denser rows — same reading order, same visual
+ *    family, but separate containers, so the watch can never be sorted into
+ *    the moves.
+ * 2. **A money strip that states a position**, not five unrelated figures.
+ *    Every figure carries its basis on the line below it.
+ * 3. **Every alert carries its arithmetic** — both ends of the comparison,
+ *    so a row can be checked rather than believed.
+ *
+ * The figures are demonstration data. They are wired to the real
+ * derivations before review; the handoff says so and it is right.
  */
 
-import type { ReactElement } from 'react';
-import { Figure } from '@ow/design/react';
-import { Money, known, partial, unavailable, type Derived } from '@ow/domain';
-import layout from '../DesktopApp.module.css';
+import { useState, type ReactElement } from 'react';
 import s from './Today.module.css';
-import { Icon } from '../icons.js';
+import { Icon, type IconName } from '../icons.js';
 
-const m = Money.money;
+const v = (token: string): string => `var(--ow-color-${token})`;
 
-/* ---------------------------------------------------------------------- *
- * Demo data. Replaced by @ow/data queries against the live Supabase
- * project — the shapes here are already the shapes those queries return,
- * so the screen does not change when they land.
- * ---------------------------------------------------------------------- */
+/* ------------------------------ metric strip ------------------------------ */
 
-const takings: Derived<Money.Money> = known(
-  m(4_186_000),
-  '11 orders invoiced since 6am',
-);
-
-const owed: Derived<Money.Money> = known(m(9_240_500), '7 customers, 2 overdue');
-
-const toPay: Derived<Money.Money> = partial(
-  m(2_115_000),
-  '4 supplier invoices due this week',
-  '1 of 5 has no amount on it yet',
-);
-
-/**
- * The margin cannot be derived, and the screen says so rather than showing
- * a confident figure built on a gap. In the old app this read as 100%.
- */
-const margin: Derived<Money.Money> = unavailable<Money.Money>(
-  'no supplier cost on 2 of today’s orders',
-);
-
-interface Job {
-  readonly id: string;
-  readonly who: string;
-  readonly what: string;
-  readonly value: Derived<Money.Money>;
-  readonly waiting: string;
-  readonly state: 'good' | 'warn' | 'bad';
-  readonly stateLabel: string;
+interface Metric {
+  readonly label: string;
+  readonly icon: IconName;
+  readonly fill: string;
+  readonly edge: string;
+  readonly chip: string;
+  readonly chipInk: string;
+  readonly figure: string;
+  readonly delta?: { readonly text: string; readonly fill: string; readonly ink: string };
+  readonly basis: ReactElement;
+  readonly aging?: readonly { readonly pct: number; readonly fill: string }[];
 }
 
-const QUEUE: readonly Job[] = [
+const METRICS: readonly Metric[] = [
   {
-    id: 'OW-2291',
-    who: 'Ssekitoleko Hardware & General Supplies',
-    what: 'Iron sheets — G28, 3m box profile ×40',
-    value: known(m(3_120_000), 'order total'),
-    waiting: '2 days',
-    state: 'bad',
-    stateLabel: 'Overdue',
+    label: 'Cash on hand',
+    icon: 'wallet',
+    fill: v('cash-fill'),
+    edge: v('cash-edge'),
+    chip: v('cash-chip'),
+    chipInk: v('info-ink'),
+    figure: '8,420,000',
+    basis: <>2 accounts · 2.4 months of cover</>,
   },
   {
-    id: 'OW-2294',
-    who: 'Kato Construction Ltd',
-    what: 'Cement ×120, nails ×8 boxes',
-    value: known(m(1_845_000), 'order total'),
-    waiting: '4 hours',
-    state: 'warn',
-    stateLabel: 'Needs pick',
+    label: 'Owed to you',
+    icon: 'trending-down',
+    fill: v('bad-fill'),
+    edge: v('debt-edge'),
+    chip: v('bad-chip-soft'),
+    chipInk: v('bad-ink'),
+    figure: '23,650,000',
+    // Widths come from the real aging split, never from a guess.
+    aging: [
+      { pct: 42, fill: v('aging-fresh') },
+      { pct: 29, fill: v('aging-middle') },
+      { pct: 29, fill: v('aging-oldest') },
+    ],
+    basis: (
+      <>
+        9 customers · <span className={s.metricBad}>6,900,000 over 60 days</span>
+      </>
+    ),
   },
   {
-    id: 'OW-2295',
-    who: 'Nabukenya Stores',
-    what: 'Binding wire ×15 rolls',
-    value: known(m(412_500), 'order total'),
-    waiting: '1 hour',
-    state: 'good',
-    stateLabel: 'Packed',
+    label: 'You owe',
+    icon: 'credit-card',
+    fill: v('surface'),
+    edge: v('hairline'),
+    chip: v('owed-chip'),
+    chipInk: v('ink-2'),
+    figure: '11,200,000',
+    basis: <>4 suppliers · 3,400,000 due this week</>,
   },
   {
-    id: 'OW-2296',
-    who: 'Mulongo Hardware',
-    what: 'Roofing nails ×6 boxes',
-    value: unavailable<Money.Money>('awaiting supplier quote'),
-    waiting: '20 minutes',
-    state: 'warn',
-    stateLabel: 'Sourcing',
+    label: 'Margin · 7 days',
+    icon: 'trending-up',
+    fill: v('good-fill'),
+    edge: v('margin-edge'),
+    chip: v('good-chip'),
+    chipInk: v('good-ink-strong'),
+    figure: '18.6%',
+    delta: { text: '−1.4 pts', fill: v('warn-fill'), ink: v('warn-ink') },
+    basis: <>4,380,000 profit on 23,500,000 sold</>,
+  },
+  {
+    label: 'Stock on the shelf',
+    icon: 'package',
+    fill: v('study-fill'),
+    edge: v('stock-edge'),
+    chip: v('study-chip'),
+    chipInk: v('study-ink'),
+    figure: '41,300,000',
+    basis: <>3,100,000 unsold past 120 days</>,
   },
 ];
 
-const CHIP = { good: s.chipGood, warn: s.chipWarn, bad: s.chipBad } as const;
+/* --------------------------------- moves ---------------------------------- */
+
+interface Move {
+  readonly pos: string;
+  readonly worthLabel: string;
+  readonly worth: string;
+  readonly gain?: boolean;
+  readonly waitsOn?: string;
+  readonly title: string;
+  readonly why: string;
+  readonly derivation: string;
+  readonly actions: readonly {
+    readonly label: string;
+    readonly kind: 'primary' | 'secondary' | 'dark';
+    readonly icon?: IconName;
+    readonly iconAfter?: boolean;
+  }[];
+}
+
+const MOVES: readonly Move[] = [
+  {
+    pos: '01 of 08',
+    worthLabel: 'Tied up',
+    worth: '3,330,000',
+    title: 'Ask Mulongo Hardware for a deposit before the next delivery',
+    why: 'Five chases since 2 August produced nothing, and they have taken two deliveries on credit since. The debt is 44 days old.',
+    derivation:
+      '3,330,000 across 4 invoices, oldest 2 August. Five chase messages sent, none answered. Two deliveries released on credit on 19 August and 3 September, worth 1,910,000 together.',
+    actions: [
+      { label: 'Draft the chase', kind: 'primary', icon: 'message-circle' },
+      { label: 'Open Mulongo', kind: 'secondary', icon: 'arrow-right', iconAfter: true },
+    ],
+  },
+  {
+    pos: '02 of 08',
+    worthLabel: 'Margin a month',
+    worth: '+1,180,000',
+    gain: true,
+    title: 'Raise iron sheets G28 by 4% — you are still selling at May’s cost',
+    why: 'Kampala Steel billed 13,000 a sheet on 20 July against 10,000 on 1 May. The shelf price has not moved since April.',
+    derivation:
+      '10,000 on 1 May, 13,000 now · across 9 invoices. At 4% on the current shelf price and last month’s volume of 295 sheets, the recovery is 1,180,000 a month.',
+    actions: [{ label: 'Open prices', kind: 'dark', icon: 'arrow-right', iconAfter: true }],
+  },
+  {
+    pos: '03 of 08',
+    worthLabel: 'Sales at risk',
+    worth: '7,400,000',
+    waitsOn: 'waits on 01',
+    title: 'Order 40 boxes of G28 before Friday',
+    why: 'Six days of cover at the last four weeks’ rate. The order needs 9,600,000 against 8,420,000 held — the Mulongo deposit covers the gap.',
+    derivation:
+      '40 boxes at 240,000 is 9,600,000. Cash on hand 8,420,000, so the gap is 1,180,000 — less than the 3,330,000 Mulongo owes. Cover is 6 days at 6.6 boxes a day.',
+    actions: [{ label: 'Open forecasts', kind: 'secondary', icon: 'arrow-right', iconAfter: true }],
+  },
+];
+
+/* --------------------------------- watch ---------------------------------- */
+
+interface Alert {
+  readonly icon: IconName;
+  readonly chip: string;
+  readonly chipInk: string;
+  readonly first: string;
+  /** Both ends of the comparison, so it can be checked rather than believed. */
+  readonly second: string;
+  readonly figure?: string;
+  readonly figureInk?: string;
+  readonly judgement?: { readonly text: string; readonly fill: string; readonly ink: string };
+}
+
+const WATCH: readonly Alert[] = [
+  {
+    icon: 'clock',
+    chip: v('bad-chip'),
+    chipInk: v('bad-ink'),
+    first: 'Nakawa Traders has owed 74 days',
+    second: 'Invoiced 5 July, part-paid 18 July · nothing since',
+    figure: '2,410,000',
+    figureInk: v('bad-ink'),
+  },
+  {
+    icon: 'package',
+    chip: v('warn-chip'),
+    chipInk: v('warn-ink'),
+    first: '7 lines run out within 10 days',
+    second: '14,200,000 to refill against 8,420,000 held',
+    judgement: { text: '5,780,000 short', fill: v('warn-fill'), ink: v('warn-ink') },
+  },
+  {
+    icon: 'trending-up',
+    chip: v('bad-chip'),
+    chipInk: v('bad-ink'),
+    first: 'Kampala Steel is billing 30% more',
+    second: '10,000 on 1 May, 13,000 now · across 9 invoices',
+    judgement: { text: '+30%', fill: v('bad-chip'), ink: v('bad-ink') },
+  },
+  {
+    icon: 'users',
+    chip: v('info-chip'),
+    chipInk: v('info-ink'),
+    first: 'Nsubuga sells at 11% margin against 19% for the rest',
+    second: '344,000 commission on 3,100,000 sold, last 30 days',
+    judgement: { text: '−8 pts', fill: v('warn-fill'), ink: v('warn-ink') },
+  },
+  {
+    icon: 'layers',
+    chip: v('owed-chip'),
+    chipInk: v('ink-2'),
+    first: '3,100,000 has not moved in 120 days',
+    second: '9 lines · oldest bought 14 March',
+    figure: '3,100,000',
+  },
+];
+
+/* ------------------------------ insight rail ------------------------------ */
+
+const PRODUCTS = [
+  { name: 'Iron sheets G28', money: '4,120,000', pct: '31%', tone: 'good', width: 100 },
+  { name: 'Cement — Tororo', money: '2,980,000', pct: '18%', tone: 'neutral', width: 72 },
+  { name: 'Steel bars Y12', money: '1,640,000', pct: '9%', tone: 'thin', width: 40 },
+  { name: 'Binding wire', money: '1,205,000', pct: '22%', tone: 'good', width: 29 },
+] as const;
+
+const TONE = {
+  good: { fill: v('good-chip-light'), ink: v('good-ink') },
+  thin: { fill: v('warn-fill'), ink: v('warn-ink') },
+  neutral: { fill: v('neutral-chip'), ink: v('neutral-ink') },
+} as const;
+
+const WEEKS = [38, 44, 41, 52, 47, 58, 55, 63, 60, 71, 68, 82];
 
 export function Today(): ReactElement {
+  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
+
+  const toggle = (pos: string): void =>
+    setOpen((prior) => {
+      const next = new Set(prior);
+      if (next.has(pos)) next.delete(pos);
+      else next.add(pos);
+      return next;
+    });
+
   return (
     <>
-      <div className={layout.work}>
-        <header className={s.head}>
-          <div>
-            <h1 className={s.title}>Today</h1>
-            <p className={s.sub}>Wednesday 17 September · reading as at 14:20</p>
-          </div>
-          <div className={s.headSpacer} />
-          <button type="button" className={s.actionGhost}>
-            Open cash day
+      <header className={s.head}>
+        <div className={s.greeting}>
+          <h1 className={s.title}>Good morning, Kevin</h1>
+          <p className={s.sub}>
+            Monday 15 September · read at 07:42 · eight things want you today
+          </p>
+        </div>
+        <div className={s.headActions}>
+          <button type="button" className={`${s.btn} ${s.btnSecondary} ${s.btnLg}`}>
+            <Icon name="plus" size={16} />
+            New quote
           </button>
-          {/* The one accent on this screen. */}
-          <button type="button" className={s.action}>
-            Take an order
+          {/* The one accent-filled control on the screen. */}
+          <button type="button" className={`${s.btn} ${s.btnPrimary} ${s.btnLg}`}>
+            <Icon name="check" size={16} />
+            Work the list
           </button>
-        </header>
+        </div>
+      </header>
 
-        <section className={s.strip} aria-label="Today at a glance">
-          <div className={s.metric}>
-            <div className={s.metricLabel}>Taken today</div>
-            <Figure value={takings} unit="UGX" size="lg" showBasis />
-          </div>
-          <div className={s.metric}>
-            <div className={s.metricLabel}>Owed to us</div>
-            <Figure value={owed} unit="UGX" size="lg" showBasis tone="bad" />
-          </div>
-          <div className={s.metric}>
-            <div className={s.metricLabel}>We owe</div>
-            <Figure value={toPay} unit="UGX" size="lg" showBasis />
-          </div>
-          <div className={s.metric}>
-            <div className={s.metricLabel}>Margin today</div>
-            <Figure value={margin} unit="UGX" size="lg" showBasis />
-          </div>
-        </section>
+      <section className={s.metrics} aria-label="The position">
+        {METRICS.map((m) => (
+          <div
+            key={m.label}
+            className={s.metric}
+            style={{ background: m.fill, border: `1px solid ${m.edge}` }}
+          >
+            <div className={s.metricTop}>
+              <span
+                className={s.metricIcon}
+                style={{ background: m.chip, color: m.chipInk }}
+                aria-hidden="true"
+              >
+                <Icon name={m.icon} size={14} />
+              </span>
+              <span className={s.metricLabel}>{m.label}</span>
+            </div>
 
-        <section className={s.panel} aria-label="Waiting on you">
-          <div className={s.panelHead}>
-            <span className={s.panelTitle}>Waiting on you</span>
-            <span className={s.panelCount}>{QUEUE.length}</span>
+            {m.delta === undefined ? (
+              <div className={s.metricFig}>{m.figure}</div>
+            ) : (
+              <div className={s.metricFigRow}>
+                <span className={s.metricFig} style={{ marginTop: 0 }}>
+                  {m.figure}
+                </span>
+                <span
+                  className={`${s.chip} ${s.chipSm}`}
+                  style={{ background: m.delta.fill, color: m.delta.ink }}
+                >
+                  {m.delta.text}
+                </span>
+              </div>
+            )}
+
+            {m.aging !== undefined && (
+              <div className={s.aging} aria-hidden="true">
+                {m.aging.map((seg, i) => (
+                  <div key={i} style={{ width: `${seg.pct}%`, background: seg.fill }} />
+                ))}
+              </div>
+            )}
+
+            <div
+              className={`${s.metricBasis} ${m.aging !== undefined ? s.metricBasisTight : ''}`}
+            >
+              {m.basis}
+            </div>
           </div>
-          <table className={s.table}>
-            {/* The figure columns take exactly what a full-length figure
-                needs; the two name columns share everything left over. */}
-            <colgroup>
-              <col className={s.colOrder} />
-              <col />
-              <col />
-              <col className={s.colValue} />
-              <col className={s.colWaiting} />
-              <col className={s.colState} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Goods</th>
-                <th className={s.numeric}>Value</th>
-                <th>Waiting</th>
-                <th>State</th>
-              </tr>
-            </thead>
-            <tbody>
-              {QUEUE.map((job) => (
-                <tr key={job.id}>
-                  <td className={s.meta}>{job.id}</td>
-                  <td className={s.name} title={job.who}>
-                    {job.who}
-                  </td>
-                  <td className={s.name} title={job.what}>
-                    {job.what}
-                  </td>
-                  <td className={s.numeric}>
-                    <Figure value={job.value} size="sm" align="right" />
-                  </td>
-                  <td className={s.meta}>{job.waiting}</td>
-                  <td>
-                    <span className={`${s.chip} ${CHIP[job.state]}`}>
-                      <span className={s.dot} aria-hidden="true" />
-                      {job.stateLabel}
-                    </span>
-                  </td>
-                </tr>
+        ))}
+      </section>
+
+      <div className={s.split}>
+        <div className={s.column}>
+          <div className={s.sectionHead}>
+            <span className={s.sectionTitle}>What to do today</span>
+            <span className={s.sectionNote}>
+              three moves from last night’s reading, in the order they depend on each other
+            </span>
+          </div>
+
+          {MOVES.map((m) => (
+            <article
+              key={m.pos}
+              className={`${s.card} ${s.move} ${m.waitsOn !== undefined ? s.moveWaiting : ''}`}
+            >
+              <div className={s.moveTop}>
+                <span
+                  className={s.chip}
+                  style={{ background: v('study-chip'), color: v('study-ink') }}
+                >
+                  <Icon name="message-square" size={12} />
+                  Manager
+                </span>
+                <span className={s.movePos}>{m.pos}</span>
+                {m.waitsOn !== undefined && (
+                  <span
+                    className={`${s.chip} ${s.chipSm}`}
+                    style={{ background: v('neutral-chip'), color: v('neutral-ink') }}
+                  >
+                    {m.waitsOn}
+                  </span>
+                )}
+                <span className={s.grow} />
+                <div className={s.moveWorth}>
+                  <div className={s.moveWorthLabel}>{m.worthLabel}</div>
+                  <div className={`${s.moveWorthFig} ${m.gain === true ? s.gain : ''}`}>
+                    {m.worth}
+                  </div>
+                </div>
+              </div>
+
+              <h2 className={s.moveTitle}>{m.title}</h2>
+              <p className={s.moveWhy}>{m.why}</p>
+
+              <div className={s.moveActions}>
+                {m.actions.map((a) => (
+                  <button
+                    key={a.label}
+                    type="button"
+                    className={`${s.btn} ${s.btnMd} ${
+                      a.kind === 'primary'
+                        ? s.btnPrimary
+                        : a.kind === 'dark'
+                          ? s.btnDark
+                          : s.btnSecondary
+                    }`}
+                  >
+                    {a.icon !== undefined && a.iconAfter !== true && (
+                      <Icon name={a.icon} size={15} />
+                    )}
+                    {a.label}
+                    {a.icon !== undefined && a.iconAfter === true && (
+                      <Icon name={a.icon} size={15} />
+                    )}
+                  </button>
+                ))}
+                <span className={s.grow} />
+                <button
+                  type="button"
+                  className={`${s.btn} ${s.btnGhost} ${s.btnMd}`}
+                  aria-expanded={open.has(m.pos)}
+                  onClick={() => toggle(m.pos)}
+                >
+                  <Icon name={open.has(m.pos) ? 'chevron-down' : 'chevron-right'} size={15} />
+                  How this was worked out
+                </button>
+              </div>
+
+              {open.has(m.pos) && <p className={s.derivation}>{m.derivation}</p>}
+            </article>
+          ))}
+
+          <section className={`${s.card} ${s.watch}`} aria-label="What the books flagged">
+            <div className={s.watchHead}>
+              <span className={s.watchTitle}>What the books flagged</span>
+              <span className={s.watchNote}>
+                arithmetic, not advice · five of five shown
+              </span>
+            </div>
+            {WATCH.map((a) => (
+              <button type="button" className={s.watchRow} key={a.first}>
+                <span
+                  className={s.watchIcon}
+                  style={{ background: a.chip, color: a.chipInk }}
+                  aria-hidden="true"
+                >
+                  <Icon name={a.icon} size={16} />
+                </span>
+                <span className={s.watchBody}>
+                  <span className={s.watchFirst}>{a.first}</span>
+                  <span className={s.watchSecond}>{a.second}</span>
+                </span>
+                {a.figure !== undefined && (
+                  <span className={s.watchFig} style={{ color: a.figureInk }}>
+                    {a.figure}
+                  </span>
+                )}
+                {a.judgement !== undefined && (
+                  <span
+                    className={s.chip}
+                    style={{ background: a.judgement.fill, color: a.judgement.ink }}
+                  >
+                    {a.judgement.text}
+                  </span>
+                )}
+                <Icon name="chevron-right" size={16} className={s.watchCaret} />
+              </button>
+            ))}
+          </section>
+        </div>
+
+        <aside className={s.insightRail} aria-label="Insight">
+          <section className={`${s.card} ${s.panel}`}>
+            <div className={s.panelTitle}>Where the profit came from</div>
+            <div className={s.panelSub}>Last 30 days · gross margin</div>
+            {PRODUCTS.map((p, i) => (
+              <div className={s.product} key={p.name}>
+                <div className={s.productTop}>
+                  <span className={s.productName} title={p.name}>
+                    {p.name}
+                  </span>
+                  <span className={s.productFig}>{p.money}</span>
+                  <span
+                    className={`${s.chip} ${s.chipSm}`}
+                    style={{ background: TONE[p.tone].fill, color: TONE[p.tone].ink }}
+                  >
+                    {p.pct}
+                  </span>
+                </div>
+                <div className={s.productBarTrack}>
+                  <div
+                    className={s.productBar}
+                    style={{
+                      width: `${p.width}%`,
+                      background: `var(--ow-violet-${i + 1})`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+            {/* Truncating a list says how many were cut. */}
+            <div className={s.notListed}>
+              <span className={s.grow}>54 other lines</span>
+              <span className={s.productFig}>3,260,000</span>
+            </div>
+          </section>
+
+          <section className={`${s.card} ${s.panel} ${s.weeks}`}>
+            <div className={s.sectionHead}>
+              <span className={s.panelTitle}>Sold by week</span>
+              <span className={s.grow} />
+              <span
+                className={`${s.chip} ${s.chipSm}`}
+                style={{ background: v('good-chip'), color: v('good-ink-strong') }}
+              >
+                best of 12
+              </span>
+            </div>
+            <div className={s.bars} aria-hidden="true">
+              {WEEKS.map((h, i) => (
+                <div
+                  key={i}
+                  className={s.bar}
+                  style={{
+                    height: `${h}%`,
+                    background: `var(--ow-green-${Math.min(6, Math.floor(i / 2) + 1)})`,
+                  }}
+                />
               ))}
-            </tbody>
-          </table>
-        </section>
+            </div>
+            <div className={s.axis}>
+              <span>12 wks ago</span>
+              <span>this week</span>
+            </div>
+            <p className={s.weeksReading}>
+              The last four weeks are the best run of the twelve — 71, 68 and 82 against a
+              12-week median of 55.
+            </p>
+          </section>
 
-        <p className={s.demoNote}>
-          The figures above are demonstration data in the shapes the live
-          queries return. “Margin today” is deliberately underivable, to show
-          what the app does with a gap: it names the cause instead of
-          reporting a confident number built on one.
-        </p>
+          <section className={`${s.card} ${s.panel}`}>
+            <div className={s.panelTitle}>Yesterday</div>
+            <div className={s.tiles}>
+              <div className={s.tile} style={{ background: v('surface-2') }}>
+                <div className={s.tileLabel}>Sold</div>
+                <div className={s.tileFig}>4,186,000</div>
+              </div>
+              <div className={s.tile} style={{ background: v('good-fill') }}>
+                <div className={s.tileLabel}>Collected</div>
+                <div className={s.tileFig} style={{ color: v('good-ink') }}>
+                  2,940,000
+                </div>
+              </div>
+              <div className={s.tile} style={{ background: v('surface-2') }}>
+                <div className={s.tileLabel}>Paid out</div>
+                <div className={s.tileFig}>1,760,000</div>
+              </div>
+              <div className={s.tile} style={{ background: v('bad-fill') }}>
+                <div className={s.tileLabel}>New debt</div>
+                <div className={s.tileFig} style={{ color: v('bad-ink') }}>
+                  1,246,000
+                </div>
+              </div>
+            </div>
+          </section>
+        </aside>
       </div>
-
-      <aside className={layout.context} aria-label="What this means">
-        <div className={s.contextTitle}>What this means</div>
-
-        <Insight
-          tone="bad"
-          label="Ssekitoleko is 2 days overdue"
-          body="3,120,000 on an order picked Monday. They have paid late twice in the last six weeks, both times after a call rather than a message."
-          action="Draft the chase"
-        />
-        <Insight
-          tone="warn"
-          label="Margin is unreadable until 2 costs land"
-          body="OW-2296 and OW-2290 have no supplier cost. Until they do, today's margin cannot be derived — and neither can this week's."
-          action="Enter the costs"
-        />
-        <Insight
-          tone="good"
-          label="Kikuubo Metals is cheapest on G28 today"
-          body="12,400 a sheet against Mukwano's 13,150. On the 40 sheets in OW-2291 that is 30,000 saved."
-          action="Compare suppliers"
-        />
-        <Insight
-          tone="warn"
-          label="Binding wire runs out in 3 days"
-          body="15 rolls left, selling about 5 a day this month. The last order from Kikuubo took 2 days to arrive."
-          action="Reorder"
-        />
-      </aside>
     </>
-  );
-}
-
-interface InsightProps {
-  readonly tone: 'good' | 'warn' | 'bad';
-  readonly label: string;
-  readonly body: string;
-  readonly action: string;
-}
-
-function Insight({ tone, label, body, action }: InsightProps): ReactElement {
-  return (
-    <article className={s.insight}>
-      <div className={s.insightHead}>
-        <span className={`${s.chip} ${CHIP[tone]}`}>
-          <span className={s.dot} aria-hidden="true" />
-          {tone === 'bad' ? 'Act' : tone === 'warn' ? 'Look' : 'Good'}
-        </span>
-        <span className={s.insightLabel}>{label}</span>
-      </div>
-      <p className={s.insightBody}>{body}</p>
-      {/* A control says what will happen, never "Submit". */}
-      <button type="button" className={s.insightLink}>
-        {action}
-        <Icon name="chevron-right" />
-      </button>
-    </article>
   );
 }

@@ -1,138 +1,210 @@
 /**
- * The dark left rail. Desktop only — the phone has a tab bar and does not
- * import this file, which a lint rule enforces.
+ * The navigation rail — 236px, navy, per the Today handoff §1.1.
+ *
+ * Measurements are the handoff's, not approximations of it: 34px rows at
+ * radius 9, 13.5px/500, 17px glyphs, 20px section chips at radius 6 with
+ * their two-letter abbreviation at 9.5px/700.
  */
 
 .rail {
-  grid-area: rail;
-  width: var(--rail-w, 232px);
-  background: var(--ow-color-nav);
+  width: var(--ow-chrome-rail-width);
+  flex: none;
+  background: var(--ow-color-navy);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: var(--ow-layer-rail);
 }
+
+/* ---------------------------------- brand --------------------------------- */
 
 .brand {
+  flex: none;
   display: flex;
   align-items: center;
-  gap: var(--ow-space-4);
-  height: 56px;
-  padding: 0 var(--ow-space-5);
-  flex: none;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-16) var(--ow-space-14) var(--ow-space-10);
 }
 
+/* The one place the raw accent appears in the chrome — a fill behind a
+   glyph, never behind a word. It is 3.66:1 and cannot carry text. */
 .mark {
-  width: 26px;
-  height: 26px;
-  flex: none;
-  border-radius: var(--ow-radius-sm);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ow-radius-button);
   background: var(--ow-color-accent);
-  display: grid;
-  place-items: center;
   color: var(--ow-color-on-fill);
-  font-weight: var(--ow-weight-bold);
-  font-size: var(--ow-size-13);
-}
-
-.wordmark {
-  color: var(--ow-color-nav-text);
-  font-size: var(--ow-size-14);
-  font-weight: var(--ow-weight-semibold);
-  letter-spacing: var(--ow-tracking-heading);
-  white-space: nowrap;
-}
-
-.scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--ow-space-2) var(--ow-space-4) var(--ow-space-6);
-  scrollbar-width: thin;
-  scrollbar-color: var(--ow-color-nav-raised) transparent;
-}
-
-.group {
-  margin-top: var(--ow-space-5);
-}
-.group:first-child {
-  margin-top: 0;
-}
-
-.groupLabel {
-  padding: 0 var(--ow-space-3) var(--ow-space-2);
-  color: var(--ow-color-nav-section);
-  font-size: var(--ow-size-11);
-  font-weight: var(--ow-weight-semibold);
-  letter-spacing: var(--ow-tracking-label);
-  text-transform: uppercase;
-}
-
-.item {
   display: flex;
   align-items: center;
-  gap: var(--ow-space-4);
-  width: 100%;
-  /* 32px of content plus padding: the desktop tap target. A pointer needs
-     far less than a thumb, and the density is the point of this design. */
-  min-height: 32px;
-  padding: var(--ow-space-3) var(--ow-space-3);
-  margin-bottom: var(--ow-space-1);
-  border: 0;
-  border-radius: var(--ow-radius-md);
-  background: transparent;
-  color: var(--ow-color-nav-text);
-  font-size: var(--ow-size-13);
-  font-weight: var(--ow-weight-medium);
-  text-align: left;
-  transition: background var(--ow-motion-instant) var(--ow-motion-ease);
-}
-
-.item:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-/**
- * The row you are on is INVERTED — white ground, nav ink. Never an accent
- * fill: the rail is on screen on every page, so an accent here would
- * permanently spend the screen's one accent on a row you are already
- * standing on.
- */
-.active {
-  background: var(--ow-color-nav-active-ground);
-  color: var(--ow-color-nav-active-ink);
-  font-weight: var(--ow-weight-semibold);
-}
-
-.icon {
+  justify-content: center;
   flex: none;
-  width: 16px;
-  height: 16px;
 }
 
-.label {
+.brandText {
   flex: 1;
-  min-width: 0; /* or it refuses to shrink and shoves the count out of the rail */
+  min-width: 0;
+}
+
+.appName {
+  font-size: var(--ow-size-14-5);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+  letter-spacing: var(--ow-tracking-heading-soft);
+}
+
+.shopName {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-rail-ink-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.count {
+/* ---------------------------------- list ---------------------------------- */
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-6) var(--ow-space-10) var(--ow-space-14);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.13) transparent;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  width: 100%;
+  height: 34px;
+  padding: 0 var(--ow-space-10);
+  margin: var(--ow-space-1) 0;
+  background: none;
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  color: var(--ow-color-rail-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-medium);
+  text-align: left;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ow-color-on-fill);
+}
+
+.row.on {
+  background: rgba(255, 255, 255, 0.13);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon {
   flex: none;
+}
+
+/* A quiet count: a tally, nothing wants you. */
+.count {
   font-family: var(--ow-font-mono);
   font-variant-numeric: tabular-nums;
   font-size: var(--ow-size-11);
-  color: var(--ow-color-nav-muted);
-}
-
-.active .count {
-  color: var(--ow-color-ink-3);
-}
-
-/* A count that needs attention is the one thing allowed to carry colour in
-   the rail — and it carries it as a filled dot with the number beside it,
-   never as colour alone. */
-.countAlert {
-  color: var(--ow-color-bad);
   font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-rail-ink-2);
+  flex: none;
+}
+
+/* A count that means "something wants you" is a pill, not a number. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 19px;
+  min-width: 19px;
+  padding: 0 var(--ow-space-6);
+  border-radius: var(--ow-radius-pill);
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  flex: none;
+  background: var(--ow-color-accent-ink);
+  color: var(--ow-color-on-fill);
+}
+
+.badgeWarn {
+  background: var(--ow-color-warn-chip);
+  color: var(--ow-color-warn-ink);
+}
+
+/* -------------------------------- sections -------------------------------- */
+
+.section {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  width: 100%;
+  padding: var(--ow-space-15) var(--ow-space-10) var(--ow-space-4);
+  background: none;
+  border: 0;
+  text-align: left;
+}
+
+.sectionChip {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--ow-radius-chip-square);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-bold);
+  flex: none;
+}
+
+.sectionName {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-section);
+  text-transform: uppercase;
+  color: var(--ow-color-rail-head);
+  flex: 1;
+  min-width: 0;
+}
+
+/* A folded section still shows its count. Hiding both the rows AND the
+   number would make the fold a place things go to be forgotten. */
+.sectionCount {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-rail-head);
+  flex: none;
+}
+
+.sectionCaret {
+  color: var(--ow-color-rail-head);
+  flex: none;
+  transition: transform var(--ow-motion-fast) var(--ow-motion-ease);
+}
+
+.sectionCaretOpen {
+  transform: rotate(180deg);
+}
+
+/* ---------------------------------- foot ---------------------------------- */
+
+/* Outside the scroll box, so Sign out never scrolls away. */
+.foot {
+  flex: none;
+  padding: var(--ow-space-8) var(--ow-space-10);
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
 }

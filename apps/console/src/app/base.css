@@ -1,14 +1,11 @@
 /**
  * The base layer. Deliberately tiny.
  *
- * This is the ONE place an element selector is allowed. Everything else in
- * the app is a scoped component style, because the old app set no base
- * font-size at all and every unstyled element in 41 screens inherited the
- * browser default — which meant adding one line to `body` would have
- * restyled the whole application in a single commit.
- *
- * Nothing here decides layout. Layout belongs to a design, and there are
- * two of them.
+ * This is the ONE place an element selector is allowed. Everything else is a
+ * scoped component style, because the old app set no base font-size at all
+ * and every unstyled element in 41 screens inherited the browser default —
+ * so adding one line to `body` would have restyled the whole application in
+ * a single commit.
  */
 
 *,
@@ -24,11 +21,10 @@ html {
 
 body {
   margin: 0;
-  background: var(--ow-color-canvas);
+  background: var(--ow-color-bg);
   color: var(--ow-color-ink);
   font-family: var(--ow-font-ui);
   font-weight: var(--ow-weight-regular);
-  line-height: var(--ow-leading-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-synthesis-weight: none; /* a weight we did not load must not be faked */
@@ -55,22 +51,14 @@ button {
   cursor: pointer;
 }
 
-a {
-  color: var(--ow-color-accent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
-
-/* The focus ring is never removed. It is the whole of keyboard navigation
-   for someone who works in this app all day. :focus-visible so a pointer
-   user does not see it on every click. */
+/* The focus ring is never removed, and never the browser default: 2px of the
+   accent ink at 2px offset, on everything you can reach with a keyboard. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: var(--ow-focus-width) solid var(--ow-color-accent);
+  outline: var(--ow-focus-width) solid var(--ow-color-accent-ink);
   outline-offset: var(--ow-focus-offset);
-  border-radius: var(--ow-radius-sm);
+  border-radius: var(--ow-radius-chip-square);
 }
 
-/* Respect a person who has asked the OS for less movement. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -82,8 +70,7 @@ a {
   }
 }
 
-/* Visually hidden, still read aloud. For the label a sighted person gets
-   from position or an icon, and a screen reader does not. */
+/* Visually hidden, still read aloud. */
 .ow-sr-only {
   position: absolute;
   width: 1px;

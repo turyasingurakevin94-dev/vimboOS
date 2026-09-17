@@ -1,94 +1,76 @@
 /**
- * The phone tab bar's marks.
+ * The phone's marks — Lucide geometry at stroke-width 2, per the handoff.
  *
- * Each has a stroked and a FILLED form, and the active tab is the filled
- * one. That is deliberate and not decoration: a shape change reads at a
- * glance where a colour change alone does not — in sunlight, at arm's
- * length, and for the roughly 1 in 12 men who cannot separate the two
- * colours you were relying on.
- *
- * These are the shop's own marks, not a borrowed set. A sunrise for Today,
- * a price tag for Sell, a note with a coin for Money, a stack of sheets for
- * Stock.
+ * The tab bar's five each have a stroked and a FILLED form, and the active
+ * tab is the filled one inside a tinted pill. A shape change reads at a
+ * glance where a colour change alone does not, in sunlight and for the
+ * roughly 1 in 12 men who cannot separate the two colours you relied on.
  */
 
 import type { ReactElement } from 'react';
 
-export type TabIcon = 'today' | 'orders' | 'money' | 'stock' | 'more';
+export type TabIcon = 'today' | 'sell' | 'money' | 'manager' | 'more';
 
 const STROKED: Record<TabIcon, ReactElement> = {
   today: (
     <>
-      <path d="M3 18h18M6.5 18a5.5 5.5 0 1 1 11 0" />
-      <path d="M12 3v3M4.8 7.8l2 2M19.2 7.8l-2 2" />
+      <path d="M12 2v8M4.93 10.93l1.41 1.41M2 18h2M20 18h2M17.66 12.34l1.41-1.41M22 22H2M8 6l4-4 4 4" />
+      <path d="M16 18a4 4 0 0 0-8 0" />
     </>
   ),
-  // A board with lanes on it: where the orders have got to.
-  orders: (
+  sell: (
     <>
-      <path d="M4 5.5h16v13H4z" />
-      <path d="M9.3 5.5v13M14.7 5.5v13" />
+      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+      <circle cx="7.5" cy="7.5" r="1" />
     </>
   ),
   money: (
     <>
-      <path d="M5 4.5h11l3 3V21H5z" />
-      <circle cx="12" cy="13" r="3" />
-      <path d="M12 11.4v3.2M10.8 13h2.4" />
+      <rect width="20" height="14" x="2" y="5" rx="2" />
+      <path d="M2 10h20" />
     </>
   ),
-  stock: (
-    <>
-      <path d="M3 8.5 12 4l9 4.5-9 4.5z" />
-      <path d="M3 13l9 4.5L21 13" />
-      <path d="M3 17l9 4.5L21 17" />
-    </>
-  ),
-  more: (
-    <>
-      <circle cx="5.5" cy="12" r="1.6" />
-      <circle cx="12" cy="12" r="1.6" />
-      <circle cx="18.5" cy="12" r="1.6" />
-    </>
-  ),
+  manager: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+  more: <path d="M3 12h.01M3 18h.01M3 6h.01M8 12h13M8 18h13M8 6h13" />,
 };
 
 const FILLED: Record<TabIcon, ReactElement> = {
   today: (
     <>
-      <path d="M12 2.6v3.2M4.1 7.1l2.2 2.2M19.9 7.1l-2.2 2.2" strokeWidth={1.9} />
-      <path d="M6.5 18a5.5 5.5 0 1 1 11 0z" fill="currentColor" stroke="none" />
-      <path d="M2.8 18.6h18.4" strokeWidth={1.9} />
+      <path d="M12 2v8M4.93 10.93l1.41 1.41M2 18h2M20 18h2M17.66 12.34l1.41-1.41" />
+      <path d="M16 18a4 4 0 0 0-8 0z" fill="currentColor" stroke="none" />
+      <path d="M22 22H2" />
     </>
   ),
-  orders: (
+  sell: (
     <>
-      <path d="M4 5.5h16v13H4z" fill="currentColor" stroke="none" />
       <path
-        d="M9.3 5.5v13M14.7 5.5v13"
-        stroke="var(--ow-color-paper)"
-        strokeWidth={1.6}
+        d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"
+        fill="currentColor"
+        stroke="none"
       />
+      <circle cx="7.5" cy="7.5" r="1.4" fill="var(--ow-color-bad-chip)" stroke="none" />
     </>
   ),
   money: (
     <>
-      <path d="M5 4.5h11l3 3V21H5z" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="13" r="3.1" fill="var(--ow-color-paper)" stroke="none" />
-      <path d="M12 11.3v3.4M10.6 13h2.8" stroke="currentColor" strokeWidth={1.4} />
+      <rect width="20" height="14" x="2" y="5" rx="2" fill="currentColor" stroke="none" />
+      <path d="M2 10h20" stroke="var(--ow-color-bad-chip)" />
     </>
   ),
-  stock: (
-    <>
-      <path d="M3 8.5 12 4l9 4.5-9 4.5z" fill="currentColor" stroke="none" />
-      <path d="M3 13l9 4.5L21 13M3 17l9 4.5L21 17" />
-    </>
+  manager: (
+    <path
+      d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+      fill="currentColor"
+      stroke="none"
+    />
   ),
   more: (
     <>
-      <circle cx="5.5" cy="12" r="1.9" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none" />
-      <circle cx="18.5" cy="12" r="1.9" fill="currentColor" stroke="none" />
+      <circle cx="4" cy="12" r="1.6" fill="currentColor" stroke="none" />
+      <path d="M9 12h12M9 6h12M9 18h12" />
+      <circle cx="4" cy="6" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="4" cy="18" r="1.6" fill="currentColor" stroke="none" />
     </>
   ),
 };
@@ -103,11 +85,11 @@ export function TabMark({
   return (
     <svg
       viewBox="0 0 24 24"
-      width={24}
-      height={24}
+      width={19}
+      height={19}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -118,22 +100,41 @@ export function TabMark({
   );
 }
 
-/** The one non-tab mark the phone design needs. */
-export function ChevronRight(): ReactElement {
+/** Small marks the phone screens need outside the tab bar. */
+export function Mark({
+  d,
+  size = 16,
+}: {
+  readonly d: string;
+  readonly size?: number;
+}): ReactElement {
   return (
     <svg
       viewBox="0 0 24 24"
-      width={18}
-      height={18}
+      width={size}
+      height={size}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
       focusable="false"
     >
-      <path d="m9.5 6 6 6-6 6" />
+      <path d={d} />
     </svg>
   );
 }
+
+export const PATH = {
+  search: 'M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16M21 21l-4.3-4.3',
+  message: 'M7.9 20A9 9 0 1 0 4 16.1L2 22z',
+  arrow: 'M5 12h14M12 5l7 7-7 7',
+  chevron: 'm9 18 6-6-6-6',
+  clock: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M12 6v6l4 2',
+  box: 'm7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
+  up: 'M16 7h6v6M22 7l-8.5 8.5-5-5L2 17',
+  users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8',
+  layers:
+    'm12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z',
+} as const;

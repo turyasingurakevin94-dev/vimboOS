@@ -18,6 +18,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { cssVariables } from '@ow/design';
 
 
 const SRC = fileURLToPath(new URL('.', import.meta.url));
@@ -75,18 +76,21 @@ describe('the two designs stay two designs', () => {
     ).toEqual([]);
   });
 
-  it('keeps a media query out of the two designs\' stylesheets, except for the desktop\'s own column drop', () => {
-    const offenders = files(['.css'])
+  it('keeps width media queries out of the PHONE design entirely', () => {
+    // The desktop reflows within itself, and the handoff says so: the metric
+    // grid drops 5→3→2 and the insight rail moves below the work column.
+    // Nothing resizes and no target changes, so that is the desktop design
+    // reorganising for a laptop, not the phone design arriving early.
+    //
+    // The phone is ONE width. A width query there is the compromise the
+    // switch exists to replace.
+    const offenders = files(['.css'], 'phone')
       .filter((f) => /@media[^{]*width/.test(read(f)))
-      .map(show)
-      // The desktop drops its context column under 1280px. That is the
-      // desktop design reorganising itself for a laptop, not the phone
-      // design arriving early — nothing resizes and no target changes.
-      .filter((f) => f !== 'desktop/DesktopApp.module.css');
+      .map(show);
 
     expect(
       offenders,
-      `${offenders.join(', ')} uses a width media query. A width breakpoint inside a design is a reflow, and reflow is what the switch exists to replace.`,
+      `${offenders.join(', ')} uses a width media query inside the phone design. The phone is one width.`,
     ).toEqual([]);
   });
 });
@@ -95,7 +99,14 @@ describe('the palette is the only source of colour', () => {
   it('has no raw hex in any component or stylesheet', () => {
     const offenders: string[] = [];
     for (const f of [...files(['.css']), ...files(['.tsx'])]) {
-      for (const hex of read(f).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
+      const source = read(f)
+        // Comments discuss hex values on purpose — the note explaining why
+        // white on #ef4b39 is 3.66:1 is documentation, not a declaration.
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+        // `&#8209;` is a non-breaking hyphen, not a colour.
+        .replace(/&#\d+;/g, '');
+      for (const hex of source.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
         offenders.push(`${show(f)}: ${hex}`);
       }
     }
@@ -109,9 +120,12 @@ describe('the palette is the only source of colour', () => {
     const offenders: string[] = [];
     for (const f of files(['.css'])) {
       for (const [i, line] of read(f).split('\n').entries()) {
-        // rgba() over white or ink is legal for a scrim or a rail hover,
-        // where the whole point is translucency the palette cannot express.
-        if (/\b(rgb|hsl)a?\(/.test(line) && !/rgba\(\s*(255,\s*255,\s*255|247|16)/.test(line)) {
+        // rgba() is legal: a rail hover and the phone's tinted header cells
+        // have to let the navy show through, and no flat token can do that.
+        // A SOLID rgb()/hsl() has no such excuse — it is a colour smuggled
+        // past the palette.
+        const translucent = /rgba\([^)]*,\s*0?\.\d+\s*\)/.test(line);
+        if (/\b(rgb|hsl)a?\(/.test(line) && !translucent) {
           offenders.push(`${show(f)}:${i + 1}: ${line.trim()}`);
         }
       }
@@ -145,16 +159,6 @@ describe('sizes and spaces come off the ramp', () => {
   const BORDER = /^(border|outline)/;
   const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, '');
 
-  const EXCEPT = new Set<number>([
-    // Hairlines, and the two values the space scale blesses off-grid for
-    // the inside of a chip: 2 and 6.
-    0, 1, 2, 6,
-    // Chrome and targets, declared in device.ts: rail, bars, rows, targets.
-    26, 30, 44, 52, 232,
-  ]);
-
-  const onGrid = (px: number): boolean => EXCEPT.has(px) || px % 4 === 0;
-
   it.each(files(['.css']))('%s', (file) => {
     const offenders: string[] = [];
     for (const [i, line] of stripComments(read(file)).split('\n').entries()) {
@@ -172,8 +176,12 @@ describe('sizes and spaces come off the ramp', () => {
           if (px !== 0) {
             offenders.push(`${where} — ${prop} takes a token, not ${m}`);
           }
-        } else if (!onGrid(px)) {
-          offenders.push(`${where} — ${m} is off the 4px grid`);
+        } else if (!Number.isInteger(px)) {
+          // A dimension is what a component needs: a 34px avatar, a 19px
+          // badge, a 7px bar. There is no grid to be off — the space scale
+          // is every integer — so the only rule left is that a dimension
+          // is a whole pixel.
+          offenders.push(`${where} — ${m} is not a whole pixel`);
         }
       }
     }
@@ -257,5 +265,37 @@ describe('every className resolves to a real rule', () => {
       missing,
       `${show(file)} references classes that do not exist, so they render as "undefined":\n${missing.join('\n')}`,
     ).toEqual([]);
+  });
+});
+
+describe('every design token a stylesheet asks for exists', () => {
+  /**
+   * `var(--ow-color-ink-2)` where the generated name is `--ow-color-ink2` is
+   * not an error. It is an undefined variable, so the property falls back to
+   * whatever it inherited and the screen looks *almost* right — the phone's
+   * header labels rendered in dark body ink on a navy ground and the build
+   * was green.
+   *
+   * The cause was a kebab-case function that split a letter from a capital
+   * but not from a digit. The class of bug is "a name that silently resolves
+   * to nothing", which is the same class the className test above catches for
+   * CSS modules. This catches it for custom properties.
+   */
+  const defined = new Set(Object.keys(cssVariables()));
+
+  it.each([...files(['.css']), ...files(['.tsx'])])('%s', (file) => {
+    const missing = new Set<string>();
+    for (const m of read(file).matchAll(/var\((--ow-[a-z0-9-]+)\s*[,)]/g)) {
+      const name = m[1];
+      if (name !== undefined && !defined.has(name)) missing.add(name);
+    }
+    expect(
+      [...missing],
+      `${show(file)} uses design tokens that are never generated, so they resolve to nothing:\n${[...missing].join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('generates a token set worth checking against', () => {
+    expect(defined.size).toBeGreaterThan(60);
   });
 });

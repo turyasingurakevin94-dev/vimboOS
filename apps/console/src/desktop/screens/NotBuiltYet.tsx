@@ -4,19 +4,19 @@ import s from './NotBuiltYet.module.css';
 /**
  * "Not enough is an answer."
  *
- * An empty screen that says what is not here yet, and what does work,
- * beats a screen that pretends. This is a placeholder for sections the
- * rewrite has not reached — it never pretends to be a loading state, and
- * it never shows an empty table as if the shop had no customers.
+ * A screen with no mockup yet says so, and says what still works. It never
+ * shows an invented layout to fill the gap — see the second rule in
+ * CLAUDE.md. Today is the screen the handoff covers; the rest arrive as
+ * their mockups do.
  */
-export function NotBuiltYet({ section }: { readonly section: string }): ReactElement {
+export function NotBuiltYet({ name }: { readonly name: string }): ReactElement {
   return (
     <div className={s.wrap}>
-      <h1 className={s.title}>{section[0]?.toUpperCase()}{section.slice(1)}</h1>
+      <h1 className={s.title}>{name}</h1>
       <p className={s.body}>
-        This section has not been rebuilt yet. It still runs in the current
-        app, against the same database — nothing here has been taken away.
-        Today is the screen this rewrite has reached.
+        No design for this screen yet. It still runs in the current app,
+        against the same database — nothing has been taken away. Today is the
+        screen this rewrite has reached.
       </p>
     </div>
   );

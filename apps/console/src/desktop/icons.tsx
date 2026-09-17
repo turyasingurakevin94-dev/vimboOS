@@ -1,170 +1,217 @@
 /**
- * The desktop icon set.
+ * Icons — Lucide geometry, per the handoff.
  *
- * 24 viewBox, no fill, stroke 1.75, round caps and joins — the skill's
- * geometry, and it is what keeps sixteen marks looking like one family
- * rather than sixteen downloads.
+ * 24 viewBox, `fill:none`, `stroke:currentColor`, **stroke-width 2**, round
+ * caps and joins. 14–17px in rails and rows, 19–20px in the phone tab bar.
  *
- * The marks mean something in *this* shop. "Owed to us" is a coin going into
- * a hand, not a generic dollar sign; "Sourcing" is a magnifier over a box,
- * because sourcing here means finding who has a thing nobody stocks.
+ * The handoff notes the current app draws at 1.8 and says "if the rest of
+ * the app stays at 1.8, follow the app, not this file". There is no rest of
+ * the app here — this is the new one, and it standardises on 2.
+ *
+ * **No emoji, ever.** Drawn marks only.
  */
 
 import type { ReactElement, SVGProps } from 'react';
 
 export type IconName =
   | 'sunrise'
-  | 'clipboard'
   | 'tag'
-  | 'people'
-  | 'route'
-  | 'coin-in'
-  | 'truck'
-  | 'invoice'
+  | 'bookmark'
+  | 'file-text'
+  | 'users'
+  | 'package'
+  | 'message-circle'
+  | 'inbox'
+  | 'bar-chart-3'
   | 'search'
-  | 'boxes'
-  | 'sheets'
-  | 'scales'
-  | 'book'
+  | 'store'
+  | 'layout-grid'
+  | 'list'
+  | 'layers'
+  | 'image'
+  | 'credit-card'
+  | 'trending-up'
+  | 'trending-down'
+  | 'line-chart'
+  | 'map-pin'
+  | 'activity'
+  | 'log-out'
+  | 'clock'
+  | 'calendar'
+  | 'message-square'
+  | 'chevron-right'
+  | 'chevron-down'
+  | 'arrow-right'
+  | 'plus'
+  | 'check'
+  | 'external-link'
+  | 'warehouse'
   | 'wallet'
-  | 'bank'
-  | 'bell'
-  | 'chevron-right';
+  | 'scale'
+  | 'truck';
 
-const PATHS: Record<IconName, ReactElement> = {
-  // The sun coming up over the yard: today's work, not a calendar.
+const P: Record<IconName, ReactElement> = {
   sunrise: (
     <>
-      <path d="M3 18h18M6.5 18a5.5 5.5 0 1 1 11 0" />
-      <path d="M12 3v3M4.8 7.8l2 2M19.2 7.8l-2 2" />
-    </>
-  ),
-  clipboard: (
-    <>
-      <path d="M9 4h6v3H9z" />
-      <path d="M15 5.5h2.5A1.5 1.5 0 0 1 19 7v12.5A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5V7a1.5 1.5 0 0 1 1.5-1.5H9" />
-      <path d="M8.5 12h7M8.5 16h4" />
+      <path d="M12 2v8M4.93 10.93l1.41 1.41M2 18h2M20 18h2M17.66 12.34l1.41-1.41M22 22H2M8 6l4-4 4 4" />
+      <path d="M16 18a4 4 0 0 0-8 0" />
     </>
   ),
   tag: (
     <>
-      <path d="M11.6 3.6 20 12l-8 8-8.4-8.4V3.6z" />
-      <circle cx="7.6" cy="7.6" r="1.4" />
+      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+      <circle cx="7.5" cy="7.5" r="0.5" fill="currentColor" />
     </>
   ),
-  people: (
+  bookmark: <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />,
+  'file-text': (
     <>
-      <circle cx="9" cy="8" r="3" />
-      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
-      <path d="M16 5.5a3 3 0 0 1 0 5.8M17.5 14.4A5.5 5.5 0 0 1 20.5 20" />
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" />
+      <path d="M14 2v5h6M16 13H8M16 17H8M10 9H8" />
     </>
   ),
-  // An agent's round: a path with stops on it.
-  route: (
+  users: (
     <>
-      <circle cx="6" cy="6" r="2.2" />
-      <circle cx="18" cy="18" r="2.2" />
-      <path d="M8.2 6H14a3 3 0 0 1 0 6h-4a3 3 0 0 0 0 6h5.8" />
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
     </>
   ),
-  // A coin dropping into an open hand: money owed, coming back in.
-  'coin-in': (
+  package: (
     <>
-      <circle cx="12" cy="7" r="3.5" />
-      <path d="M12 14.5v-2" />
-      <path d="M4.5 16.5a3 3 0 0 1 3-1h9a3 3 0 0 1 3 1L18 20H6z" />
+      <path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
     </>
   ),
-  truck: (
+  'message-circle': (
+    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
+  ),
+  inbox: (
     <>
-      <path d="M3 7.5h10.5V16H3z" />
-      <path d="M13.5 10.5h3.6l2.9 3V16h-6.5z" />
-      <circle cx="7" cy="18" r="1.8" />
-      <circle cx="17" cy="18" r="1.8" />
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11" />
     </>
   ),
-  invoice: (
-    <>
-      <path d="M6 3h12v18l-3-1.6-3 1.6-3-1.6L6 21z" />
-      <path d="M9.5 8.5h5M9.5 12.5h5" />
-    </>
-  ),
-  // Finding who has a thing nobody stocks: a glass over a crate.
+  'bar-chart-3': <path d="M3 3v16a2 2 0 0 0 2 2h16M18 17V9M13 17V5M8 17v-3" />,
   search: (
     <>
-      <circle cx="11" cy="11" r="6" />
-      <path d="M15.5 15.5 21 21" />
-      <path d="M8.5 11h5M11 8.5v5" />
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
     </>
   ),
-  boxes: (
+  store: (
     <>
-      <path d="M3 9.5h8V17H3zM13 9.5h8V17h-8z" />
-      <path d="M5.5 9.5V7h3v2.5M15.5 9.5V7h3v2.5" />
+      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+      <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4M2 7h20" />
     </>
   ),
-  // Iron sheets on a stack — the thing this shop actually sells.
-  sheets: (
+  'layout-grid': (
     <>
-      <path d="M3 8.5 12 4l9 4.5-9 4.5z" />
-      <path d="M3 13l9 4.5L21 13" />
-      <path d="M3 17l9 4.5L21 17" />
+      <rect width="7" height="7" x="3" y="3" rx="1" />
+      <rect width="7" height="7" x="14" y="3" rx="1" />
+      <rect width="7" height="7" x="14" y="14" rx="1" />
+      <rect width="7" height="7" x="3" y="14" rx="1" />
     </>
   ),
-  scales: (
+  list: <path d="M3 12h.01M3 18h.01M3 6h.01M8 12h13M8 18h13M8 6h13" />,
+  layers: (
     <>
-      <path d="M12 4v16M7 20h10" />
-      <path d="M12 7 5 9l2.5 4.5L12 7zM12 7l7 2-2.5 4.5L12 7z" />
+      <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
+      <path d="m6.08 10.37-3.5 1.6a1 1 0 0 0 0 1.81l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9a1 1 0 0 0 0-1.83l-3.5-1.59" />
     </>
   ),
-  book: (
+  image: (
     <>
-      <path d="M5 4.5h9A2.5 2.5 0 0 1 16.5 7v13H7.5A2.5 2.5 0 0 1 5 17.5z" />
-      <path d="M16.5 7H19v13h-2.5" />
-      <path d="M8.5 9h5" />
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21" />
+    </>
+  ),
+  'credit-card': (
+    <>
+      <rect width="20" height="14" x="2" y="5" rx="2" />
+      <path d="M2 10h20" />
+    </>
+  ),
+  'trending-up': <path d="M16 7h6v6M22 7l-8.5 8.5-5-5L2 17" />,
+  'trending-down': <path d="M16 17h6v-6M22 17l-8.5-8.5-5 5L2 7" />,
+  'line-chart': <path d="M3 3v16a2 2 0 0 0 2 2h16M19 9l-5 5-4-4-3 3" />,
+  'map-pin': (
+    <>
+      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+      <circle cx="12" cy="10" r="3" />
+    </>
+  ),
+  activity: <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />,
+  'log-out': <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect width="18" height="18" x="3" y="4" rx="2" />
+      <path d="M3 10h18M8 2v4M16 2v4" />
+    </>
+  ),
+  'message-square': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+  'chevron-right': <path d="m9 18 6-6-6-6" />,
+  'chevron-down': <path d="m6 9 6 6 6-6" />,
+  'arrow-right': <path d="M5 12h14M12 5l7 7-7 7" />,
+  plus: <path d="M5 12h14M12 5v14" />,
+  check: <path d="M20 6 9 17l-5-5" />,
+  'external-link': <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />,
+  warehouse: (
+    <>
+      <path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35" />
+      <path d="M6 18h12M6 14h12M6 10h12" />
     </>
   ),
   wallet: (
     <>
-      <path d="M4 7.5h14A1.5 1.5 0 0 1 19.5 9v8a1.5 1.5 0 0 1-1.5 1.5H4z" />
-      <path d="M4 7.5v11" />
-      <circle cx="15.5" cy="13" r="1.3" />
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
     </>
   ),
-  bank: (
+  scale: (
     <>
-      <path d="M3.5 9.5 12 4.5l8.5 5" />
-      <path d="M5.5 9.5V18M10 9.5V18M14 9.5V18M18.5 9.5V18" />
-      <path d="M3.5 20.5h17" />
+      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1M2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1" />
+      <path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
     </>
   ),
-  bell: (
+  truck: (
     <>
-      <path d="M12 4a5.5 5.5 0 0 0-5.5 5.5c0 4-1.5 5.5-1.5 5.5h14s-1.5-1.5-1.5-5.5A5.5 5.5 0 0 0 12 4z" />
-      <path d="M10.2 18a2 2 0 0 0 3.6 0" />
+      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9" />
+      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+      <circle cx="17" cy="18" r="2" />
+      <circle cx="7" cy="18" r="2" />
     </>
   ),
-  'chevron-right': <path d="m9.5 6 6 6-6 6" />,
 };
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   readonly name: IconName;
+  readonly size?: number;
 }
 
-export function Icon({ name, ...rest }: IconProps): ReactElement {
+export function Icon({ name, size = 17, ...rest }: IconProps): ReactElement {
   return (
     <svg
       viewBox="0 0 24 24"
+      width={size}
+      height={size}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
       focusable="false"
       {...rest}
     >
-      {PATHS[name]}
+      {P[name]}
     </svg>
   );
 }

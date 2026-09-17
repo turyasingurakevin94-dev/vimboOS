@@ -1,86 +1,105 @@
 /**
- * Space, radius, elevation.
+ * Space, radius, elevation — from the Today handoff.
  *
- * A 4px grid stepping in 8s. The reference system asks for an 8px grid, and
- * 8 is the working step here — 4, 6 and 2 exist for the inside of a chip and
- * the gap between a figure and its unit, where 8 is simply too much.
+ * The space scale is every integer from 2 to 16, then the even numbers to
+ * 24. It is not a 4px grid, and an earlier version of this system enforced
+ * one; the design uses 3, 5, 7, 9, 11, 13 and 15 freely and the mockup is
+ * the design, so the grid rule is replaced by an allowlist. That is stricter
+ * anyway — a grid would have allowed 28.
+ *
+ * 15 is here because the design file's section heading is `padding:15px 10px
+ * 4px`; the README's scale omits it. The markup wins.
  */
 
 export const space = {
-  0: '0',
-  1: '2px',
-  2: '4px',
-  3: '6px',
-  4: '8px',
-  5: '12px',
-  6: '16px',
-  7: '20px',
-  8: '24px',
-  9: '32px',
-  10: '40px',
-  11: '48px',
-  12: '64px',
+  /** A hairline nudge — the 1px that separates two rail rows. */
+  1: '1px',
+  2: '2px',
+  3: '3px',
+  4: '4px',
+  5: '5px',
+  6: '6px',
+  7: '7px',
+  8: '8px',
+  9: '9px',
+  10: '10px',
+  11: '11px',
+  12: '12px',
+  13: '13px',
+  14: '14px',
+  15: '15px',
+  16: '16px',
+  18: '18px',
+  20: '20px',
+  22: '22px',
+  24: '24px',
 } as const;
 
+/** Each radius names what wears it, because that is how it stays consistent. */
 export const radius = {
-  /** Chips, badges, small tags. */
-  sm: '6px',
-  /** Buttons, fields, nav rows. */
-  md: '8px',
-  /** Cards, panels. */
-  lg: '12px',
-  /** Modals, slide-overs. */
-  xl: '16px',
+  /** The top of a bar in a chart. Flat foot, rounded head. */
+  barTop: '4px',
+  /** A square chip — the rail's section abbreviations. */
+  chipSquare: '6px',
+  /** The phone's small brand mark. */
+  markSmall: '7px',
+  /** An icon chip. */
+  iconChip: '8px',
+  /** A button, and a rail row. */
+  button: '9px',
+  /** A field. */
+  field: '10px',
+  /** An inner tile inside a card. */
+  tile: '11px',
+  /** A card. */
+  card: '14px',
+  /** The frame the whole app sits in. */
+  frame: '18px',
   pill: '999px',
 } as const;
 
-/**
- * Elevation. Three steps, and each one names what genuinely floats at it.
- *
- * Soft and low: the reference system asks for soft shadows and hover
- * elevation, and this is that — but a shadow here is depth, never
- * decoration. A card that sits flat on the canvas is a hairline and a
- * whisper of shadow, not a drop shadow. Anything heavier reads as a dialog
- * and makes the page feel like a pile of paper.
- */
 export const elevation = {
-  /** A card resting on the canvas. Pairs with a hairline border, not instead of it. */
-  rest: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06)',
-  /** A card under the pointer, and a sticky table header over scrolled rows. */
-  raised: '0 2px 4px rgba(16, 24, 40, 0.05), 0 4px 12px rgba(16, 24, 40, 0.08)',
-  /** A menu, a combobox list, a toast — things genuinely above the page. */
-  float: '0 8px 16px rgba(16, 24, 40, 0.08), 0 16px 32px rgba(16, 24, 40, 0.10)',
-  /** A modal or slide-over, over a scrim. */
-  modal: '0 16px 32px rgba(16, 24, 40, 0.12), 0 32px 64px rgba(16, 24, 40, 0.16)',
+  /** A card. Barely there, and that is the point. */
+  card: '0 1px 2px rgba(23, 34, 60, 0.05)',
+  /** Something genuinely floating: a menu, the phone sheet, a toast. */
+  floating: '0 18px 40px rgba(23, 34, 60, 0.16)',
 } as const;
 
-/** The scrim behind a modal. */
-export const scrim = 'rgba(16, 24, 40, 0.45)';
+/** Chrome dimensions, named. */
+export const chrome = {
+  railWidth: '236px',
+  topBarHeight: '58px',
+  insightRailWidth: '326px',
+  phoneTabBarHeight: '56px',
+  /** The phone header, including its figure strip. */
+  phoneHeaderHeight: '120px',
+  /** The phone's minimum tap target, and it is a floor not a target. */
+  tap: '44px',
+} as const;
+
+/** The scrim behind a sheet. */
+export const scrim = 'rgba(23, 34, 60, 0.45)';
 
 /**
- * The focus ring. One ring, everywhere, and it is never removed — it is the
- * whole of keyboard navigation for someone who works in this app all day.
+ * The focus ring. 2px accent at 2px offset, on every interactive element —
+ * never the browser default, and never removed. It is the whole of keyboard
+ * navigation for someone who lives in this app all day.
  */
 export const focusRing = {
   width: '2px',
   offset: '2px',
 } as const;
 
-/** Motion. Short enough to feel instant, long enough to be followed. */
 export const motion = {
   instant: '80ms',
   fast: '140ms',
   base: '200ms',
-  /** Slide-overs and modals entering. */
   enter: '260ms',
   ease: 'cubic-bezier(0.2, 0, 0.2, 1)',
   easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
 } as const;
 
-/**
- * The z-index scale. Named, because a hand-picked 9999 is how a toast ends
- * up under the thing it is reporting on.
- */
+/** Named, because a hand-picked 9999 is how a toast ends up under a dialog. */
 export const layer = {
   base: 0,
   sticky: 10,

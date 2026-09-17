@@ -11,7 +11,7 @@ export function Booting(): React.ReactElement {
     <div
       role="status"
       aria-live="polite"
-      style={{ minHeight: '100dvh', background: 'var(--ow-color-canvas)' }}
+      style={{ minHeight: '100dvh', background: 'var(--ow-color-bg)' }}
     >
       <span className="ow-sr-only">Loading Omni-Ware</span>
     </div>

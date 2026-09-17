@@ -33,8 +33,11 @@ export type Design = (typeof DESIGNS)[number];
  * Below this the phone design renders; at or above it, the desktop design.
  * One number, one place. It is not a breakpoint in a stylesheet — nothing
  * reflows at it, a different application renders.
+ *
+ * 820, from the Today handoff, which inherits it from the previous design
+ * system. It had been 900 here; the handoff is the design and it says 820.
  */
-export const SWITCH_PX = 900;
+export const SWITCH_PX = 820;
 
 /** Which design a viewport width gets. The only place this is decided. */
 export const designFor = (viewportWidth: number): Design =>
@@ -55,40 +58,40 @@ export const metrics = {
     /** Sat in front of, for hours, with a mouse and a keyboard. */
     bodySize: '13px',
     metaSize: '11px',
-    pageTitleSize: '20px',
-    /** A table row. Dense enough to see twenty at once. */
-    rowHeight: '40px',
-    rowPaddingY: '10px',
-    rowPaddingX: '12px',
-    /** The page's own outer padding. */
-    pagePadding: '24px',
+    pageTitleSize: '24px',
+    /** A watch row. */
+    rowPaddingY: '12px',
+    rowPaddingX: '14px',
+    /** The scrolling body's own padding: 20 top, 22 sides, 24 bottom. */
+    pagePaddingTop: '20px',
+    pagePaddingX: '22px',
+    pagePaddingBottom: '24px',
     /** The dark left rail. */
-    railWidth: '232px',
-    railCollapsedWidth: '64px',
-    topBarHeight: '56px',
-    /** The right-hand context column. Insights live here, beside the work. */
-    contextWidth: '320px',
+    railWidth: '236px',
+    topBarHeight: '58px',
+    /** The right-hand insight rail. */
+    insightRailWidth: '326px',
     /** A pointer needs far less than a thumb. */
-    tapTarget: '32px',
-    maxContentWidth: '1600px',
+    tapTarget: '34px',
+    /** The design is drawn at this width. */
+    drawnAt: '1440px',
   },
   phone: {
     /** Held in one hand, outdoors, in daylight, while doing something else. */
-    bodySize: '15px',
-    metaSize: '13px',
-    pageTitleSize: '22px',
-    /** A card, not a row. Actions visible without opening anything. */
-    rowHeight: 'auto',
-    rowPaddingY: '14px',
-    rowPaddingX: '16px',
-    pagePadding: '16px',
-    /** No rail. A top bar and a bottom tab bar. */
-    topBarHeight: '52px',
-    tabBarHeight: '60px',
-    /** The thumb. Never smaller, whatever the design looks like at rest. */
+    bodySize: '13px',
+    metaSize: '11px',
+    pageTitleSize: '14px',
+    /** Compact by explicit request: the same content, less air. */
+    rowPaddingY: '8px',
+    rowPaddingX: '11px',
+    pagePadding: '10px',
+    /** No rail. A navy header carrying a figure strip, and a tab bar. */
+    headerHeight: '120px',
+    tabBarHeight: '56px',
+    /** The thumb. A floor, never a target. */
     tapTarget: '44px',
-    /** The bottom third of the screen, where a thumb reaches comfortably. */
-    thumbZone: '33vh',
+    /** The design is drawn at this width. */
+    drawnAt: '390px',
   },
 } as const;
 
@@ -101,16 +104,16 @@ export const metrics = {
  */
 export const HOW_EACH_DESIGN_WORKS = {
   navigation: {
-    desktop: 'a persistent dark rail, collapsible, with counts and favourites',
-    phone: 'a five-item bottom tab bar; everything else lives under More',
+    desktop: 'a 236px dark rail carrying the complete destination map, in sections',
+    phone: 'a 56px tab bar of five; the More sheet is generated from the rail',
   },
   aQueue: {
-    desktop: 'a dense table; 40px rows; expand in place; bulk select; sticky header',
-    phone: 'cards; the two actions that matter are on the card; no bulk anything',
+    desktop: 'numbered move cards, then the watch beneath as denser rows',
+    phone: 'compact move cards; the worth as an inline chip, not a block',
   },
   metrics: {
-    desktop: 'one horizontal strip across the top, hairline dividers, no per-tile borders',
-    phone: 'a 2×2 block in a single card',
+    desktop: 'five tinted cards across the top, each with its basis line',
+    phone: 'one 4-across figure strip inside the navy header, abbreviated',
   },
   context: {
     desktop: 'a 320px right-hand column, always visible beside the work',

@@ -1,8 +1,8 @@
-.wrap { padding: var(--ow-space-9) 0; }
-.title { font-size: var(--ow-size-18); font-weight: var(--ow-weight-semibold); }
+.wrap { padding: var(--ow-space-20) var(--ow-space-2); }
+.title { font-size: var(--ow-size-14-5); font-weight: var(--ow-weight-bold); }
 .body {
-  margin-top: var(--ow-space-4);
-  font-size: var(--ow-size-15);
-  line-height: var(--ow-leading-normal);
-  color: var(--ow-color-ink-3);
+  margin-top: var(--ow-space-8);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
 }
