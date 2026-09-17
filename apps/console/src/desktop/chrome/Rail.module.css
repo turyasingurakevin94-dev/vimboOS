@@ -30,7 +30,7 @@
   background: var(--ow-color-accent);
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--ow-color-on-fill);
   font-weight: var(--ow-weight-bold);
   font-size: var(--ow-size-13);
 }

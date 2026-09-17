@@ -19,9 +19,12 @@ const query = (): MediaQueryList | null =>
     ? null
     : window.matchMedia(DESKTOP_QUERY);
 
+/** No matchMedia (a server render, a test) — nothing to unsubscribe from. */
+const NOTHING_TO_UNSUBSCRIBE = (): void => undefined;
+
 const subscribe = (onChange: () => void): (() => void) => {
   const mq = query();
-  if (mq === null) return () => {};
+  if (mq === null) return NOTHING_TO_UNSUBSCRIBE;
   mq.addEventListener('change', onChange);
   return () => mq.removeEventListener('change', onChange);
 };

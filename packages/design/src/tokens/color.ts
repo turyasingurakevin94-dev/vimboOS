@@ -60,6 +60,16 @@ export const color = {
   /** Row dividers inside a table. Lighter, so a dense table is not a grid. */
   lineSoft: '#EDF0F5',
 
+  /**
+   * The ink that sits ON a filled accent or state colour — a primary button,
+   * a badge, the knockout inside a filled icon.
+   *
+   * It is the same white as `paper`, and it is named separately because it is
+   * a different job: `paper` is a surface, this is an ink. When a dark theme
+   * arrives, `paper` moves and this one does not.
+   */
+  onFill: '#FFFFFF',
+
   /* -------------------------------- accent ------------------------------- */
   /** THE action. Once per screen. See the accent rule in the skill. */
   accent: '#1D4ED8',
@@ -90,9 +100,10 @@ export type ColorToken = keyof typeof color;
  * that used to match. Anything not listed here is a duplicate, and the test
  * says so.
  */
-export const intentionalAliases: ReadonlyArray<readonly [ColorToken, ColorToken]> = [
+export const intentionalAliases: readonly (readonly [ColorToken, ColorToken])[] = [
   ['navActiveGround', 'paper'],
   ['navActiveInk', 'nav'],
+  ['onFill', 'paper'],
 ];
 
 /**
@@ -102,12 +113,12 @@ export const intentionalAliases: ReadonlyArray<readonly [ColorToken, ColorToken]
  * colour without adding its legal grounds here means the test never checks
  * it, so the list and the palette are kept in step by a test of their own.
  */
-export const legalPairings: ReadonlyArray<{
+export const legalPairings: readonly {
   readonly ink: ColorToken;
   readonly ground: ColorToken;
   readonly floor: 'body' | 'large' | 'ui';
   readonly note: string;
-}> = [
+}[] = [
   // Body ink on every surface it can land on.
   { ink: 'ink', ground: 'canvas', floor: 'body', note: 'body text on the ground' },
   { ink: 'ink', ground: 'paper', floor: 'body', note: 'body text on a card' },
@@ -128,8 +139,8 @@ export const legalPairings: ReadonlyArray<{
   { ink: 'navActiveInk', ground: 'navActiveGround', floor: 'body', note: 'the inverted active row' },
 
   // The accent, both ways round.
-  { ink: 'paper', ground: 'accent', floor: 'body', note: 'white on the accent button' },
-  { ink: 'paper', ground: 'accentDeep', floor: 'body', note: 'white on the pressed accent' },
+  { ink: 'onFill', ground: 'accent', floor: 'body', note: 'white on the accent button' },
+  { ink: 'onFill', ground: 'accentDeep', floor: 'body', note: 'white on the pressed accent' },
   { ink: 'accent', ground: 'paper', floor: 'body', note: 'accent as a link on a card' },
   { ink: 'accent', ground: 'canvas', floor: 'body', note: 'accent as a link on the ground' },
   { ink: 'accent', ground: 'accentTint', floor: 'body', note: 'accent chip' },
@@ -139,15 +150,15 @@ export const legalPairings: ReadonlyArray<{
   { ink: 'good', ground: 'paper', floor: 'body', note: 'a good figure on a card' },
   { ink: 'good', ground: 'canvas', floor: 'body', note: 'a good figure on the ground' },
   { ink: 'good', ground: 'goodTint', floor: 'body', note: 'good chip' },
-  { ink: 'paper', ground: 'good', floor: 'body', note: 'white on a good fill' },
+  { ink: 'onFill', ground: 'good', floor: 'body', note: 'white on a good fill' },
   { ink: 'warn', ground: 'paper', floor: 'body', note: 'a caution figure on a card' },
   { ink: 'warn', ground: 'canvas', floor: 'body', note: 'a caution figure on the ground' },
   { ink: 'warn', ground: 'warnTint', floor: 'body', note: 'caution chip' },
-  { ink: 'paper', ground: 'warn', floor: 'body', note: 'white on a caution fill' },
+  { ink: 'onFill', ground: 'warn', floor: 'body', note: 'white on a caution fill' },
   { ink: 'bad', ground: 'paper', floor: 'body', note: 'a bad figure on a card' },
   { ink: 'bad', ground: 'canvas', floor: 'body', note: 'a bad figure on the ground' },
   { ink: 'bad', ground: 'badTint', floor: 'body', note: 'bad chip' },
-  { ink: 'paper', ground: 'bad', floor: 'body', note: 'white on a destructive fill' },
+  { ink: 'onFill', ground: 'bad', floor: 'body', note: 'white on a destructive fill' },
 ];
 
 /**
@@ -155,10 +166,10 @@ export const legalPairings: ReadonlyArray<{
  * The test asserts each one is genuinely below the floor, so that a future
  * edit which makes one "safe" has to come here and say so deliberately.
  */
-export const neverCarriesText: ReadonlyArray<{
+export const neverCarriesText: readonly {
   readonly token: ColorToken;
   readonly why: string;
-}> = [
+}[] = [
   { token: 'inkDisabled', why: 'disabled state — meaning must not depend on it' },
   { token: 'line', why: 'a border, not an ink' },
   { token: 'lineSoft', why: 'a hairline, not an ink' },

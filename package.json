@@ -15,8 +15,11 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.2",
     "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.12.0",
     "playwright": "^1.63.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.1",

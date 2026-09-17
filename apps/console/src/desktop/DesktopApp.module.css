@@ -69,7 +69,7 @@
   height: 28px;
   border-radius: var(--ow-radius-pill);
   background: var(--ow-color-nav);
-  color: #fff;
+  color: var(--ow-color-on-fill);
   display: grid;
   place-items: center;
   font-size: var(--ow-size-11);

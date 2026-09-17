@@ -63,13 +63,13 @@ const FILLED: Record<TabIcon, ReactElement> = {
   sell: (
     <>
       <path d="M11.6 3.6 20 12l-8 8-8.4-8.4V3.6z" fill="currentColor" stroke="none" />
-      <circle cx="7.6" cy="7.6" r="1.5" fill="#fff" stroke="none" />
+      <circle cx="7.6" cy="7.6" r="1.5" fill="var(--ow-color-paper)" stroke="none" />
     </>
   ),
   money: (
     <>
       <path d="M5 4.5h11l3 3V21H5z" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="13" r="3.1" fill="#fff" stroke="none" />
+      <circle cx="12" cy="13" r="3.1" fill="var(--ow-color-paper)" stroke="none" />
       <path d="M12 11.3v3.4M10.6 13h2.8" stroke="currentColor" strokeWidth={1.4} />
     </>
   ),

@@ -19,23 +19,41 @@ describe('the palette is well formed', () => {
   });
 
   it('stays small — a palette nobody can hold in their head is not a palette', () => {
-    expect(Object.keys(color).length).toBeLessThanOrEqual(26);
+    // Distinct VALUES, not names. A semantic alias (`onFill` for the ink
+    // that goes on a filled accent) adds a name and no colour, and is the
+    // thing that makes a dark theme possible later. Counting names would
+    // punish exactly the discipline this system wants.
+    const distinct = new Set(Object.values(color).map((v) => v.toUpperCase()));
+    expect(distinct.size).toBeLessThanOrEqual(24);
   });
 
   it('has no duplicate values beyond the declared aliases', () => {
+    // Group by value rather than comparing each name to the one before it:
+    // #FFFFFF legitimately wears three names, and a pairwise walk would
+    // pass or fail depending on declaration order.
     const declared = new Set(
       intentionalAliases.flatMap(([a, b]) => [`${a}->${b}`, `${b}->${a}`]),
     );
-    const seen = new Map<string, ColorToken>();
+    const byValue = new Map<string, ColorToken[]>();
     for (const [name, value] of Object.entries(color) as [ColorToken, string][]) {
       const v = value.toUpperCase();
-      const prior = seen.get(v);
-      if (prior !== undefined && !declared.has(`${name}->${prior}`)) {
-        expect.fail(
-          `${name} duplicates ${prior} (${v}) — if that is deliberate, say so in intentionalAliases and why`,
-        );
+      byValue.set(v, [...(byValue.get(v) ?? []), name]);
+    }
+
+    for (const [value, names] of byValue) {
+      if (names.length === 1) continue;
+      // Every name after the first must be declared an alias of one of the
+      // names already in the group.
+      const group: ColorToken[] = [names[0]!];
+      for (const name of names.slice(1)) {
+        const linked = group.some((prior) => declared.has(`${name}->${prior}`));
+        if (!linked) {
+          expect.fail(
+            `${name} duplicates ${group.join('/')} (${value}) — if that is deliberate, say so in intentionalAliases and why`,
+          );
+        }
+        group.push(name);
       }
-      seen.set(v, name);
     }
   });
 

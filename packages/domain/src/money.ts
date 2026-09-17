@@ -68,7 +68,7 @@ export const add = (...amounts: readonly Money[]): Money =>
 
 export const subtract = (a: Money, b: Money): Money => money(a - b);
 
-export const negate = (a: Money): Money => money(-a);
+export const negate = (a: Money): Money => subtract(ZERO, a);
 
 export const abs = (a: Money): Money => money(Math.abs(a));
 

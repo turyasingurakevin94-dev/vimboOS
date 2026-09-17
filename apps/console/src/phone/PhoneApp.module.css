@@ -30,7 +30,7 @@
   font-size: var(--ow-size-16);
   font-weight: var(--ow-weight-semibold);
   letter-spacing: var(--ow-tracking-heading);
-  color: #fff;
+  color: var(--ow-color-on-fill);
 }
 
 .topSpacer {
@@ -79,7 +79,7 @@
   border: 0;
   border-radius: var(--ow-radius-md);
   background: var(--ow-color-accent);
-  color: #fff;
+  color: var(--ow-color-on-fill);
   font-size: var(--ow-size-16);
   font-weight: var(--ow-weight-semibold);
 }
@@ -119,15 +119,15 @@
 .tabBadge {
   position: absolute;
   transform: translate(12px, -12px);
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--ow-space-2);
   border-radius: var(--ow-radius-pill);
   background: var(--ow-color-bad);
-  color: #fff;
+  color: var(--ow-color-on-fill);
   font-family: var(--ow-font-mono);
-  font-size: 10px;
-  line-height: 16px;
+  font-size: var(--ow-size-11);
+  line-height: 18px;
   text-align: center;
 }
 
