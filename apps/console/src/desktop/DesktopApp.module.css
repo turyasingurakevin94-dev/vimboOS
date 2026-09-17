@@ -185,3 +185,31 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+/**
+ * A screen's own door, in the slot the stage chips otherwise hold.
+ *
+ * Secondary, never the accent: the accent belongs to the one thing to do
+ * next, and on Customers that is chasing the money already owed, not taking
+ * on a new account.
+ */
+.topAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  flex: none;
+  height: 34px;
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.topAction:hover {
+  background: var(--ow-color-surface-2);
+}

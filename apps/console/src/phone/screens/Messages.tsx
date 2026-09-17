@@ -423,7 +423,7 @@ function TellingLens({
       <header className={s.header}>
         <div className={s.headTop}>
           <span className={s.headIcon}>
-            <Mark d={PATH.shop} size={14} />
+            <Mark d={PATH.home} size={14} />
           </span>
           <span className={s.headTitle}>Worth telling</span>
           <button type="button" className={s.headSearch} aria-label="Search">

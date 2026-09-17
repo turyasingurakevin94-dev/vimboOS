@@ -197,6 +197,19 @@ const trim = (n: number): string =>
   (Math.round(n * 10) / 10).toFixed(Math.abs(n) < 10 ? 1 : 0);
 
 /**
+ * Millions, to a stated number of places — `3.33m`, `2.00m`, `38.4m`.
+ *
+ * `formatCompact` decides the places for you, which is right for chrome that
+ * has to fit whatever it is handed. A BASIS line is comparing two figures
+ * and needs them written to the same precision: "Mulongo 3.33m of 2.00m"
+ * only reads as a comparison because the limit kept its trailing zeros.
+ *
+ * Like `formatCompact`, never for a figure being acted on.
+ */
+export const formatMillions = (amount: Money, places: 1 | 2 = 1): string =>
+  `${(amount / 1_000_000).toFixed(places)}m`;
+
+/**
  * Read a figure a person typed. Accepts the separators people actually use
  * ("1,240,000", "1 240 000") and refuses anything else rather than guessing —
  * a silently misread price is a wrong price.

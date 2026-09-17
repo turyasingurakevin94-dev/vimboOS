@@ -18,11 +18,21 @@ import { TabMark, type TabIcon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
+import { Customers } from './screens/Customers.js';
 import { Messages } from './screens/Messages.js';
+import { More, type MoreDestination } from './screens/More.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
-const TABS: readonly { readonly id: TabIcon; readonly label: string }[] = [
-  { id: 'today', label: 'Today' },
+/**
+ * A dot rather than a count.
+ *
+ * The rail on the desktop has room to say EIGHT things want you. A tab bar
+ * has room to say that something does, and the screen behind it says how
+ * many the moment you arrive. A 19px pill on a 19px glyph is a badge that
+ * covers the thing it is badging.
+ */
+const TABS: readonly { readonly id: TabIcon; readonly label: string; readonly dot?: boolean }[] = [
+  { id: 'today', label: 'Today', dot: true },
   { id: 'sell', label: 'Sell' },
   { id: 'money', label: 'Money' },
   { id: 'manager', label: 'Manager' },
@@ -39,6 +49,8 @@ const TITLES: Record<TabIcon, string> = {
 
 export default function PhoneApp(): ReactElement {
   const [tab, setTab] = useState<TabIcon>('today');
+  /** Which destination the More tab has been opened into, if any. */
+  const [beyond, setBeyond] = useState<MoreDestination | null>(null);
 
   return (
     <div className={s.shell}>
@@ -64,12 +76,20 @@ export default function PhoneApp(): ReactElement {
         <Invoices />
       ) : tab === 'more' ? (
         /**
-         * Messages lives under More, and the mockups say so: every phone
-         * frame in the Messages handoff draws the tab bar with **More**
-         * lit. Five tabs cannot hold six destinations, and the desk is
-         * reached from the one that holds the rest.
+         * Two handoffs now end under this tab: the Customers phone frames
+         * draw the bar with **More** lit, and so does every Messages phone
+         * frame. Both screens are built, five tabs cannot hold six
+         * destinations, and no frame draws the sheet that stands between
+         * them — so `More` is the plainest list that keeps both reachable,
+         * and it goes the day the real sheet is designed.
          */
-        <Messages />
+        beyond === null ? (
+          <More onOpen={setBeyond} />
+        ) : beyond === 'customers' ? (
+          <Customers />
+        ) : (
+          <Messages />
+        )
       ) : (
         <NotBuiltYet name={TITLES[tab]} />
       )}
@@ -83,10 +103,20 @@ export default function PhoneApp(): ReactElement {
               type="button"
               className={`${s.tab} ${on ? s.tabOn : ''}`}
               aria-current={on ? 'page' : undefined}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                /**
+                 * Tapping the tab you are already on returns it to its root.
+                 * That is the standard, and here it is also the only way back
+                 * out of a destination the More list opened — a screen you
+                 * can reach and not leave is a trap.
+                 */
+                if (t.id !== 'more' || tab === 'more') setBeyond(null);
+                setTab(t.id);
+              }}
             >
               <span className={s.tabPill}>
                 <TabMark name={t.id} active={on} />
+                {t.dot === true && !on && <span className={s.dot} />}
               </span>
               {t.label}
             </button>

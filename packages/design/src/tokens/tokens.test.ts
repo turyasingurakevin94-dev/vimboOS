@@ -281,26 +281,27 @@ describe('space and radius', () => {
     // A radius called "md" tells you nothing at the call site; one called
     // "card" cannot be used on a chip by accident.
     //
-    // Three names joined the list for Messages, and the rule this test holds
-    // is why they are names rather than reuses. `checkbox` is 4px, the same
-    // value `barTop` already carries — and putting `--ow-radius-bar-top` on a
-    // checkbox is precisely the mistake the name rule exists to stop, so the
-    // duplicate value is correct and the shared name would not be.
-    // `bubbleTail` is the one corner of a chat bubble that is not a corner,
-    // and `checkboxPhone` is the same checkbox at the 17px the phone draws.
+    // Four of these share a value with a neighbour, and the rule this test
+    // holds is exactly why each is a name rather than a reuse. `barSmall` and
+    // `bubbleTail` are both 3px — a bar too short for `barTop` and the one
+    // corner of a chat bubble that is not a corner. `checkbox` is 4px, the
+    // same value `barTop` already carries, and putting
+    // `--ow-radius-bar-top` on a checkbox is precisely the mistake this rule
+    // exists to stop. `checkboxPhone` is that checkbox at the 17px the phone
+    // draws it. A shared value is fine; a shared name would not be.
     expect(Object.keys(radius)).toEqual([
-      'bubbleTail', 'barTop', 'checkbox', 'checkboxPhone', 'chipSquare',
-      'segment', 'iconChip', 'button',
+      'barSmall', 'bubbleTail', 'barTop', 'checkbox', 'checkboxPhone',
+      'chipSquare', 'segment', 'iconChip', 'button',
       'field', 'tile', 'block', 'card', 'sheet', 'frame', 'pill',
     ]);
   });
 
   it('orders the radii from chip to frame', () => {
-    // `checkbox` is not in this list, and cannot be: it ties with `barTop` at
-    // 4px, and a tie is not an order. The two are never adjacent and never
-    // compared, so nothing is lost by leaving one of them out of the ramp.
+    // One of each tied pair is left out, and has to be: `bubbleTail` ties
+    // with `barSmall` and `checkbox` with `barTop`, and a tie is not an
+    // order. Neither pair is ever adjacent or compared, so nothing is lost.
     const px = [
-      'bubbleTail', 'barTop', 'checkboxPhone', 'chipSquare', 'segment',
+      'barSmall', 'barTop', 'checkboxPhone', 'chipSquare', 'segment',
       'iconChip', 'button',
       'field', 'tile', 'card', 'frame',
     ] as const;

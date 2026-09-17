@@ -35,16 +35,20 @@ const pay = (id: string, amount: number, over: Partial<Payment> = {}): Payment =
   ...over,
 });
 
-const sale = (over: Partial<SalesInvoice> = {}): SalesInvoice => ({
-  kind: 'sale',
-  doc: 'INV-0001',
-  customer: 'Ken Bwaise',
-  total: m(100_000),
-  issued: daysBefore(3),
-  dueOn: daysBefore(-11),
-  payments: [],
-  ...over,
-});
+const sale = (over: Partial<SalesInvoice> = {}): SalesInvoice => {
+  const total = over.total ?? m(100_000);
+  return {
+    kind: 'sale',
+    doc: 'INV-0001',
+    customer: 'Ken Bwaise',
+    total,
+    lines: [{ kind: 'item', id: 'l1', name: 'Goods', qty: 1, priceEach: total }],
+    issued: daysBefore(3),
+    dueOn: daysBefore(-11),
+    payments: [],
+    ...over,
+  };
+};
 
 const purchase = (over: Partial<PurchaseInvoice> = {}): PurchaseInvoice => ({
   kind: 'purchase',

@@ -46,10 +46,14 @@ export type IconName =
   | 'check'
   | 'external-link'
   | 'warehouse'
+  | 'home'
   | 'wallet'
   | 'scale'
   | 'truck'
   | 'more-horizontal'
+  | 'trash'
+  | 'sort'
+  | 'alert-triangle'
   /* Messages. */
   | 'x'
   | 'pause'
@@ -69,6 +73,14 @@ export type IconName =
   | 'bin';
 
 const P: Record<IconName, ReactElement> = {
+  /* Deleting a payment moves money, so the glyph is the one everybody reads
+     as "this is gone" — and it never acts without asking. */
+  trash: (
+    <>
+      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6" />
+    </>
+  ),
   /* Three dots: everything this screen can do that is not the next action. */
   'more-horizontal': (
     <>
@@ -188,6 +200,22 @@ const P: Record<IconName, ReactElement> = {
   'arrow-right': <path d="M5 12h14M12 5l7 7-7 7" />,
   plus: <path d="M5 12h14M12 5v14" />,
   check: <path d="M20 6 9 17l-5-5" />,
+  /* Three rules, narrowing: a list put in an order, not a funnel. */
+  sort: <path d="M3 6h18M7 12h10M10 18h4" />,
+  /* The brand mark. A shop with a door — `Rail.dc.html` draws this, and it
+     is the authority on navigation. */
+  home: (
+    <>
+      <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />
+      <path d="M9 21v-6h6v6" />
+    </>
+  ),
+  'alert-triangle': (
+    <>
+      <path d="M12 9v4M12 17h.01" />
+      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0" />
+    </>
+  ),
   'external-link': <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />,
   warehouse: (
     <>

@@ -52,13 +52,14 @@ export const color = {
   /** The trough of a segmented control, and a lens at hover. */
   track: '#f0eeea',
   /**
-   * The lens group's own trough, and a lens at hover inside it.
+   * The lens GROUP's own trough — the warm band a lens row sits in.
    *
-   * One step off `track`, and that is the mockup's value, not a slip: every
-   * Messages frame draws the lens group on `#efede9` while `Invoices.dc.html`
-   * draws its segmented control on `#f0eeea`. The rule is that the tokens
-   * move to meet the mockup and never round to the token that happens to be
-   * near, so both exist and each is named after what draws it.
+   * A hair darker than `track` because it holds white pills rather than
+   * being one, and a white pill on `track` does not read as lifted. It is
+   * also, independently, the value every Messages frame draws its lens group
+   * on while `Invoices.dc.html` draws its segmented control on `track`: two
+   * screens arrived at the same #efede9, which is the strongest evidence a
+   * token can have that it is a real one.
    */
   lensTrack: '#efede9',
   /** The one strong rule under a page header. Heavier than a card border. */
@@ -115,20 +116,21 @@ export const color = {
   accentBtn: '#c2311f',
   /** That button, pressed. */
   accentBtnHover: '#a5291a',
-  /**
-   * The same red as a GROUND under white text where the thing is not a
-   * control: the avatar on a draft panel's navy header, the "21 days of
-   * stock" chip on a price card.
-   *
-   * It has to be `accentBtn`'s value and not `accent`'s, because white on
-   * `accent` is 3.66:1 — the failure at the other end of the rule. It has to
-   * be its own NAME because a test counts how many filled controls on a
-   * screen claim to be the one thing to do next, and an avatar is not one of
-   * them. One value, two jobs, both named.
-   */
-  accentGround: '#c2311f',
   /** Accent-coloured TYPE. Same value as `badInk`, and that is deliberate. */
   accentInk: '#b2301f',
+  /**
+   * The accent as a MARK rather than a control: the deepest band of a warm
+   * bar, and the `1st` chip that ranks a row.
+   *
+   * Same value as `accentBtn`. A different name because the two are governed
+   * by different rules — there is one accent-filled CONTROL per screen, and
+   * that rule is enforced by counting `accentBtn` in a stylesheet. A rank
+   * chip is a label and a bar band is a bar; neither is a thing to press,
+   * and neither should make the screen's one button look like a second
+   * opinion. This is the same split that already separates `accent` from
+   * `accentBtn` from `accentInk`: one coral, named by the job it is doing.
+   */
+  accentMark: '#c2311f',
 
   /* ------------------ meaning: bad / caution / good / studied -------------- */
   badFill: '#fff1ec',
@@ -146,18 +148,17 @@ export const color = {
   warnInk: '#96600f',
   warnMeta: '#6b5a33',
   /**
-   * A caution BLOCK — a paragraph of caution inside a card, rather than a
-   * chip or a tinted row.
+   * The caution PANEL — a bordered block of prose inside a card, not a chip.
+   * Paler than `warnFill` and with a darker ink, because a chip is read in a
+   * glance and a paragraph is read: 7.6:1 rather than the chip's 5.0:1.
    *
-   * It is a paler ground and a much darker ink than the chip family: three
-   * lines of prose are read, not glanced at, and `warnInk` on `warnFill` is
-   * 4.89:1, which is a pass a paragraph should not be spending. This is
-   * 7.6:1. Messages draws it once, around the sentence that says no invoice
-   * stands behind a balance.
+   * Customers wraps the over-limit sentence in it; Messages wraps the one
+   * that says no invoice stands behind a balance. Both were written against
+   * the same #fff8e8 independently.
    */
-  warnBlockFill: '#fff8e8',
-  warnBlockEdge: '#f4e3bd',
-  warnBlockInk: '#6b4a0d',
+  warnPanel: '#fff8e8',
+  warnPanelEdge: '#f4e3bd',
+  warnPanelInk: '#6b4a0d',
   /** The amber bar in "which signals actually sell". A bar, never a word. */
   warnBar: '#f0b323',
 
@@ -216,6 +217,30 @@ export const color = {
   agingMiddle: '#f0a98f',
   agingOldest: '#ef4b39',
 
+  /**
+   * The debt bar on Customers is FOUR warm bands, not the three above.
+   *
+   * Invoices asks "how old is this document", and its cool-to-hot ramp says
+   * so. Customers asks "how much of what I am owed has gone cold", and the
+   * whole bar is money that is late or going late — so it runs deep red to
+   * pale clay and never touches the blue. 60+ days wears `accentBtn` and
+   * 45–59 the raw accent; these two are the rest.
+   *
+   * Bars, never text: 1.95:1 and 1.57:1 on white.
+   */
+  debtMid: '#f6a68c',
+  debtFresh: '#e4c9bf',
+
+  /**
+   * How a customer pays, as a bar: on time is `goodInk`, very late is
+   * `accentBtn`, and these two are the middle and the absence. `payQuiet`
+   * fills the whole bar for an account with no history at all — a grey bar
+   * is the honest drawing of "nothing is known yet", where an empty one
+   * would read as "pays badly".
+   */
+  payLate: '#f0b323',
+  payQuiet: '#dedbd4',
+
   /** White, as an ink on a filled accent, navy or state colour. */
   onFill: '#ffffff',
 } as const;
@@ -271,11 +296,15 @@ export const neverCarriesText: readonly {
   { token: 'goodEdgeSoft', why: 'a card border' },
   { token: 'infoEdge', why: 'a card border' },
   { token: 'studyEdge', why: 'a card border' },
-  { token: 'warnBlockEdge', why: 'the border of a caution block' },
   { token: 'warnBar', why: 'a bar segment' },
   { token: 'cashChip', why: 'an icon chip ground; its glyph is not text' },
   { token: 'badChipSoft', why: 'an icon chip ground; its glyph is not text' },
   { token: 'studyMuted', why: 'the left border of a move that is waiting' },
+  { token: 'warnPanelEdge', why: 'the border of a caution panel' },
+  { token: 'debtMid', why: '1.95:1 on white — a band of the debt bar' },
+  { token: 'debtFresh', why: '1.57:1 on white — a band of the debt bar' },
+  { token: 'payLate', why: '1.88:1 on white — the late band of the pays bar' },
+  { token: 'payQuiet', why: '1.38:1 on white — a pays bar with no history in it' },
 ];
 
 /**
@@ -332,6 +361,7 @@ export const legalPairings: readonly {
   { ink: 'ink3', ground: 'studyFill', floor: 'body', note: 'basis on the stock card' },
   { ink: 'ink3', ground: 'infoFill', floor: 'body', note: 'basis on an info tint' },
   { ink: 'ink3', ground: 'neutralChip', floor: 'body', note: 'a neutral chip' },
+  { ink: 'ink2', ground: 'neutralChip', floor: 'body', note: "a lens's own count" },
 
   // The rail and the phone header.
   { ink: 'railInkStrong', ground: 'navy', floor: 'body', note: 'a back chevron, a header sub-line' },
@@ -348,7 +378,12 @@ export const legalPairings: readonly {
   { ink: 'accentInk', ground: 'bg', floor: 'body', note: 'accent text on the ground' },
   { ink: 'accentInk', ground: 'badChip', floor: 'body', note: "the phone's active tab label" },
   { ink: 'onFill', ground: 'accentBtn', floor: 'body', note: 'the primary button' },
-  { ink: 'onFill', ground: 'accentGround', floor: 'body', note: 'an avatar, a stock chip' },
+  {
+    ink: 'onFill',
+    ground: 'accentMark',
+    floor: 'body',
+    note: 'the 1st chip on the ask order, a draft avatar, a stock chip',
+  },
   { ink: 'onFill', ground: 'accentBtnHover', floor: 'body', note: 'the primary button, pressed' },
 
   // Meaning families: ink on its own fill, its chip, white and the ground.
@@ -364,7 +399,6 @@ export const legalPairings: readonly {
   { ink: 'warnInk', ground: 'surface', floor: 'body', note: 'a caution figure on a card' },
   { ink: 'warnInk', ground: 'bg', floor: 'body', note: 'a caution figure on the ground' },
   { ink: 'warnMeta', ground: 'warnFill', floor: 'body', note: 'meta under a name on a caution tint' },
-  { ink: 'warnBlockInk', ground: 'warnBlockFill', floor: 'body', note: 'a paragraph of caution in a card' },
 
   { ink: 'goodInk', ground: 'goodFill', floor: 'body', note: 'good figure on its tint' },
   { ink: 'goodInk', ground: 'goodChipLight', floor: 'body', note: 'a good chip' },
@@ -400,6 +434,26 @@ export const legalPairings: readonly {
   { ink: 'insightChipInk', ground: 'insightChip', floor: 'body', note: 'the Insight chip' },
   { ink: 'setupChipInk', ground: 'setupChip', floor: 'body', note: 'the Setup chip' },
 
+  // The lens group's trough, and the pills sitting in it.
+  { ink: 'ink3', ground: 'lensTrack', floor: 'body', note: 'a lens at rest' },
+  { ink: 'ink', ground: 'lensTrack', floor: 'body', note: 'a lens, hovered' },
+
+  // The caution panel — a paragraph, not a chip, so it is held higher.
+  { ink: 'warnPanelInk', ground: 'warnPanel', floor: 'body', note: 'the over-limit sentence' },
+  { ink: 'warnInk', ground: 'warnPanel', floor: 'body', note: 'its warning glyph' },
+
+  // The picked row on Customers wears the studied violet, and everything a
+  // row carries has to stay readable on it.
+  { ink: 'ink', ground: 'studyFill', floor: 'body', note: 'a picked row\'s name' },
+  { ink: 'ink2', ground: 'studyFill', floor: 'body', note: "a picked row's meta" },
+  { ink: 'badInk', ground: 'studyFill', floor: 'body', note: 'a picked row\'s overdue figure' },
+  { ink: 'warnInk', ground: 'studyFill', floor: 'body', note: 'a picked row\'s near-due age' },
+
+  // A hovered row carries the same four.
+  { ink: 'ink2', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s meta' },
+  { ink: 'badInk', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s overdue figure' },
+  { ink: 'warnInk', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s near-due age' },
+
   // The focus ring, as a control boundary.
   { ink: 'accentBtn', ground: 'surface', floor: 'ui', note: 'the focus ring' },
 ];
@@ -411,13 +465,19 @@ export const intentionalAliases: readonly (readonly [ColorToken, ColorToken])[] 
   // "Neutral ink" and "label ink" are the same grey doing two jobs; the
   // names stay separate so a chip and a caption can move independently.
   ['neutralInk', 'ink3'],
+  // The late band of a pays bar and the amber bar under "idle stock" are one
+  // colour, and one meaning: amber is part-done or waiting, and both bars are
+  // drawing the same kind of not-quite. Two names because each is named after
+  // what wears it — `payLate` on a signals bar would be the mistake the
+  // name-after-what-wears-it rule exists to stop.
+  ['warnBar', 'payLate'],
   // The oldest aging segment IS the accent — that is the point of it.
   ['agingOldest', 'accent'],
-  // The filled button and the accent-as-a-ground are one colour: they are the
-  // same red doing a control's job and a chip's. Two names because a test
-  // counts filled CONTROLS, and because a future palette could move the
-  // button without moving every chip that wears the accent.
-  ['accentBtn', 'accentGround'],
+  // The accent button and the accent mark are one colour, split by job: see
+  // the note on `accentMark`. They move together or the screen's one button
+  // and its one ranked row stop matching. The split is also what lets a test
+  // count filled CONTROLS without counting an avatar.
+  ['accentBtn', 'accentMark'],
   // Accent type and bad type are one colour. An overdue figure IS bad news,
   // and the design draws it once; two names because a future palette could
   // move "late" without moving "the next action".

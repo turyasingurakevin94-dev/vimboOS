@@ -39,8 +39,9 @@ import {
   type PurchaseInvoice,
   type SalesInvoice,
 } from '@ow/domain';
-import { DEMO_TODAY, demoPurchaseInvoices, demoSalesInvoices } from '@ow/data';
+import { useLedgers } from '../../app/useLedgers.js';
 import s from './Invoices.module.css';
+import { ReceivePayment } from './ReceivePayment.js';
 import { Mark, PATH } from '../icons.js';
 
 const v = (t: string): string => `var(--ow-color-${t})`;
@@ -58,13 +59,54 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const shortDate = (d: Date): string => `${d.getDate()} ${MONTHS[d.getMonth()] ?? ''}`;
 
 export function Invoices(): ReactElement {
-  const now = DEMO_TODAY;
-  const sales = demoSalesInvoices();
-  const purchases = demoPurchaseInvoices();
+  // Not `state` — that name belongs to the domain reckoning imported above.
+  const read = useLedgers();
+  if (read.at === 'loading') return <Plain say="Reading the books…" />;
+  if (read.at === 'failed') return <Plain say={`The books could not be read. ${read.why}`} />;
+  return <Register read={read} />;
+}
+
+/**
+ * The header with no figures under it.
+ *
+ * Reading and refused share a shape because they share a problem: there is
+ * no ledger yet, and a zero would be a claim that nothing is owed. The one
+ * thing that differs between them is the sentence, so that is the one thing
+ * this takes.
+ */
+function Plain({ say }: { readonly say: string }): ReactElement {
+  return (
+    <div className={s.screen}>
+      <header className={s.header}>
+        <div className={s.headTop}>
+          <span className={s.headTitle}>Invoices</span>
+        </div>
+        <div className={s.headLabel}>{say}</div>
+      </header>
+    </div>
+  );
+}
+
+function Register({
+  read,
+}: {
+  readonly read: Extract<ReturnType<typeof useLedgers>, { at: 'ready' }>;
+}): ReactElement {
+  const now = read.today;
+  const { sales, purchases, unreadable } = read.ledgers;
   const band = readBand(sales, purchases, now);
   const [side, setSide] = useState<'in' | 'out'>('in');
+  /** Which invoice's Receive screen is open. Null is the ledger. */
+  const [receiving, setReceiving] = useState<string | null>(null);
 
   const inward = side === 'in';
+  const inDialog = sales.find((x) => x.doc === receiving);
+
+  // A full screen REPLACES the ledger rather than covering it — that is what
+  // makes it a screen and not a dialog, and it is why the tab bar stays.
+  if (inDialog !== undefined) {
+    return <ReceivePayment invoice={inDialog} today={now} onClose={() => setReceiving(null)} />;
+  }
 
   return (
     <div className={s.screen}>
@@ -118,8 +160,22 @@ export function Invoices(): ReactElement {
       </header>
 
       <div className={s.list}>
+        {/* Said once, at the top, where it qualifies every figure below it —
+            not swallowed, and not attached to a single row, because a row
+            that would not parse is exactly the row that cannot be named. */}
+        {unreadable.length > 0 && (
+          <p className={s.note}>
+            {unreadable.length} {unreadable.length === 1 ? 'invoice' : 'invoices'} could not be read
+            in full. The totals above leave out what they could not say.
+          </p>
+        )}
         {inward ? (
-          <MoneyIn sales={sales} purchases={purchases} now={now} />
+          <MoneyIn
+            sales={sales}
+            purchases={purchases}
+            now={now}
+            onReceive={(doc) => setReceiving(doc)}
+          />
         ) : (
           <MoneyOut purchases={purchases} now={now} />
         )}
@@ -134,10 +190,12 @@ function MoneyIn({
   sales,
   purchases,
   now,
+  onReceive,
 }: {
   readonly sales: readonly SalesInvoice[];
   readonly purchases: readonly PurchaseInvoice[];
   readonly now: Date;
+  readonly onReceive: (doc: string) => void;
 }): ReactElement {
   const groups = groupLedger(sales, now);
   if (groups.length === 0) {
@@ -174,6 +232,7 @@ function MoneyIn({
                   purchases={purchases}
                   now={now}
                   needsYou={inv.doc === needsYou}
+                  onReceive={() => onReceive(inv.doc)}
                 />
               ))
           )}
@@ -229,11 +288,13 @@ function SaleRow({
   purchases,
   now,
   needsYou,
+  onReceive,
 }: {
   readonly inv: SalesInvoice;
   readonly purchases: readonly PurchaseInvoice[];
   readonly now: Date;
   readonly needsYou: boolean;
+  readonly onReceive: () => void;
 }): ReactElement {
   const due = balanceDue(inv);
   const got = receivedSoFar(inv);
@@ -293,7 +354,7 @@ function SaleRow({
       )}
 
       {needsYou && (
-        <button type="button" className={s.act}>
+        <button type="button" className={s.act} onClick={onReceive}>
           Receive <span className={s.actFig}>{Money.format(due)}</span>
         </button>
       )}

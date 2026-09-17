@@ -1,0 +1,100 @@
+/**
+ * More — the one piece of navigation no frame draws.
+ *
+ * Two handoffs now end under this tab: the Customers phone frames draw the
+ * bar with **More** lit, and so does every Messages phone frame. Five tabs
+ * cannot hold six destinations, and both screens are built, so something has
+ * to stand between the tab and them.
+ *
+ * It is deliberately the plainest thing that can: a title and the
+ * destinations, as 44px rows. It is NOT a designed screen and should not be
+ * treated as one — when the More sheet arrives (generated from the rail's own
+ * index, never a second hand-kept list, which the phone cannot reach today
+ * because a lint rule forbids importing the desktop's), this file goes.
+ */
+
+.screen {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  flex: none;
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-11) var(--ow-space-12) var(--ow-space-13);
+  padding-top: calc(var(--ow-space-11) + env(safe-area-inset-top));
+}
+
+.title {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--ow-color-surface);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-12);
+  width: 100%;
+  min-height: var(--ow-chrome-tap);
+  padding: var(--ow-space-12);
+  border: 0;
+  border-bottom: 1px solid var(--ow-color-rule);
+  background: none;
+  font-family: var(--ow-font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mark {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-track);
+  color: var(--ow-color-ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/* A badge is drawn only when its number is above zero. */
+.badge {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-11);
+  height: 19px;
+  min-width: 19px;
+  padding: 0 var(--ow-space-6);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-bad-chip);
+  color: var(--ow-color-bad-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.chevron {
+  flex: none;
+  color: var(--ow-color-ink-faint);
+  display: flex;
+}

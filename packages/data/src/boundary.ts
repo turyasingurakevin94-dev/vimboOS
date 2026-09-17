@@ -101,70 +101,9 @@ export function readDate(value: unknown): Date | null {
 
 export const readBool = (value: unknown): boolean => value === true;
 
-/* -------------------------------------------------------------------------- *
- * jsonb
- * -------------------------------------------------------------------------- */
-
 /**
- * `saved_quotes.payload` holds `items[]` and `payments[]` and is, in the
- * schema's own words, "not normalized yet". It has been written by several
- * versions of the old app, so a row can be any shape that code ever
- * produced.
- *
- * Reading it is therefore a parse, not a cast. `as Payload` would compile
- * and then hand a screen `undefined.length` in front of a customer.
+ * `saved_quotes.payload` used to be read here, from a guessed shape. It is
+ * read in `savedQuotes.ts` now, from the old app's own writer — the guess
+ * had the wrong keys and would have shown the shop's BUYING price as what
+ * the customer was charged.
  */
-export interface OrderLine {
-  readonly name: string;
-  readonly quantity: number;
-  readonly unitPrice: Derived<MoneyAmount>;
-}
-
-export interface ParsedPayload {
-  readonly lines: readonly OrderLine[];
-  /**
-   * Lines that could not be read, in words.
-   *
-   * Named rather than dropped: an order whose total is computed from four of
-   * its five lines is `partial`, and this is what it says is missing.
-   */
-  readonly unreadable: readonly string[];
-}
-
-export function readPayload(value: unknown, basis: string): ParsedPayload {
-  if (value === null || typeof value !== 'object') {
-    return { lines: [], unreadable: ['the order has no items recorded'] };
-  }
-
-  const items = (value as Record<string, unknown>).items;
-  if (!Array.isArray(items)) {
-    return { lines: [], unreadable: ['the order has no items recorded'] };
-  }
-
-  const lines: OrderLine[] = [];
-  const unreadable: string[] = [];
-
-  items.forEach((raw, i) => {
-    if (raw === null || typeof raw !== 'object') {
-      unreadable.push(`line ${i + 1} is not readable`);
-      return;
-    }
-    const row = raw as Record<string, unknown>;
-    const name = readText(row.name) ?? `line ${i + 1}`;
-
-    const qtyRaw = row.qty ?? row.quantity;
-    const quantity = typeof qtyRaw === 'number' ? qtyRaw : Number(qtyRaw);
-    if (!Number.isFinite(quantity)) {
-      unreadable.push(`${name} has no quantity`);
-      return;
-    }
-
-    lines.push({
-      name,
-      quantity,
-      unitPrice: readMoney(row.price ?? row.unitPrice, `${name} price`, basis),
-    });
-  });
-
-  return { lines, unreadable };
-}

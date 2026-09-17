@@ -39,6 +39,12 @@ export const space = {
 
 /** Each radius names what wears it, because that is how it stays consistent. */
 export const radius = {
+  /**
+   * A bar in a small inline series — the five months on the customer panel.
+   * Not `barTop`: the shortest of those bars is 5px tall, and a 4px radius on
+   * a 5px bar is a lozenge rather than a bar.
+   */
+  barSmall: '3px',
   /** The tail corner of a chat bubble — the one corner that is not a corner. */
   bubbleTail: '3px',
   /** The top of a bar in a chart. Flat foot, rounded head. */
@@ -74,6 +80,12 @@ export const radius = {
 export const elevation = {
   /** A card. Barely there, and that is the point. */
   card: '0 1px 2px rgba(23, 34, 60, 0.05)',
+  /**
+   * A white pill lifted off a tinted trough — the active lens, and only it.
+   * A hair stronger than `card`, because a card is lifted off white paper
+   * and this is lifted off a ground that is already darker than it.
+   */
+  lens: '0 1px 2px rgba(23, 34, 60, 0.08)',
   /** Something genuinely floating: a menu, the phone sheet, a toast. */
   floating: '0 18px 40px rgba(23, 34, 60, 0.16)',
 } as const;

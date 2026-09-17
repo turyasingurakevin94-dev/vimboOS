@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { Money, balanceDue, paidOffShare, readBand, settledByDay, state } from '@ow/domain';
+import {
+  Money,
+  balanceDue,
+  canSaveEdit,
+  linesTotal,
+  lowestEditableTotal,
+  paidOffShare,
+  readBand,
+  settledByDay,
+  state,
+} from '@ow/domain';
 import { DEMO_TODAY, demoPurchaseInvoices, demoSalesInvoices } from './demo-invoices.js';
 
 /**
@@ -89,5 +99,41 @@ describe('the settled tail reads like trading, not like a generator', () => {
   it('is newest first', () => {
     const times = days.map((d) => d.on.getTime());
     expect([...times].sort((a, b) => b - a)).toEqual(times);
+  });
+});
+
+describe('every invoice\u2019s lines come to its total', () => {
+  /**
+   * Edit invoice reads the LINES; the ledger and the dialog read the TOTAL.
+   * A screen where those two disagree is the defect this module exists to
+   * prevent, and it would appear as an invoice that changes value the moment
+   * someone opens it to look.
+   */
+  it.each(demoSalesInvoices().map((s) => [s.doc, s] as const))('%s', (_doc, inv) => {
+    expect(linesTotal(inv.lines)).toBe(inv.total);
+  });
+
+  it('draws frame 2c\u2019s three lines on the invoice 2c draws them on', () => {
+    const inv = demoSalesInvoices().find((s) => s.doc === 'INV-0209');
+    expect(inv?.lines.map((l) => (l.kind === 'item' ? [l.qty, l.priceEach] : l.amount))).toEqual([
+      [20, 14_500],
+      [15, 29_000],
+      15_000,
+    ]);
+    expect(inv && linesTotal(inv.lines)).toBe(740_000);
+  });
+
+  it('will not let INV-0209 be edited below the 700,000 already received', () => {
+    const inv = demoSalesInvoices().find((s) => s.doc === 'INV-0209');
+    if (inv === undefined) throw new Error('INV-0209 is not in the demo data');
+    expect(lowestEditableTotal(inv)).toBe(700_000);
+    expect(canSaveEdit(inv, inv.lines)).toEqual({ ok: true });
+
+    const gutted = inv.lines.filter((l) => l.kind === 'charge');
+    const refused = canSaveEdit(inv, gutted);
+    expect(refused.ok).toBe(false);
+    expect(!refused.ok && refused.why).toContain('700,000 is already received');
+
+    expect(canSaveEdit(inv, []).ok).toBe(false);
   });
 });

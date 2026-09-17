@@ -89,7 +89,7 @@
   height: 26px;
   flex: none;
   border-radius: var(--ow-radius-pill);
-  background: var(--ow-color-accent-ground);
+  background: var(--ow-color-accent-mark);
   color: var(--ow-color-on-fill);
   display: flex;
   align-items: center;
@@ -153,7 +153,7 @@
 
 .headChipLoud {
   composes: headChip;
-  background: var(--ow-color-accent-ground);
+  background: var(--ow-color-accent-mark);
 }
 
 /**
@@ -297,10 +297,10 @@
  */
 .carried {
   padding: var(--ow-space-10) var(--ow-space-12);
-  background: var(--ow-color-warn-block-fill);
-  border-bottom: 1px solid var(--ow-color-warn-block-edge);
+  background: var(--ow-color-warn-panel);
+  border-bottom: 1px solid var(--ow-color-warn-panel-edge);
   font-size: var(--ow-size-12);
-  color: var(--ow-color-warn-block-ink);
+  color: var(--ow-color-warn-panel-ink);
   text-wrap: pretty;
 }
 
@@ -766,7 +766,7 @@
 
 .postStock {
   composes: chipSmall;
-  background: var(--ow-color-accent-ground);
+  background: var(--ow-color-accent-mark);
   color: var(--ow-color-on-fill);
 }
 

@@ -6,16 +6,48 @@
  * that question.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
+import { owingBadge, read } from '@ow/domain';
+import { DEMO_TODAY, demoCustomers } from '@ow/data';
 import s from './DesktopApp.module.css';
-import { Rail, SECTIONS, TODAY } from './chrome/Rail.js';
+import { Rail, SECTIONS, TODAY, resolveTab } from './chrome/Rail.js';
 import { Icon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
+import { Customers } from './screens/Customers.js';
 import { Messages } from './screens/Messages.js';
 import { Shop } from './screens/Shop.js';
+
+/**
+ * What a screen puts in the top bar, where the stage chips otherwise sit.
+ *
+ * The bar is chrome and belongs to the shell, but its right-hand slot and
+ * its search hint are the SCREEN's — frame 1a of the Customers handoff draws
+ * `New customer` there and a search that offers to answer "owes over 1m",
+ * and a Customers screen advertising three order stages would be the shell
+ * talking over it. A screen that says nothing keeps the stage chips.
+ *
+ * `opens` is what the action MAKES, and only an action that makes something
+ * wears the plus. Broadcast does not make a customer — it is one of the two
+ * features WhatsApp had before it became a lens on Messages, and a plus
+ * beside it would promise a new thing rather than a door.
+ */
+const CHROME: Record<
+  string,
+  { readonly hint: string; readonly action: string; readonly opens?: boolean }
+> = {
+  customers: { hint: 'Name, phone, or "owes over 1m"', action: 'New customer', opens: true },
+  messages: { hint: 'Name, number, or what the message is about', action: 'Broadcast' },
+};
 
 /** The order-stage chips in the top bar. They replace the old status bar. */
 const STAGES = [
@@ -38,17 +70,6 @@ const PARENTS = new Map<string, string>(
   SECTIONS.flatMap((sec) => sec.items.map((i) => [i.id, sec.name] as [string, string])),
 );
 
-/**
- * What the search field is looking for, where a screen makes it specific.
- *
- * A placeholder that says "Search a screen, customer or product" on the
- * Messages desk is a field that has not read the screen it is sitting above:
- * what you search for there is a person and what the message is about.
- */
-const SEARCH_HINT: Record<string, string> = {
-  messages: 'Name, number, or what the message is about',
-};
-
 export default function DesktopApp(): ReactElement {
   const [section, setSection] = useState('today');
   /**
@@ -60,6 +81,20 @@ export default function DesktopApp(): ReactElement {
    */
   const [trail, setTrail] = useState<string | null>(null);
   const search = useRef<HTMLInputElement>(null);
+  const chrome = CHROME[section];
+
+  /**
+   * The Customers badge, from the same reckoning the screen reads.
+   *
+   * Every other badge in the rail is still the frame's literal, because
+   * every other screen is still `NotBuiltYet` — a number invented for a
+   * screen that does not exist yet is a placeholder, and a number invented
+   * beside a screen that does exist is a lie.
+   */
+  const badges = useMemo(
+    () => ({ customers: owingBadge(read(demoCustomers(), DEMO_TODAY)) }),
+    [],
+  );
 
   const onTrail = useCallback((next: string | null) => setTrail(next), []);
 
@@ -80,7 +115,7 @@ export default function DesktopApp(): ReactElement {
 
   return (
     <div className={s.shell}>
-      <Rail current={section} onNavigate={setSection} />
+      <Rail current={section} onNavigate={setSection} badges={badges} />
 
       <div className={s.work}>
         <header className={s.topbar}>
@@ -102,8 +137,17 @@ export default function DesktopApp(): ReactElement {
               ref={search}
               className={s.searchInput}
               type="search"
-              placeholder={SEARCH_HINT[section] ?? 'Search a screen, customer or product'}
+              placeholder={chrome?.hint ?? 'Search a screen, customer or product'}
               aria-label="Search"
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                // "debtors" still reaches the list it used to name.
+                const found = resolveTab(e.currentTarget.value);
+                if (found !== null) {
+                  setSection(found);
+                  e.currentTarget.blur();
+                }
+              }}
             />
             <span className={s.kbd} aria-hidden="true">
               Ctrl K
@@ -112,33 +156,28 @@ export default function DesktopApp(): ReactElement {
 
           <div className={s.spacer} />
 
-          {/**
-           * Messages puts its own door here instead of the stage chips.
-           * Broadcast was one of WhatsApp's two features and it survives the
-           * merge as a button; the order stages belong to the screens that
-           * are about orders.
-           */}
-          {section === 'messages' ? (
-            <button type="button" className={s.topAction}>
-              Broadcast
-            </button>
+          {chrome === undefined ? (
+            <div className={s.stages}>
+              {STAGES.map((st) => (
+                <span
+                  key={st.id}
+                  className={s.stage}
+                  style={{
+                    background: `var(--ow-color-${st.bg})`,
+                    color: `var(--ow-color-${st.ink})`,
+                  }}
+                  title={`${st.label}: ${st.n}`}
+                >
+                  <span className={s.stageFig}>{st.n}</span>
+                  <span className={s.stageLabel}>{st.label}</span>
+                </span>
+              ))}
+            </div>
           ) : (
-          <div className={s.stages}>
-            {STAGES.map((st) => (
-              <span
-                key={st.id}
-                className={s.stage}
-                style={{
-                  background: `var(--ow-color-${st.bg})`,
-                  color: `var(--ow-color-${st.ink})`,
-                }}
-                title={`${st.label}: ${st.n}`}
-              >
-                <span className={s.stageFig}>{st.n}</span>
-                <span className={s.stageLabel}>{st.label}</span>
-              </span>
-            ))}
-          </div>
+            <button type="button" className={s.topAction}>
+              {chrome.opens === true && <Icon name="plus" size={15} />}
+              {chrome.action}
+            </button>
           )}
 
           <div className={s.avatar}>KT</div>
@@ -151,6 +190,8 @@ export default function DesktopApp(): ReactElement {
             <Quote />
           ) : section === 'invoices' ? (
             <Invoices />
+          ) : section === 'customers' ? (
+            <Customers />
           ) : section === 'messages' ? (
             <Messages onTrail={onTrail} />
           ) : section === 'shop' ? (

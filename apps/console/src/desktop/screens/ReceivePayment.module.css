@@ -1,0 +1,485 @@
+/**
+ * Receive payment, its delete confirm, and Edit invoice — frames 2a, 2b, 2c.
+ *
+ * Three dialogs over one scrim, in this app's idiom. The handoff's five
+ * fixes are all structural and survive the change of skin intact:
+ *
+ * 1. **Balance due leads.** It is the 22px figure; invoice total and
+ *    received so far sit beside it at 13. The old band gave all three equal
+ *    weight, so the figure the clerk needs was the third thing read.
+ * 2. **Money is written with separators**, in the figure face, and the
+ *    spinner arrows are gone — money is typed, not stepped.
+ * 3. **The date reads the way the shop writes it**: `17 Sep 2026`.
+ * 4. **The note stops repeating the method** — that is what *Received into*
+ *    asks, and it now names the account, not just the method.
+ * 5. **The button says what it does**: `Receive 40,000`.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ow-layer-scrim);
+  background: var(--ow-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ow-space-24);
+}
+
+.panel {
+  width: 700px;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ow-color-surface);
+  border-radius: var(--ow-radius-sheet);
+  box-shadow: var(--ow-elevation-floating);
+  overflow: hidden;
+}
+
+.panelSmall {
+  composes: panel;
+  width: 340px;
+  padding: var(--ow-space-14) var(--ow-space-16);
+}
+
+/* ---------------------------------- head ---------------------------------- */
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-14) var(--ow-space-16);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.headTitle {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.doc {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-accent-ink);
+}
+
+.headWho {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* --------------------------------- the band -------------------------------- */
+
+/* Balance due leads: one 22px figure, two 13px companions. */
+.band {
+  flex: none;
+  margin: var(--ow-space-14) var(--ow-space-16) 0;
+  padding: var(--ow-space-12) var(--ow-space-14);
+  background: var(--ow-color-surface-2);
+  border: 1px solid var(--ow-color-rule);
+  border-radius: var(--ow-radius-icon-chip);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-22);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-2);
+}
+
+.labelSoft {
+  font-weight: var(--ow-weight-medium);
+  letter-spacing: var(--ow-tracking-normal);
+  text-transform: none;
+  color: var(--ow-color-ink-4);
+}
+
+.bandDue {
+  composes: fig from './Invoices.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-22);
+  font-weight: var(--ow-weight-medium);
+  line-height: var(--ow-leading-tight);
+}
+
+.bandSide {
+  padding-bottom: var(--ow-space-3);
+}
+
+.bandFig {
+  composes: fig from './Invoices.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-2);
+}
+
+.bandFigGood {
+  composes: bandFig;
+  color: var(--ow-color-good-ink);
+}
+
+.unit {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-4);
+}
+
+/* --------------------------------- fields --------------------------------- */
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.fields {
+  display: flex;
+  gap: var(--ow-space-12);
+  padding: var(--ow-space-14) var(--ow-space-16) 0;
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  width: 100%;
+  height: 38px;
+  margin-top: var(--ow-space-6);
+  padding: 0 var(--ow-space-10);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+  text-align: left;
+}
+
+.control:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/* The field the dialog opens on, and the only one bordered in ink. */
+.controlFocus {
+  composes: control;
+  border-color: var(--ow-color-ink);
+}
+
+.controlFocus:hover {
+  background: var(--ow-color-surface);
+}
+
+.amount {
+  composes: fig from './Invoices.fig.css';
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink);
+}
+
+.amount:focus {
+  outline: none;
+}
+
+.pick {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickFig {
+  composes: fig from './Invoices.fig.css';
+  flex: 1;
+  min-width: 0;
+}
+
+.placeholder {
+  color: var(--ow-color-ink-4);
+}
+
+.caret {
+  flex: none;
+  color: var(--ow-color-ink-2);
+}
+
+.wide {
+  padding: var(--ow-space-12) var(--ow-space-16) 0;
+}
+
+/* ------------------------------ already received --------------------------- */
+
+.paid {
+  padding: var(--ow-space-14) var(--ow-space-16) 0;
+}
+
+.payment {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-12);
+  margin-top: var(--ow-space-6);
+  padding: var(--ow-space-9) var(--ow-space-11);
+  border: 1px solid var(--ow-color-rule);
+  border-radius: var(--ow-radius-icon-chip);
+}
+
+.payWhen {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-2);
+}
+
+.payHow {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.payFig {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-good-ink);
+}
+
+.none {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+}
+
+/* ---------------------------------- foot ----------------------------------- */
+
+.foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  margin-top: var(--ow-space-14);
+  padding: var(--ow-space-14) var(--ow-space-16);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.footSay {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.footTotal {
+  text-align: right;
+}
+
+.footFig {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-17);
+  font-weight: var(--ow-weight-medium);
+}
+
+/* -------------------------------- buttons ---------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-6);
+  flex: none;
+  height: 30px;
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--ow-color-surface-2);
+}
+
+.btnIcon {
+  composes: btn;
+  width: 30px;
+  padding: 0;
+  color: var(--ow-color-ink-2);
+}
+
+/* Deleting a payment moves money out of the till, so the control that ends
+   the asking wears the colour of what it does. */
+.btnDanger {
+  composes: btn;
+  background: var(--ow-color-bad-ink);
+  border-color: var(--ow-color-bad-ink);
+  color: var(--ow-color-on-fill);
+}
+
+.btnDanger:hover {
+  background: var(--ow-color-accent-btn-hover);
+  border-color: var(--ow-color-accent-btn-hover);
+}
+
+/* The one accent-filled control in the dialog. */
+.btnPrimary {
+  composes: btn;
+  height: 34px;
+  padding: 0 var(--ow-space-14);
+  background: var(--ow-color-accent-btn);
+  border-color: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-bold);
+}
+
+.btnPrimary:hover {
+  background: var(--ow-color-accent-btn-hover);
+  border-color: var(--ow-color-accent-btn-hover);
+}
+
+.btnPrimary:disabled {
+  background: var(--ow-color-neutral-chip);
+  border-color: var(--ow-color-neutral-chip);
+  color: var(--ow-color-ink-4);
+}
+
+/* ------------------------------ delete confirm ----------------------------- */
+
+.askTitle {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.askWhy {
+  margin-top: var(--ow-space-7);
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+}
+
+.askFig {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-11-5);
+}
+
+.askDoc {
+  font-weight: var(--ow-weight-bold);
+}
+
+.askButtons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ow-space-10);
+  margin-top: var(--ow-space-14);
+}
+
+/* ------------------------------- edit invoice ------------------------------ */
+
+/* The floor, stated before you type rather than after you try to save. */
+.caution {
+  flex: none;
+  padding: var(--ow-space-10) var(--ow-space-16);
+  background: var(--ow-color-warn-fill);
+  border-bottom: 1px solid var(--ow-color-rule);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-warn-ink);
+}
+
+.editHead {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 92px 120px 120px;
+  align-items: center;
+  column-gap: var(--ow-space-10);
+  padding: var(--ow-space-8) var(--ow-space-16);
+  background: var(--ow-color-row-hover);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.editRow {
+  composes: editHead;
+  padding: var(--ow-space-9) var(--ow-space-16);
+  background: none;
+}
+
+.editRowCharge {
+  composes: editRow;
+  background: var(--ow-color-row-alt);
+}
+
+.right {
+  text-align: right;
+}
+
+.editNum {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-4);
+}
+
+.editName {
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editBasis {
+  color: var(--ow-color-ink-4);
+}
+
+.editField {
+  composes: fig from './Invoices.fig.css';
+  width: 100%;
+  height: 30px;
+  padding: 0 var(--ow-space-10);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+  text-align: right;
+}
+
+.editField:focus {
+  outline: none;
+  border-color: var(--ow-color-navy);
+}
+
+.editTotal {
+  composes: fig from './Invoices.fig.css';
+  text-align: right;
+  font-size: var(--ow-size-13);
+}
