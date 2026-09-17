@@ -1,0 +1,582 @@
+/**
+ * Receive payment on the phone — frames 2d, 2e and 2f.
+ *
+ * **A full screen, not the dialog shrunk.** A 700px dialog cannot hold the
+ * balance, four fields, the payment history and the action at 390 without
+ * one of them going below the fold — and the one that would go is the
+ * action. So the header carries the invoice and the balance, the body
+ * scrolls, and the primary is pinned in the thumb zone with the figure it
+ * acts on still on screen.
+ *
+ * Every tap target here is at least 44px. The delete confirm is a bottom
+ * sheet rather than a centred box because the thumb reaches the bottom of
+ * the screen first, and its two buttons stack with **Delete it** on top for
+ * the same reason.
+ */
+
+.screen {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* --------------------------------- header --------------------------------- */
+
+.header {
+  flex: none;
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-11) var(--ow-space-13) var(--ow-space-12);
+  padding-top: calc(var(--ow-space-11) + env(safe-area-inset-top));
+}
+
+.headTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.back {
+  width: var(--ow-chrome-tap);
+  height: var(--ow-chrome-tap);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: calc(var(--ow-space-11) * -1) 0 calc(var(--ow-space-11) * -1)
+    calc(var(--ow-space-13) * -1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink-strong);
+}
+
+.headTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-on-fill);
+}
+
+/* Ghost on navy: a translucent edge, because no flat token shows through. */
+.ghost {
+  flex: none;
+  height: 32px;
+  padding: 0 var(--ow-space-11);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--ow-radius-icon-chip);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-on-fill);
+  white-space: nowrap;
+}
+
+.ghost:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.headDoc {
+  margin-top: var(--ow-space-10);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.doc {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-on-fill);
+}
+
+.headWho {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-rail-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headLabel {
+  margin-top: var(--ow-space-9);
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-rail-ink-2);
+}
+
+.headFig {
+  composes: fig from './Invoices.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-24);
+  font-weight: var(--ow-weight-medium);
+  line-height: var(--ow-leading-tight);
+  color: var(--ow-color-on-fill);
+}
+
+.headUnit {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.headBasis {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-rail-ink);
+}
+
+/* ---------------------------------- body ---------------------------------- */
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--ow-color-surface);
+  padding: var(--ow-space-13);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-2);
+}
+
+.labelGap {
+  composes: label;
+  margin-top: var(--ow-space-14);
+}
+
+.labelSoft {
+  font-weight: var(--ow-weight-medium);
+  letter-spacing: var(--ow-tracking-normal);
+  text-transform: none;
+  color: var(--ow-color-ink-4);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  width: 100%;
+  height: 46px;
+  margin-top: var(--ow-space-6);
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+  text-align: left;
+}
+
+/* The field the screen opens on, and the only one bordered in ink. */
+.fieldFocus {
+  composes: field;
+  border-color: var(--ow-color-ink);
+}
+
+.amount {
+  composes: fig from './Invoices.fig.css';
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: var(--ow-size-19);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink);
+}
+
+.amount:focus {
+  outline: none;
+}
+
+.unit {
+  flex: none;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-4);
+}
+
+.pick {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickFig {
+  composes: fig from './Invoices.fig.css';
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-13);
+}
+
+.placeholder {
+  color: var(--ow-color-ink-4);
+}
+
+.caret {
+  flex: none;
+  color: var(--ow-color-ink-2);
+}
+
+/* ------------------------------ already received --------------------------- */
+
+.paidLabel {
+  composes: label;
+  margin-top: var(--ow-space-16);
+}
+
+.payment {
+  margin-top: var(--ow-space-6);
+  padding: var(--ow-space-10) var(--ow-space-11);
+  border: 1px solid var(--ow-color-rule);
+  border-radius: var(--ow-radius-icon-chip);
+}
+
+.payTop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.payWhen {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-2);
+}
+
+.payHow {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.payFig {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-good-ink);
+}
+
+.payActions {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  gap: var(--ow-space-8);
+}
+
+.none {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+}
+
+/* -------------------------------- buttons ---------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-6);
+  height: var(--ow-chrome-tap);
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.btnWide {
+  composes: btn;
+  flex: 1;
+  min-width: 0;
+}
+
+.btnFull {
+  composes: btn;
+  width: 100%;
+}
+
+/* Deleting a payment takes money out of the till, so the control wears what
+   it does — and it is an ICON here only because the sheet it opens asks in
+   words. */
+.btnDelete {
+  composes: btn;
+  width: 46px;
+  flex: none;
+  padding: 0;
+  color: var(--ow-color-bad-ink);
+}
+
+/* -------------------------------- the foot --------------------------------- */
+
+/**
+ * Pinned, in the bottom third, with the figure it acts on still on screen.
+ * The list scrolls under it; the action never does.
+ */
+.foot {
+  flex: none;
+  background: var(--ow-color-surface);
+  border-top: 1px solid var(--ow-color-rule);
+  padding: var(--ow-space-11) var(--ow-space-13) var(--ow-space-13);
+  padding-bottom: calc(var(--ow-space-13) + env(safe-area-inset-bottom));
+}
+
+.footSay {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.footTotal {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.footFig {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-17);
+  font-weight: var(--ow-weight-medium);
+}
+
+/* The one accent-filled control on the screen, 48px. */
+.primary {
+  margin-top: var(--ow-space-8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-6);
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+}
+
+.primary:disabled {
+  background: var(--ow-color-neutral-chip);
+  color: var(--ow-color-ink-4);
+}
+
+.primaryFig {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-14);
+}
+
+/* --------------------------------- frame 2e -------------------------------- */
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: var(--ow-layer-scrim);
+  background: var(--ow-scrim);
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--ow-layer-modal);
+  background: var(--ow-color-surface);
+  border-radius: var(--ow-radius-block) var(--ow-radius-block) 0 0;
+  padding: var(--ow-space-14) var(--ow-space-13) var(--ow-space-16);
+  padding-bottom: calc(var(--ow-space-16) + env(safe-area-inset-bottom));
+  box-shadow: var(--ow-elevation-floating);
+}
+
+.grab {
+  width: 36px;
+  height: 4px;
+  margin: 0 auto var(--ow-space-12);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-divider);
+}
+
+.askTitle {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.askWhy {
+  margin-top: var(--ow-space-7);
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+}
+
+.askFig {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-11-5);
+}
+
+.askDoc {
+  font-weight: var(--ow-weight-bold);
+}
+
+/* Delete sits ABOVE Keep: the thumb reaches the bottom of the sheet first,
+   and the destructive choice should not be the one it lands on. */
+.sheetDelete {
+  margin-top: var(--ow-space-14);
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-bad-ink);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.sheetKeep {
+  composes: sheetDelete;
+  margin-top: var(--ow-space-8);
+  border: 1px solid var(--ow-color-control-edge);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+}
+
+/* --------------------------------- frame 2f -------------------------------- */
+
+/* Under the header, so the floor is never scrolled away. */
+.caution {
+  flex: none;
+  padding: var(--ow-space-10) var(--ow-space-13);
+  background: var(--ow-color-warn-fill);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-warn-ink);
+}
+
+.lines {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--ow-color-surface);
+  padding: var(--ow-space-13);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-10);
+}
+
+/* One line, one card. A five-column table row does not survive 390px. */
+.lineCard {
+  border: 1px solid var(--ow-color-rule);
+  border-radius: var(--ow-radius-icon-chip);
+  padding: var(--ow-space-11);
+}
+
+.lineCardCharge {
+  composes: lineCard;
+  background: var(--ow-color-row-alt);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.lineName {
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.lineBasis {
+  font-weight: var(--ow-weight-regular);
+  color: var(--ow-color-ink-4);
+}
+
+.lineFields {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-9);
+}
+
+.qtyCell {
+  width: 86px;
+  flex: none;
+}
+
+.priceCell {
+  flex: 1;
+  min-width: 0;
+}
+
+.lineInput {
+  composes: fig from './Invoices.fig.css';
+  width: 100%;
+  height: var(--ow-chrome-tap);
+  margin-top: var(--ow-space-5);
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-surface);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+  text-align: right;
+}
+
+.lineInput:focus {
+  outline: none;
+  border-color: var(--ow-color-navy);
+}
+
+.lineInputWide {
+  composes: lineInput;
+  width: 120px;
+  flex: none;
+  margin-top: 0;
+}
+
+.lineOut {
+  flex: none;
+  text-align: right;
+  padding-bottom: var(--ow-space-12);
+}
+
+.lineOutFig {
+  composes: fig from './Invoices.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-14);
+}
+
+.chargeName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

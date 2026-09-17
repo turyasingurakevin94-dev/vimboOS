@@ -41,6 +41,7 @@ import {
 } from '@ow/domain';
 import { DEMO_TODAY, demoPurchaseInvoices, demoSalesInvoices } from '@ow/data';
 import s from './Invoices.module.css';
+import { ReceivePayment } from './ReceivePayment.js';
 import { Mark, PATH } from '../icons.js';
 
 const v = (t: string): string => `var(--ow-color-${t})`;
@@ -63,8 +64,17 @@ export function Invoices(): ReactElement {
   const purchases = demoPurchaseInvoices();
   const band = readBand(sales, purchases, now);
   const [side, setSide] = useState<'in' | 'out'>('in');
+  /** Which invoice's Receive screen is open. Null is the ledger. */
+  const [receiving, setReceiving] = useState<string | null>(null);
 
   const inward = side === 'in';
+  const inDialog = sales.find((x) => x.doc === receiving);
+
+  // A full screen REPLACES the ledger rather than covering it — that is what
+  // makes it a screen and not a dialog, and it is why the tab bar stays.
+  if (inDialog !== undefined) {
+    return <ReceivePayment invoice={inDialog} today={now} onClose={() => setReceiving(null)} />;
+  }
 
   return (
     <div className={s.screen}>
@@ -119,7 +129,12 @@ export function Invoices(): ReactElement {
 
       <div className={s.list}>
         {inward ? (
-          <MoneyIn sales={sales} purchases={purchases} now={now} />
+          <MoneyIn
+            sales={sales}
+            purchases={purchases}
+            now={now}
+            onReceive={(doc) => setReceiving(doc)}
+          />
         ) : (
           <MoneyOut purchases={purchases} now={now} />
         )}
@@ -134,10 +149,12 @@ function MoneyIn({
   sales,
   purchases,
   now,
+  onReceive,
 }: {
   readonly sales: readonly SalesInvoice[];
   readonly purchases: readonly PurchaseInvoice[];
   readonly now: Date;
+  readonly onReceive: (doc: string) => void;
 }): ReactElement {
   const groups = groupLedger(sales, now);
   if (groups.length === 0) {
@@ -174,6 +191,7 @@ function MoneyIn({
                   purchases={purchases}
                   now={now}
                   needsYou={inv.doc === needsYou}
+                  onReceive={() => onReceive(inv.doc)}
                 />
               ))
           )}
@@ -229,11 +247,13 @@ function SaleRow({
   purchases,
   now,
   needsYou,
+  onReceive,
 }: {
   readonly inv: SalesInvoice;
   readonly purchases: readonly PurchaseInvoice[];
   readonly now: Date;
   readonly needsYou: boolean;
+  readonly onReceive: () => void;
 }): ReactElement {
   const due = balanceDue(inv);
   const got = receivedSoFar(inv);
@@ -293,7 +313,7 @@ function SaleRow({
       )}
 
       {needsYou && (
-        <button type="button" className={s.act}>
+        <button type="button" className={s.act} onClick={onReceive}>
           Receive <span className={s.actFig}>{Money.format(due)}</span>
         </button>
       )}

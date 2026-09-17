@@ -143,4 +143,5 @@ export const PATH = {
   down: 'M16 17h6v-6M22 17l-8.5-8.5-5 5L2 7',
   dots: 'M12 12h.01M19 12h.01M5 12h.01',
   chevronDown: 'm6 9 6 6 6-6',
+  trash: 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6',
 } as const;

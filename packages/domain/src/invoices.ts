@@ -46,11 +46,49 @@ export interface Voided {
   readonly on: Date;
 }
 
+/**
+ * A line on an invoice. The same two kinds as a quote, minus the shop's side
+ * — an invoice is what the client was charged, and the buying price is not
+ * part of that document.
+ */
+export type InvoiceLine =
+  | {
+      readonly kind: 'item';
+      readonly id: string;
+      readonly name: string;
+      readonly qty: number;
+      readonly priceEach: Amount;
+    }
+  | {
+      readonly kind: 'charge';
+      readonly id: string;
+      readonly name: string;
+      readonly basis: string;
+      readonly amount: Amount;
+    };
+
+/** What one line comes to. */
+export const lineAmount = (line: InvoiceLine): Amount =>
+  line.kind === 'charge' ? line.amount : Money.times(line.priceEach, line.qty);
+
+/** What the lines come to. `total` must equal this, and a test says so. */
+export const linesTotal = (lines: readonly InvoiceLine[]): Amount =>
+  Money.add(...lines.map(lineAmount));
+
+/** An account money can be received into — a cash book account and its balance. */
+export interface CashAccount {
+  readonly id: string;
+  /** As the field shows it: `Cash · shop till`. Method AND account, not just method. */
+  readonly name: string;
+  readonly balance: Amount;
+}
+
 export interface SalesInvoice {
   readonly kind: 'sale';
   readonly doc: string;
   readonly customer: string;
   readonly total: Amount;
+  readonly lines: readonly InvoiceLine[];
   readonly issued: Date;
   /** `null` when no terms were recorded — not "due now". */
   readonly dueOn: Date | null;
@@ -207,6 +245,31 @@ export function afterDeleting(
  * shop is holding against nothing.
  */
 export const lowestEditableTotal = (inv: SalesInvoice): Amount => receivedSoFar(inv);
+
+/**
+ * Whether an edited set of lines may be saved, and why not when it may not.
+ *
+ * The caution band in 2c states the floor before you type; this is the same
+ * fact enforced after you have. Returning the reason rather than a boolean
+ * means the screen says what is wrong instead of just refusing.
+ */
+export function canSaveEdit(
+  inv: SalesInvoice,
+  lines: readonly InvoiceLine[],
+): { readonly ok: true } | { readonly ok: false; readonly why: string } {
+  if (lines.length === 0) {
+    return { ok: false, why: 'An invoice with no lines is not an invoice. Delete it instead.' };
+  }
+  const next = linesTotal(lines);
+  const floor = lowestEditableTotal(inv);
+  if (Money.compare(next, floor) < 0) {
+    return {
+      ok: false,
+      why: `${Money.format(floor)} is already received, so the total cannot go below it.`,
+    };
+  }
+  return { ok: true };
+}
 
 /* -------------------------------------------------------------------------- */
 /*  The balance band                                                          */

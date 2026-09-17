@@ -11,7 +11,13 @@
  * shows what fits and says how many there are.
  */
 
-import { Money, type PurchaseInvoice, type SalesInvoice } from '@ow/domain';
+import {
+  Money,
+  type CashAccount,
+  type InvoiceLine,
+  type PurchaseInvoice,
+  type SalesInvoice,
+} from '@ow/domain';
 
 const m = Money.money;
 
@@ -33,6 +39,36 @@ const took = (
   takenBy: 'Kevin',
 });
 
+/**
+ * The lines frame 2c and 2f draw, for the invoice they draw them on.
+ *
+ * 20 x 14,500 = 290,000, 15 x 29,000 = 435,000, transport 15,000 — which is
+ * INV-0209's 740,000 to the shilling. A test asserts every invoice's lines
+ * come to its total, because Edit invoice reads the lines and the ledger
+ * reads the total, and a screen where those two disagree is the defect this
+ * whole module exists to prevent.
+ */
+const LINES_0209: readonly InvoiceLine[] = [
+  { kind: 'item', id: 'a', name: 'ELEPHANT King \u2014 Short / Single Lock', qty: 20, priceEach: m(14_500) },
+  { kind: 'item', id: 'b', name: 'Iron sheets G28 \u00b7 3m box profile', qty: 15, priceEach: m(29_000) },
+  { kind: 'charge', id: 'c', name: 'Transport', basis: 'charge', amount: m(15_000) },
+];
+
+/** Everything else gets one line worth its total — we have no itemisation. */
+const oneLine = (name: string, total: Money.Money): readonly InvoiceLine[] => [
+  { kind: 'item', id: 'only', name, qty: 1, priceEach: total },
+];
+
+const GOODS = [
+  'Iron sheets G28 \u00b7 3m box profile',
+  'Cement \u2014 Tororo',
+  'Black screws 8"',
+  'Hinges 100mm',
+  'Roofing nails 2.5"',
+  'Steel bars Y12',
+  'Binding wire',
+] as const;
+
 export function demoSalesInvoices(): readonly SalesInvoice[] {
   const s = (
     doc: string,
@@ -46,6 +82,7 @@ export function demoSalesInvoices(): readonly SalesInvoice[] {
     doc,
     customer,
     total: m(total),
+    lines: doc === 'INV-0209' ? LINES_0209 : oneLine(GOODS[doc.length % GOODS.length] ?? GOODS[0], m(total)),
     issued: day(-issuedAgo),
     dueOn: day(-issuedAgo + termDays),
     payments: paid > 0 ? [took(`${doc}-1`, paid, Math.max(0, issuedAgo - 2))] : [],
@@ -145,6 +182,7 @@ function settledTail(): readonly SalesInvoice[] {
       doc,
       customer: REGULARS[i % REGULARS.length] ?? 'Ken Bwaise',
       total,
+      lines: oneLine(GOODS[i % GOODS.length] ?? GOODS[0], total),
       issued: day(-issuedAgo),
       dueOn: day(-issuedAgo + 30),
       payments: [took(`${doc}-1`, total, paidAgo)],
@@ -190,3 +228,10 @@ export function demoPurchaseInvoices(): readonly PurchaseInvoice[] {
     p('PINV-0292', 'Mukwano Steel', 100_000, 0, 'INV-0344', 0),
   ];
 }
+
+/** The cash book accounts the *Received into* field offers. */
+export const demoAccounts: readonly CashAccount[] = [
+  { id: 'till', name: 'Cash \u00b7 shop till', balance: m(2_140_000) },
+  { id: 'mm', name: 'Mobile money \u00b7 0772 481 330', balance: m(860_500) },
+  { id: 'bank', name: 'Bank \u00b7 Stanbic 9032', balance: m(5_420_000) },
+];
