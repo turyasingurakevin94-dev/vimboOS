@@ -52,9 +52,14 @@ export const color = {
   /** The trough of a segmented control, and a lens at hover. */
   track: '#f0eeea',
   /**
-   * The lens GROUP's own trough — the warm band the Customers lenses sit in.
+   * The lens GROUP's own trough — the warm band a lens row sits in.
+   *
    * A hair darker than `track` because it holds white pills rather than
-   * being one, and a white pill on `track` does not read as lifted.
+   * being one, and a white pill on `track` does not read as lifted. It is
+   * also, independently, the value every Messages frame draws its lens group
+   * on while `Invoices.dc.html` draws its segmented control on `track`: two
+   * screens arrived at the same #efede9, which is the strongest evidence a
+   * token can have that it is a real one.
    */
   lensTrack: '#efede9',
   /** The one strong rule under a page header. Heavier than a card border. */
@@ -151,10 +156,16 @@ export const color = {
    * The caution PANEL — a bordered block of prose inside a card, not a chip.
    * Paler than `warnFill` and with a darker ink, because a chip is read in a
    * glance and a paragraph is read: 7.6:1 rather than the chip's 5.0:1.
+   *
+   * Customers wraps the over-limit sentence in it; Messages wraps the one
+   * that says no invoice stands behind a balance. Both were written against
+   * the same #fff8e8 independently.
    */
   warnPanel: '#fff8e8',
   warnPanelEdge: '#f4e3bd',
   warnPanelInk: '#6b4a0d',
+  /** The amber bar in "which signals actually sell". A bar, never a word. */
+  warnBar: '#f0b323',
 
   goodFill: '#ecf8f2',
   /** The deep green chip. Only `goodInkStrong` clears the floor on it. */
@@ -308,6 +319,7 @@ export const neverCarriesText: readonly {
   { token: 'goodEdgeSoft', why: 'a card border' },
   { token: 'infoEdge', why: 'a card border' },
   { token: 'studyEdge', why: 'a card border' },
+  { token: 'warnBar', why: 'a bar segment' },
   { token: 'cashChip', why: 'an icon chip ground; its glyph is not text' },
   { token: 'badChipSoft', why: 'an icon chip ground; its glyph is not text' },
   { token: 'studyMuted', why: 'the left border of a move that is waiting' },
@@ -337,6 +349,10 @@ export const legalPairings: readonly {
   { ink: 'ink', ground: 'rowHover', floor: 'body', note: 'body on a hovered row' },
   { ink: 'ink', ground: 'rowAlt', floor: 'body', note: 'body on a banded row' },
   { ink: 'ink', ground: 'track', floor: 'body', note: 'the label of a hovered lens' },
+  { ink: 'ink', ground: 'lensTrack', floor: 'body', note: 'a hovered lens on the Messages track' },
+  { ink: 'ink', ground: 'neutralChip', floor: 'body', note: 'a chat bubble they sent' },
+  { ink: 'ink', ground: 'goodChipLight', floor: 'body', note: 'a chat bubble you sent' },
+  { ink: 'ink', ground: 'studyFill', floor: 'body', note: 'the row the draft box is showing' },
   { ink: 'ink', ground: 'field', floor: 'body', note: 'what you type in a field' },
 
   // The reasoning sentence.
@@ -351,6 +367,7 @@ export const legalPairings: readonly {
   { ink: 'ink2', ground: 'surface2', floor: 'body', note: 'secondary prose on a tile' },
   { ink: 'ink2', ground: 'rowAlt', floor: 'body', note: 'secondary prose on a banded row' },
   { ink: 'ink2', ground: 'field', floor: 'body', note: 'a field placeholder' },
+  { ink: 'ink2', ground: 'neutralChip', floor: 'body', note: "a grey avatar's initials" },
 
   // Labels, meta and basis lines — the widest-travelling ink in the app.
   { ink: 'ink3', ground: 'surface', floor: 'body', note: 'a label on a card' },
@@ -359,6 +376,7 @@ export const legalPairings: readonly {
   { ink: 'ink3', ground: 'rowHover', floor: 'body', note: 'a label on a hovered row' },
   { ink: 'ink3', ground: 'rowAlt', floor: 'body', note: 'a label on a banded row' },
   { ink: 'ink3', ground: 'track', floor: 'body', note: 'a lens at rest' },
+  { ink: 'ink3', ground: 'lensTrack', floor: 'body', note: 'a lens at rest on the Messages track' },
   { ink: 'ink3', ground: 'field', floor: 'body', note: 'a field label' },
   { ink: 'ink3', ground: 'cashFill', floor: 'body', note: 'basis on the cash card' },
   { ink: 'ink3', ground: 'badFill', floor: 'body', note: 'basis on the debt card' },
@@ -385,7 +403,12 @@ export const legalPairings: readonly {
   { ink: 'accentInk', ground: 'bg', floor: 'body', note: 'accent text on the ground' },
   { ink: 'accentInk', ground: 'badChip', floor: 'body', note: "the phone's active tab label" },
   { ink: 'onFill', ground: 'accentBtn', floor: 'body', note: 'the primary button' },
-  { ink: 'onFill', ground: 'accentMark', floor: 'body', note: 'the 1st chip on the ask order' },
+  {
+    ink: 'onFill',
+    ground: 'accentMark',
+    floor: 'body',
+    note: 'the 1st chip on the ask order, a draft avatar, a stock chip',
+  },
   { ink: 'onFill', ground: 'accentBtnHover', floor: 'body', note: 'the primary button, pressed' },
 
   // Meaning families: ink on its own fill, its chip, white and the ground.
@@ -409,6 +432,13 @@ export const legalPairings: readonly {
   { ink: 'goodInkStrong', ground: 'goodChip', floor: 'body', note: 'text on the deep green chip' },
   { ink: 'goodPanelInk', ground: 'goodFill', floor: 'body', note: 'a caption on the green panel' },
   { ink: 'goodNoticeInk', ground: 'goodFill', floor: 'body', note: 'the reconciliation notice' },
+  /**
+   * Green as a GROUND. The hand-off button — "Open WhatsApp with this" — is
+   * a door out of the app rather than the screen's next action, so it wears
+   * the green the design files give it and not the accent.
+   */
+  { ink: 'onFill', ground: 'goodInk', floor: 'body', note: 'the WhatsApp hand-off button' },
+  { ink: 'onFill', ground: 'goodInkStrong', floor: 'body', note: 'that button, pressed' },
 
   { ink: 'infoInk', ground: 'infoFill', floor: 'body', note: 'info figure on its tint' },
   { ink: 'infoInk', ground: 'infoChip', floor: 'body', note: 'an info chip' },
@@ -463,11 +493,18 @@ export const intentionalAliases: readonly (readonly [ColorToken, ColorToken])[] 
   // "Neutral ink" and "label ink" are the same grey doing two jobs; the
   // names stay separate so a chip and a caption can move independently.
   ['neutralInk', 'ink3'],
+  // The late band of a pays bar and the amber bar under "idle stock" are one
+  // colour, and one meaning: amber is part-done or waiting, and both bars are
+  // drawing the same kind of not-quite. Two names because each is named after
+  // what wears it — `payLate` on a signals bar would be the mistake the
+  // name-after-what-wears-it rule exists to stop.
+  ['warnBar', 'payLate'],
   // The oldest aging segment IS the accent — that is the point of it.
   ['agingOldest', 'accent'],
   // The accent button and the accent mark are one colour, split by job: see
   // the note on `accentMark`. They move together or the screen's one button
-  // and its one ranked row stop matching.
+  // and its one ranked row stop matching. The split is also what lets a test
+  // count filled CONTROLS without counting an avatar.
   ['accentBtn', 'accentMark'],
   // The inert grey under a bar, twice: an account with no pay history, and
   // the cost band of the waterfall. One value, two questions — see costBar.

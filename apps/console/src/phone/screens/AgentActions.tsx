@@ -188,7 +188,7 @@ function Settle({
               onClick={() => toggle(order.doc)}
             >
               <span className={ticked.has(order.doc) ? s.tickOn : s.tick}>
-                {ticked.has(order.doc) && <Mark d={PATH.check} size={10} stroke={3.4} />}
+                {ticked.has(order.doc) && <Mark d={PATH.tick} size={10} stroke={3.4} />}
               </span>
               <span className={s.orderWho}>
                 <span className={s.orderDoc}>{order.doc.replace('-', '‑')}</span>
@@ -405,7 +405,7 @@ function Invite({
           >
             <span className={s.termHead}>
               <span className={terms === 'prepay' ? s.tickOn : s.tick}>
-                {terms === 'prepay' && <Mark d={PATH.check} size={10} stroke={3.4} />}
+                {terms === 'prepay' && <Mark d={PATH.tick} size={10} stroke={3.4} />}
               </span>
               <span className={s.termName}>Prepay</span>
             </span>
@@ -422,7 +422,7 @@ function Invite({
           >
             <span className={s.termHead}>
               <span className={terms === 'credit' ? s.tickOn : s.tick}>
-                {terms === 'credit' && <Mark d={PATH.check} size={10} stroke={3.4} />}
+                {terms === 'credit' && <Mark d={PATH.tick} size={10} stroke={3.4} />}
               </span>
               <span className={s.termName}>Credit</span>
             </span>

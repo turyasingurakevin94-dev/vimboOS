@@ -193,7 +193,7 @@
   justify-content: center;
   padding: 0;
   border: 1px solid var(--ow-color-control-edge);
-  border-radius: var(--ow-radius-checkbox);
+  border-radius: var(--ow-radius-checkbox-large);
   background: var(--ow-color-surface);
   color: var(--ow-color-on-fill);
   cursor: pointer;

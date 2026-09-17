@@ -240,12 +240,21 @@ describe('type', () => {
   it('is exactly the sizes the design file uses', () => {
     // Sorted, because JS hoists integer-like object keys ahead of the rest
     // however they are written. The set is the contract, not the order.
+    //
+    // 25, 26 and 30 arrived with the Messages handoff. The assertion did not
+    // stop being true because the rule loosened — the rule is still "exactly
+    // the sizes the design files use", and this is still an allowlist rather
+    // than a grid. Three more files draw three more sizes: a post card's
+    // price at 26 on the desktop and 25 on the phone, and the typed WhatsApp
+    // link code at 30, which is meant to be read across a yard into another
+    // device. Each is a display figure; none is a body size, and no size in
+    // the ramp moved.
     const px = Object.keys(size)
       .map(Number.parseFloat)
       .sort((a, b) => a - b);
     expect(px).toEqual([
       9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 16, 16.5, 17, 18,
-      19, 20, 22, 24, 27,
+      19, 20, 22, 24, 25, 26, 27, 30,
     ]);
   });
 
@@ -271,17 +280,31 @@ describe('space and radius', () => {
   it('names every radius after what wears it', () => {
     // A radius called "md" tells you nothing at the call site; one called
     // "card" cannot be used on a chip by accident.
+    //
+    // Four of these share a value with a neighbour, and the rule this test
+    // holds is exactly why each is a name rather than a reuse. `barSmall` and
+    // `bubbleTail` are both 3px — a bar too short for `barTop` and the one
+    // corner of a chat bubble that is not a corner. `checkbox` is 4px, the
+    // same value `barTop` already carries, and putting
+    // `--ow-radius-bar-top` on a checkbox is precisely the mistake this rule
+    // exists to stop. `checkboxLarge` is that checkbox one step bigger — the
+    // phone's 17px box and the 16px one the Agents settlement table draws.
+    // A shared value is fine; a shared name would not be.
     expect(Object.keys(radius)).toEqual([
-      'barWaterfall', 'barSmall', 'barTop', 'checkbox', 'chipSquare', 'segment',
-      'iconChip', 'button', 'field', 'tile', 'block', 'card', 'sheet', 'frame',
-      'pill',
+      'barWaterfall', 'barSmall', 'bubbleTail', 'barTop', 'checkbox',
+      'checkboxLarge', 'chipSquare', 'segment', 'iconChip', 'button',
+      'field', 'tile', 'block', 'card', 'sheet', 'frame', 'pill',
     ]);
   });
 
   it('orders the radii from chip to frame', () => {
+    // One of each tied pair is left out, and has to be: `bubbleTail` ties
+    // with `barSmall` and `checkbox` with `barTop`, and a tie is not an
+    // order. Neither pair is ever adjacent or compared, so nothing is lost.
     const px = [
-      'barWaterfall', 'barSmall', 'barTop', 'checkbox', 'chipSquare', 'segment',
-      'iconChip', 'button', 'field', 'tile', 'card', 'frame',
+      'barWaterfall', 'barSmall', 'barTop', 'checkboxLarge', 'chipSquare',
+      'segment', 'iconChip', 'button',
+      'field', 'tile', 'card', 'frame',
     ] as const;
     for (let i = 1; i < px.length; i++) {
       expect(Number.parseFloat(radius[px[i]!])).toBeGreaterThan(

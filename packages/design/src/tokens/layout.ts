@@ -51,13 +51,22 @@ export const radius = {
    * a 5px bar is a lozenge rather than a bar.
    */
   barSmall: '3px',
+  /** The tail corner of a chat bubble — the one corner that is not a corner. */
+  bubbleTail: '3px',
   /** The top of a bar in a chart. Flat foot, rounded head. */
   barTop: '4px',
+  /** A tick box at 15px square, which is how Messages draws one. */
+  checkbox: '4px',
   /**
-   * A tick box, 16px square. The design system's prose says 4; every
-   * reference file that draws one draws 5, and the file wins.
+   * A tick box that is bigger, and rounder with it: the phone's 17px box,
+   * and the 16px one the Agents settlement table draws on both designs.
+   *
+   * It was `checkboxPhone` until Agents arrived drawing the same 5px on a
+   * desktop dialog. The name says what wears it — a larger box — because a
+   * name that says which DESIGN wears it stops being true the moment the
+   * other design draws the same thing.
    */
-  checkbox: '5px',
+  checkboxLarge: '5px',
   /** A square chip — the rail's section abbreviations. */
   chipSquare: '6px',
   /** An inner segment: a ghost number field, a dashed placeholder square,

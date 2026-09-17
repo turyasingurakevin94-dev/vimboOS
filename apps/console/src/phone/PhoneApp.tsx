@@ -18,7 +18,10 @@ import { TabMark, type TabIcon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
+import { Customers } from './screens/Customers.js';
+import { Messages } from './screens/Messages.js';
 import { Agents } from './screens/Agents.js';
+import { More, type MoreDestination } from './screens/More.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
 /**
@@ -47,6 +50,8 @@ const TITLES: Record<TabIcon, string> = {
 
 export default function PhoneApp(): ReactElement {
   const [tab, setTab] = useState<TabIcon>('today');
+  /** Which destination the More tab has been opened into, if any. */
+  const [beyond, setBeyond] = useState<MoreDestination | null>(null);
 
   return (
     <div className={s.shell}>
@@ -72,24 +77,22 @@ export default function PhoneApp(): ReactElement {
         <Invoices />
       ) : tab === 'more' ? (
         /**
-         * More lands on Agents, and that leaves Customers with no tab.
-         *
-         * Two handoffs now draw their phone screen with **More** active:
-         * Customers 1b and Agents 1b. Both are right — More is where
-         * everything that is not one of the four tabs lives — and the thing
-         * that resolves them is the More sheet, generated from the rail's own
-         * index. That sheet has not been drawn, and inventing a layout to
-         * stand in for it would anchor the design it is meant to be.
-         *
-         * So the newest frame gets the tab, exactly as it draws it, and
-         * Customers keeps its screen, its stylesheet and its tests while
-         * waiting for the sheet that will carry both. This is the second
-         * time this shell has had to park a frame's own placement (Invoices
-         * wants slot two, which Sell has) and it is the same answer: say
-         * which frame is being served, and leave the other reachable in one
-         * edit rather than quietly reflowed into something else.
+         * Three handoffs now end under this tab: the Customers phone frames
+         * draw the bar with **More** lit, and so do every Messages frame and
+         * the Agents 1b frame. All three screens are built, five tabs cannot
+         * hold seven destinations, and no frame draws the sheet that stands
+         * between them — so `More` is the plainest list that keeps all three
+         * reachable, and it goes the day the real sheet is designed.
          */
-        <Agents />
+        beyond === null ? (
+          <More onOpen={setBeyond} />
+        ) : beyond === 'customers' ? (
+          <Customers />
+        ) : beyond === 'agents' ? (
+          <Agents />
+        ) : (
+          <Messages />
+        )
       ) : (
         <NotBuiltYet name={TITLES[tab]} />
       )}
@@ -103,7 +106,16 @@ export default function PhoneApp(): ReactElement {
               type="button"
               className={`${s.tab} ${on ? s.tabOn : ''}`}
               aria-current={on ? 'page' : undefined}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                /**
+                 * Tapping the tab you are already on returns it to its root.
+                 * That is the standard, and here it is also the only way back
+                 * out of a destination the More list opened — a screen you
+                 * can reach and not leave is a trap.
+                 */
+                if (t.id !== 'more' || tab === 'more') setBeyond(null);
+                setTab(t.id);
+              }}
             >
               <span className={s.tabPill}>
                 <TabMark name={t.id} active={on} />

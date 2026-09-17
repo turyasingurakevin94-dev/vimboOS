@@ -6,7 +6,14 @@
  * that question.
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import { owingBadge, read } from '@ow/domain';
 import { DEMO_TODAY, demoCustomers } from '@ow/data';
 import s from './DesktopApp.module.css';
@@ -18,6 +25,8 @@ import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
 import { Customers } from './screens/Customers.js';
 import { Agents } from './screens/Agents.js';
+import { Messages } from './screens/Messages.js';
+import { Shop } from './screens/Shop.js';
 
 /**
  * What a screen puts in the top bar, where the stage chips otherwise sit.
@@ -27,10 +36,23 @@ import { Agents } from './screens/Agents.js';
  * `New customer` there and a search that offers to answer "owes over 1m",
  * and a Customers screen advertising three order stages would be the shell
  * talking over it. A screen that says nothing keeps the stage chips.
+ *
+ * `opens` is what the action MAKES, and only an action that makes something
+ * wears the plus. Broadcast does not make a customer — it is one of the two
+ * features WhatsApp had before it became a lens on Messages, and a plus
+ * beside it would promise a new thing rather than a door.
  */
-const CHROME: Record<string, { readonly hint: string; readonly action: string }> = {
-  customers: { hint: 'Name, phone, or "owes over 1m"', action: 'New customer' },
-  agents: { hint: 'Agent, order no., or "owes the shop"', action: 'Invite an agent' },
+const CHROME: Record<
+  string,
+  { readonly hint: string; readonly action: string; readonly opens?: boolean }
+> = {
+  customers: { hint: 'Name, phone, or "owes over 1m"', action: 'New customer', opens: true },
+  messages: { hint: 'Name, number, or what the message is about', action: 'Broadcast' },
+  agents: {
+    hint: 'Agent, order no., or "owes the shop"',
+    action: 'Invite an agent',
+    opens: true,
+  },
 };
 
 /** The order-stage chips in the top bar. They replace the old status bar. */
@@ -56,6 +78,14 @@ const PARENTS = new Map<string, string>(
 
 export default function DesktopApp(): ReactElement {
   const [section, setSection] = useState('today');
+  /**
+   * A third crumb, where a screen has somewhere inside it worth naming.
+   *
+   * Only the posting queue uses it — frame 1c draws "Sell › Messages ›
+   * Posting" — because a lens is not a destination and the other three are
+   * not places you say you are going.
+   */
+  const [trail, setTrail] = useState<string | null>(null);
   /**
    * The top bar's action belongs to the SCREEN, not the shell.
    *
@@ -96,6 +126,8 @@ export default function DesktopApp(): ReactElement {
     [],
   );
 
+  const onTrail = useCallback((next: string | null) => setTrail(next), []);
+
   // Ctrl/Cmd + K focuses the field. Escape gives it up.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -121,6 +153,12 @@ export default function DesktopApp(): ReactElement {
             <span className={s.crumbStart}>{PARENTS.get(section) ?? 'Start'}</span>
             <Icon name="chevron-right" size={14} className={s.crumbSep} />
             <span className={s.crumbHere}>{NAMES.get(section) ?? 'Today'}</span>
+            {trail !== null && (
+              <>
+                <Icon name="chevron-right" size={14} className={s.crumbSep} />
+                <span className={s.crumbHere}>{trail}</span>
+              </>
+            )}
           </div>
 
           <div className={s.search}>
@@ -171,7 +209,7 @@ export default function DesktopApp(): ReactElement {
             </div>
           ) : (
             <button type="button" className={s.topAction} onClick={() => setTopAction(true)}>
-              <Icon name="plus" size={15} />
+              {chrome.opens === true && <Icon name="plus" size={15} />}
               {chrome.action}
             </button>
           )}
@@ -194,6 +232,10 @@ export default function DesktopApp(): ReactElement {
               bonusAsk={bonusAsk}
               onInviteClose={() => setTopAction(false)}
             />
+          ) : section === 'messages' ? (
+            <Messages onTrail={onTrail} />
+          ) : section === 'shop' ? (
+            <Shop onTrail={onTrail} />
           ) : (
             <NotBuiltYet name={NAMES.get(section) ?? section} />
           )}

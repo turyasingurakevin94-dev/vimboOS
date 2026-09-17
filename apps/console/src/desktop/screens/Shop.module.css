@@ -1,0 +1,264 @@
+/**
+ * Setup › The shop — frame 3a, the WhatsApp connection as one card.
+ *
+ * ## Why this is here and not in Messages
+ *
+ * The live app gave the unmade connection a quarter of a screen used every
+ * day: a fourth tab that said "nothing to show" three times, tabulated three
+ * absences as *none · none · not available*, and offered **Check the
+ * connection** for a connection nobody had ever made. It is a setup job — done
+ * once, with a phone in your hand, often by whoever set up the computer — so
+ * it belongs beside the other things configured once.
+ *
+ * Three things change in the move, and each is a rule:
+ *
+ * 1. **Absences become intentions.** You do not tabulate the absence of
+ *    things that were never switched on. Three *none* rows become three
+ *    "what linking would turn on" lines, in the future tense, each naming
+ *    what the shop would actually get.
+ * 2. **Check becomes Link.** The primary action was to *check* something that
+ *    does not exist. It is **Link the number**, in coral, with the cost
+ *    stated: about ten minutes, phone in hand.
+ * 3. **The steps become something you send.** They are not a disclosure the
+ *    owner must be sitting here to expand — they go to the person who does
+ *    them.
+ */
+
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-22);
+}
+
+.card {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+  overflow: hidden;
+}
+
+/**
+ * The sentence that answers the real fear, at the TOP of the card.
+ *
+ * The owner's own words, with one substitution — *this screen* became
+ * *Omni-Ware*, because once the card sits in Setup the screen in front of you
+ * is not the one that would start seeing the chats. It is read before the
+ * decision rather than after it.
+ */
+.head {
+  padding: var(--ow-space-14);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-good-chip-light);
+  color: var(--ow-color-good-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.headBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.headTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--ow-space-9);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  background: var(--ow-color-neutral-chip);
+  color: var(--ow-color-ink-2);
+  white-space: nowrap;
+}
+
+.promise {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-prose);
+  max-width: var(--ow-measure);
+  text-wrap: pretty;
+}
+
+.body {
+  padding: var(--ow-space-14);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.turnsOn {
+  margin-top: var(--ow-space-11);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-11);
+}
+
+.turn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-11);
+}
+
+/**
+ * A dashed square, not a solid one. These are things that would exist, and a
+ * filled icon chip would draw them as things that do.
+ */
+.turnMark {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ow-radius-icon-chip);
+  border: 1px dashed var(--ow-color-control-edge);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--ow-color-rail-head);
+}
+
+.turnBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.turnTitle {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/* Each names what the shop would actually GET, with the figure behind it. */
+.turnSay {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.turnFig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-12);
+}
+
+.foot {
+  padding: var(--ow-space-14);
+  border-top: 1px solid var(--ow-color-rule);
+  background: var(--ow-color-row-hover);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  flex-wrap: wrap;
+}
+
+.cost {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-7);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  font-family: var(--ow-font-ui);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/** The one accent on this screen, and it says what it costs. */
+.primary {
+  composes: btn;
+  height: 38px;
+  padding: 0 var(--ow-space-15);
+  font-size: var(--ow-size-13-5);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+}
+
+.primary:hover {
+  background: var(--ow-color-accent-btn-hover);
+}
+
+.secondary {
+  composes: btn;
+  height: 34px;
+  padding: 0 var(--ow-space-12);
+  font-size: var(--ow-size-12-5);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-divider);
+  color: var(--ow-color-ink);
+}
+
+.secondary:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/** The footer promise, reworded to cover the question linking raises. */
+.locked {
+  margin-top: var(--ow-space-12);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-9);
+  padding: 0 var(--ow-space-2);
+}
+
+.lockIcon {
+  flex: none;
+  margin-top: var(--ow-space-2);
+  color: var(--ow-color-ink-3);
+}
+
+.lockedSay {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+  line-height: var(--ow-leading-prose);
+  text-wrap: pretty;
+}
+
+/** Once the number is linked there is nothing to sell, only a state. */
+.linkedChip {
+  composes: chip;
+  background: var(--ow-color-good-chip-light);
+  color: var(--ow-color-good-ink);
+}
