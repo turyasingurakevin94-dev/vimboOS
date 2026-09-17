@@ -1,0 +1,200 @@
+/**
+ * Linking the shop number — frame 5c.
+ *
+ * Its own file because two screens open it: the line at the foot of the
+ * Messages register, and the setup card in Setup › The shop. One dialog, one
+ * set of words, and no chance of the two drifting apart.
+ *
+ * On a desk the SQUARE leads and the typed code is the fallback, which is the
+ * opposite of the phone. Both halves say what linking does not change, because
+ * the real reason a shop does not link is the fear that it breaks the number
+ * the business runs on.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--ow-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ow-space-30);
+  z-index: var(--ow-layer-modal);
+}
+
+.dialog {
+  width: 520px;
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-floating);
+  overflow: hidden;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.head {
+  padding: var(--ow-space-14) var(--ow-space-16);
+  border-bottom: 1px solid var(--ow-color-rule);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+.title {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-7);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  font-family: var(--ow-font-ui);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.close {
+  composes: btn;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: none;
+  color: var(--ow-color-ink-3);
+}
+
+.close:hover {
+  background: var(--ow-color-track);
+  color: var(--ow-color-ink);
+}
+
+.secondary {
+  composes: btn;
+  height: 36px;
+  padding: 0 var(--ow-space-13);
+  font-size: var(--ow-size-13);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-divider);
+  color: var(--ow-color-ink);
+}
+
+.secondary:hover {
+  background: var(--ow-color-surface-2);
+}
+
+.body {
+  padding: var(--ow-space-14) var(--ow-space-16);
+  display: flex;
+  gap: var(--ow-space-16);
+}
+
+.steps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-10);
+}
+
+.step {
+  display: flex;
+  gap: var(--ow-space-9);
+}
+
+.stepNo {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-navy);
+  color: var(--ow-color-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-bold);
+}
+
+.stepSay {
+  font-size: var(--ow-size-12-5);
+}
+
+/** The typed code. A fallback on a desk, and the whole screen on a phone. */
+.fallback {
+  margin-top: var(--ow-space-2);
+  padding-top: var(--ow-space-10);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.fallbackSay {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.code {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-19);
+  letter-spacing: var(--ow-tracking-dock);
+}
+
+.square {
+  width: 184px;
+  flex: none;
+}
+
+.squareBox {
+  width: 184px;
+  height: 184px;
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ow-color-ink-4);
+  cursor: pointer;
+}
+
+.squareSay {
+  margin-top: var(--ow-space-7);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  text-align: center;
+}
+
+.foot {
+  padding: var(--ow-space-11) var(--ow-space-16);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.footSay {
+  flex: 1;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}

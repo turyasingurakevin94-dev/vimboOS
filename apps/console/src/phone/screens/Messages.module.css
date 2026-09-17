@@ -1,0 +1,1260 @@
+/**
+ * Messages — the phone. Frames 2b, 1b, 4b, 5b, the phone half of 1c, and the
+ * four things they open: 5d, 5f, 5h, 5j. Frame 3b is beside them in `Shop`.
+ *
+ * ## Not the console with the rail taken off
+ *
+ * The desktop is a register beside a draft panel: you pick a row, the panel
+ * fills, the list never navigates away. At 390 there is nothing to sit
+ * beside, so the Money lens IS the draft — full width, one person, with
+ * *1 of N* in the header saying how many are behind it. The list did not
+ * shrink; it stopped being the thing on screen.
+ *
+ * Three more things move:
+ *
+ * 1. **The lens group becomes a tab row under the header**, 34px with a 2px
+ *    accent underline, because a 30px segmented track at this width would
+ *    have to drop the counts and the counts are the point.
+ * 2. **Every action is 44px and in the thumb zone**, in a footer that does
+ *    not scroll. The hand-off and the two stamps are the whole of what this
+ *    screen does.
+ * 3. **A pushed screen covers the tab bar.** Linking and a picked list are
+ *    whole screens with a back chevron, not panels: on a phone there is no
+ *    "behind".
+ *
+ * There is no width query anywhere in this file. The phone is one width.
+ */
+
+.screen {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --------------------------------- header --------------------------------- */
+
+.header {
+  flex: none;
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-10) var(--ow-space-12) 0;
+  padding-top: calc(var(--ow-space-10) + env(safe-area-inset-top));
+}
+
+/** A header with no tab row under it closes itself off at the foot. */
+.headerShut {
+  composes: header;
+  padding-bottom: var(--ow-space-13);
+}
+
+.headTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+/**
+ * A 44px target around an 18px glyph, without 44px of header: the padding
+ * grows the hit area and the negative margin gives the height back.
+ */
+.back {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+  margin: calc(var(--ow-space-13) * -1) 0;
+  box-sizing: content-box;
+  padding: var(--ow-space-13) var(--ow-space-4) var(--ow-space-13) 0;
+}
+
+.headIcon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--ow-radius-segment);
+  background: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headAv {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-accent-ground);
+  color: var(--ow-color-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.headBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.headName {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headTitle {
+  composes: headName;
+  font-size: var(--ow-size-14);
+}
+
+.headMeta {
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-rail-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headSearch {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+  display: flex;
+}
+
+.headChip {
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 var(--ow-space-8);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  flex: none;
+  /* On navy, and no flat token can let the navy through. */
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--ow-color-on-fill);
+  white-space: nowrap;
+}
+
+.headChipLoud {
+  composes: headChip;
+  background: var(--ow-color-accent-ground);
+}
+
+/**
+ * The one position figure the header carries.
+ *
+ * Its ground says whether the message is still owed: the accent tint when it
+ * is, plain white translucency once it has gone. Same cell, two readings,
+ * and the label takes its colour from the same fact.
+ */
+.stake {
+  margin-top: var(--ow-space-9);
+  border-radius: var(--ow-radius-field);
+  padding: var(--ow-space-8) var(--ow-space-11);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.stakeOwed {
+  composes: stake;
+  background: rgba(239, 75, 57, 0.18);
+}
+
+.stakeLabel {
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.stakeLabelOwed {
+  composes: stakeLabel;
+  color: var(--ow-color-rail-ink-bad);
+}
+
+.stakeFig {
+  composes: fig from './Messages.fig.css';
+  font-size: var(--ow-size-16);
+  color: var(--ow-color-on-fill);
+  margin-left: auto;
+}
+
+.stakeBasis {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-rail-ink-2);
+}
+
+/* -------------------------------- lens tabs ------------------------------- */
+
+.tabs {
+  margin-top: var(--ow-space-9);
+  display: flex;
+}
+
+.tab {
+  flex: 1;
+  height: 34px;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--ow-color-rail-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tabOn {
+  border-bottom-color: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-bold);
+}
+
+.tabFig {
+  composes: fig from './Messages.fig.css';
+  font-size: var(--ow-size-11);
+}
+
+/** On the lens you are already on, the count is the quieter of the two. */
+.tabFigOn {
+  composes: tabFig;
+  color: var(--ow-color-rail-ink-2);
+}
+
+/* ---------------------------------- body ---------------------------------- */
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--ow-color-surface);
+}
+
+.bodyPad {
+  composes: body;
+  padding: var(--ow-space-12);
+}
+
+.section {
+  padding: var(--ow-space-11) var(--ow-space-12);
+}
+
+.sectionRule {
+  composes: section;
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+/** A second label further down the same scroll. No rule: it is one block. */
+.labelNext {
+  composes: label;
+  margin-top: var(--ow-space-14);
+  display: block;
+}
+
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.hint {
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-ink-2);
+  margin-left: auto;
+}
+
+/**
+ * The carried balance, at the top of the body where it is read before the
+ * draft it explains. Full-bleed on a phone: a card inside a card at 390 is
+ * two borders and no more meaning.
+ */
+.carried {
+  padding: var(--ow-space-10) var(--ow-space-12);
+  background: var(--ow-color-warn-block-fill);
+  border-bottom: 1px solid var(--ow-color-warn-block-edge);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-warn-block-ink);
+  text-wrap: pretty;
+}
+
+/** The draft. The box is what ships, so it is a field and not a rendering. */
+.box {
+  display: block;
+  width: 100%;
+  margin-top: var(--ow-space-8);
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-regular);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink);
+  white-space: pre-wrap;
+  background: var(--ow-color-surface-2);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-tile);
+  padding: var(--ow-space-10) var(--ow-space-11);
+  resize: none;
+}
+
+.tools {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  gap: var(--ow-space-7);
+}
+
+/* ------------------------------ history block ----------------------------- */
+
+.history {
+  margin-top: var(--ow-space-12);
+  padding-top: var(--ow-space-12);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.historyRows {
+  margin-top: var(--ow-space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+}
+
+.historyRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+.historyDate {
+  composes: fig from './Messages.fig.css';
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-2);
+  width: 44px;
+  flex: none;
+}
+
+.historyWhat {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historySay {
+  margin-top: var(--ow-space-9);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* --------------------------------- footers -------------------------------- */
+
+/**
+ * The thumb zone. It does not scroll, and everything in it is at least 44px.
+ */
+.foot {
+  flex: none;
+  background: var(--ow-color-surface);
+  border-top: 1px solid var(--ow-color-hairline);
+  padding: var(--ow-space-10) var(--ow-space-12);
+}
+
+.footQuiet {
+  composes: foot;
+  background: var(--ow-color-row-hover);
+}
+
+.footSay {
+  margin-top: var(--ow-space-7);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  text-align: center;
+}
+
+.footRow {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  gap: var(--ow-space-8);
+}
+
+/* --------------------------------- buttons -------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-7);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  font-family: var(--ow-font-ui);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.secondary {
+  composes: btn;
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-divider);
+  color: var(--ow-color-ink);
+}
+
+/** The ONE accent fill in this file. */
+.primary {
+  composes: btn;
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+}
+
+/** The door out of the app. Green, because WhatsApp is where it goes. */
+.handoff {
+  composes: btn;
+  background: var(--ow-color-good-ink);
+  color: var(--ow-color-on-fill);
+}
+
+/** Holding is not the screen's next action, so its commit is navy. */
+.commit {
+  composes: btn;
+  background: var(--ow-color-navy);
+  color: var(--ow-color-on-fill);
+}
+
+.tap {
+  width: 100%;
+  height: var(--ow-chrome-tap);
+  font-size: var(--ow-size-13);
+}
+
+.tapWide {
+  width: 100%;
+  height: 48px;
+  font-size: var(--ow-size-14);
+}
+
+.tapShare {
+  flex: 1;
+  height: var(--ow-chrome-tap);
+  font-size: var(--ow-size-13);
+}
+
+.tapTool {
+  flex: 1;
+  height: 40px;
+  font-size: var(--ow-size-12-5);
+}
+
+/**
+ * The one target the handoff draws under 44: the Pick beside a queue row,
+ * inside a row that is itself 44 tall. Everything a thumb reaches for on its
+ * own is 44 or more.
+ */
+.tapPick {
+  height: 36px;
+  padding: 0 var(--ow-space-12);
+  font-size: var(--ow-size-12);
+  flex: none;
+}
+
+/** A 44px square: the two stamps beside the sentence that asks for them. */
+.tapSquare {
+  width: var(--ow-chrome-tap);
+  height: var(--ow-chrome-tap);
+  padding: 0;
+  flex: none;
+}
+
+.tapHold {
+  margin-top: var(--ow-space-9);
+  height: var(--ow-chrome-tap);
+  padding: 0 var(--ow-space-13);
+  font-size: var(--ow-size-13);
+}
+
+.went {
+  color: var(--ow-color-good-ink);
+  display: flex;
+}
+
+.didNot {
+  color: var(--ow-color-bad-ink);
+  display: flex;
+}
+
+/* ------------------------------- Telling lens ----------------------------- */
+
+.reason {
+  padding: var(--ow-space-10) var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-rule);
+  width: 100%;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  background: none;
+  font-family: var(--ow-font-ui);
+  text-align: left;
+  display: block;
+}
+
+/** The reason that goes stale first. */
+.reasonOn {
+  background: var(--ow-color-study-fill);
+}
+
+.reasonAside {
+  composes: reason;
+  opacity: 0.82;
+}
+
+.reasonTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.av {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ow-radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-bold);
+  flex: none;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  display: block;
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: block;
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaWarn {
+  composes: meta;
+  color: var(--ow-color-warn-ink);
+}
+
+.what {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+}
+
+.route {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-buy-chip-ink);
+}
+
+.band {
+  padding: var(--ow-space-7) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+  border-bottom: 1px solid var(--ow-color-rule);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.bandSay {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+  margin-left: auto;
+}
+
+.note {
+  padding: var(--ow-space-11) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.noteSay {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+.noteStrong {
+  color: var(--ow-color-ink);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/**
+ * Frame 3c on the phone: the one line the unmade connection leaves behind, at
+ * the foot of a list that has work in it.
+ */
+.linkLine {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  width: 100%;
+  min-height: var(--ow-chrome-tap);
+  padding: var(--ow-space-11) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border: 0;
+  border-top: 1px solid var(--ow-color-rule);
+  font-family: var(--ow-font-ui);
+  text-align: left;
+}
+
+.linkIcon {
+  flex: none;
+  display: flex;
+  color: var(--ow-color-ink-3);
+}
+
+.linkSay {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* --------------------------------- chips ---------------------------------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  height: 22px;
+  padding: 0 var(--ow-space-9);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.chipSmall {
+  composes: chip;
+  height: 20px;
+  padding: 0 var(--ow-space-8);
+}
+
+.chipTiny {
+  composes: chip;
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+}
+
+.pill {
+  composes: fig from './Messages.fig.css';
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-10-5);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ------------------------------- Posting lens ----------------------------- */
+
+.postWrap {
+  padding: var(--ow-space-12) var(--ow-space-12) 0;
+}
+
+.postCard {
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-block);
+  overflow: hidden;
+}
+
+.postTop {
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-13) var(--ow-space-13) var(--ow-space-12);
+}
+
+.postShop {
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-wordmark);
+  color: var(--ow-color-rail-ink-2);
+  text-transform: uppercase;
+}
+
+.postProduct {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-18);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+  letter-spacing: var(--ow-tracking-heading-soft);
+}
+
+.postSpec {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-rail-ink);
+}
+
+.postPrices {
+  margin-top: var(--ow-space-11);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-9);
+}
+
+.postPrice {
+  composes: fig from './Messages.fig.css';
+  font-size: var(--ow-size-25);
+  color: var(--ow-color-on-fill);
+  line-height: var(--ow-leading-flat);
+}
+
+.postWas {
+  composes: fig from './Messages.fig.css';
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-rail-ink-2);
+  text-decoration: line-through;
+  padding-bottom: var(--ow-space-3);
+}
+
+.postStockRow {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+}
+
+.postStock {
+  composes: chipSmall;
+  background: var(--ow-color-accent-ground);
+  color: var(--ow-color-on-fill);
+}
+
+.noPhoto {
+  background: var(--ow-color-surface-2);
+  padding: var(--ow-space-8) var(--ow-space-11);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  color: var(--ow-color-ink-3);
+}
+
+.noPhotoSay {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.ghost {
+  composes: btn;
+  background: none;
+  color: var(--ow-color-ink-3);
+  height: 28px;
+  padding: 0 var(--ow-space-8);
+  font-size: var(--ow-size-11-5);
+}
+
+.queueNext {
+  margin-top: var(--ow-space-12);
+  padding: var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.queueRows {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+}
+
+.queueRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  min-height: var(--ow-chrome-tap);
+}
+
+.queueRowRolls {
+  composes: queueRow;
+  opacity: 0.6;
+}
+
+.queueNo {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--ow-radius-chip-square);
+  background: var(--ow-color-track);
+  color: var(--ow-color-ink-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-bold);
+  flex: none;
+}
+
+.queueName {
+  display: block;
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueWhy {
+  display: block;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueRolls {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  flex: none;
+}
+
+.chipPicked {
+  composes: chipSmall;
+  background: var(--ow-color-good-ink);
+  color: var(--ow-color-on-fill);
+  flex: none;
+}
+
+.heldLine {
+  margin-top: var(--ow-space-10);
+  padding-top: var(--ow-space-10);
+  border-top: 1px solid var(--ow-color-rule);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.heldSay {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.pushRight {
+  margin-left: auto;
+}
+
+/* -------------------------------- Inbox lens ------------------------------ */
+
+/**
+ * Only the top chat carries its 44px Reply. The rest are tap-throughs, and
+ * their chevron is affordance rather than a second control — four buttons
+ * down one screen is four things to do next.
+ */
+.chatTop {
+  display: flex;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-11) var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-rule);
+  min-height: var(--ow-chrome-tap);
+  width: 100%;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  background: none;
+  font-family: var(--ow-font-ui);
+  text-align: left;
+}
+
+.chatRow {
+  composes: chatTop;
+  align-items: center;
+}
+
+.chatHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.chatName {
+  composes: name;
+  flex: 1;
+  min-width: 0;
+}
+
+.chatAt {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.chatPreview {
+  display: block;
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-12);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatPreviewQuiet {
+  composes: chatPreview;
+  color: var(--ow-color-ink-2);
+}
+
+.chatAbout {
+  display: block;
+  margin-top: var(--ow-space-4);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.chatAboutFig {
+  composes: fig from './Messages.fig.css';
+  font-size: var(--ow-size-11);
+}
+
+.chevron {
+  flex: none;
+  color: var(--ow-color-ink-faint);
+  display: flex;
+}
+
+.replyTap {
+  composes: primary;
+  margin-top: var(--ow-space-9);
+  width: 100%;
+  height: var(--ow-chrome-tap);
+  font-size: var(--ow-size-13-5);
+}
+
+/* ------------------------- pushed screens and sheets ---------------------- */
+
+/**
+ * A pushed screen covers the tab bar, because on a phone there is no
+ * "behind" — the list is gone until you come back, and a tab bar under a
+ * screen that has its own back chevron is two ways out arguing.
+ */
+.pushed {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ow-layer-modal);
+  display: flex;
+  flex-direction: column;
+  background: var(--ow-color-bg);
+}
+
+.linkCode {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+  padding: var(--ow-space-14) var(--ow-space-13);
+  text-align: center;
+}
+
+/**
+ * The code LEADS on a phone. You cannot scan your own screen, so the square
+ * is not even drawn here — it would be a control that cannot be used.
+ */
+.code {
+  composes: fig from './Messages.fig.css';
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-30);
+  letter-spacing: var(--ow-tracking-code-wide);
+}
+
+.codeSay {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.card {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+  padding: var(--ow-space-13);
+}
+
+.step {
+  display: flex;
+  gap: var(--ow-space-9);
+}
+
+.stepNext {
+  composes: step;
+  margin-top: var(--ow-space-10);
+}
+
+.stepNo {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-navy);
+  color: var(--ow-color-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-bold);
+}
+
+.stepSay {
+  font-size: var(--ow-size-13);
+}
+
+.aside {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+.stack {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-13);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-11);
+}
+
+/* A picked list. */
+.picks {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+}
+
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-11);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  min-height: var(--ow-chrome-tap);
+}
+
+.tick {
+  width: 17px;
+  height: 17px;
+  border-radius: var(--ow-radius-checkbox-phone);
+  background: var(--ow-color-navy);
+  color: var(--ow-color-on-fill);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pickName {
+  display: block;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickWhy {
+  display: block;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.pickFig {
+  composes: fig from './Messages.fig.css';
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.footNote {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+/* The hold sheet. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--ow-scrim);
+  z-index: var(--ow-layer-modal);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  background: var(--ow-color-surface);
+  border-radius: var(--ow-radius-frame) var(--ow-radius-frame) 0 0;
+  padding: var(--ow-space-13) var(--ow-space-13) var(--ow-space-15);
+  padding-bottom: calc(var(--ow-space-15) + env(safe-area-inset-bottom));
+  box-shadow: var(--ow-elevation-floating);
+}
+
+.grab {
+  width: 38px;
+  height: 4px;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-field-edge);
+  margin: 0 auto var(--ow-space-12);
+}
+
+.sheetTitle {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+}
+
+.sheetSay {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.sheetLabel {
+  composes: label;
+  margin-top: var(--ow-space-13);
+}
+
+.words {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ow-space-7);
+}
+
+.word {
+  composes: secondary;
+  height: var(--ow-chrome-tap);
+  padding: 0 var(--ow-space-13);
+  font-size: var(--ow-size-13);
+}
+
+.wordOn {
+  composes: word;
+  border-color: var(--ow-color-navy);
+}
+
+.wordWide {
+  composes: word;
+  flex: 1;
+  padding: 0;
+}
+
+.wordWideOn {
+  composes: wordWide;
+  border-color: var(--ow-color-navy);
+}
+
+.sheetCommit {
+  composes: commit;
+  margin-top: var(--ow-space-14);
+  width: 100%;
+  height: 48px;
+  font-size: var(--ow-size-14);
+}
+
+.sheetCancel {
+  composes: secondary;
+  margin-top: var(--ow-space-8);
+  width: 100%;
+  height: 48px;
+  font-size: var(--ow-size-14);
+}
+
+/**
+ * The result of a pick, as a toast over the queue rather than a new screen —
+ * the queue is what you are looking at and the pick did not change that.
+ */
+.toast {
+  position: absolute;
+  left: var(--ow-space-12);
+  right: var(--ow-space-12);
+  bottom: var(--ow-space-14);
+  background: var(--ow-color-navy);
+  border-radius: var(--ow-radius-card);
+  padding: var(--ow-space-12) var(--ow-space-13);
+  box-shadow: var(--ow-elevation-floating);
+  z-index: var(--ow-layer-toast);
+}
+
+.toastTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.toastSay {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-on-fill);
+}
+
+.toastUndo {
+  composes: btn;
+  height: 36px;
+  padding: 0 var(--ow-space-12);
+  font-size: var(--ow-size-12-5);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--ow-color-on-fill);
+}
+
+.toastWrite {
+  composes: primary;
+  margin-top: var(--ow-space-9);
+  width: 100%;
+  height: var(--ow-chrome-tap);
+  font-size: var(--ow-size-13-5);
+}
+
+/** The screen the toast floats over has to be the thing it is positioned in. */
+.relative {
+  position: relative;
+}

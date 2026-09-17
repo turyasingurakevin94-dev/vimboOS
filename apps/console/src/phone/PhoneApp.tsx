@@ -18,6 +18,7 @@ import { TabMark, type TabIcon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
+import { Messages } from './screens/Messages.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
 const TABS: readonly { readonly id: TabIcon; readonly label: string }[] = [
@@ -61,6 +62,14 @@ export default function PhoneApp(): ReactElement {
          * reachable while the owner decides which of the two owns slot two.
          */
         <Invoices />
+      ) : tab === 'more' ? (
+        /**
+         * Messages lives under More, and the mockups say so: every phone
+         * frame in the Messages handoff draws the tab bar with **More**
+         * lit. Five tabs cannot hold six destinations, and the desk is
+         * reached from the one that holds the rest.
+         */
+        <Messages />
       ) : (
         <NotBuiltYet name={TITLES[tab]} />
       )}

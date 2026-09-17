@@ -5,3 +5,4 @@ export * from './ids.js';
 export * from './orders.js';
 export * from './quote.js';
 export * from './invoices.js';
+export * from './messages.js';

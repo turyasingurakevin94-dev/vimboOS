@@ -6,7 +6,7 @@
  * that question.
  */
 
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import s from './DesktopApp.module.css';
 import { Rail, SECTIONS, TODAY } from './chrome/Rail.js';
 import { Icon } from './icons.js';
@@ -14,6 +14,8 @@ import { Today } from './screens/Today.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
+import { Messages } from './screens/Messages.js';
+import { Shop } from './screens/Shop.js';
 
 /** The order-stage chips in the top bar. They replace the old status bar. */
 const STAGES = [
@@ -36,9 +38,30 @@ const PARENTS = new Map<string, string>(
   SECTIONS.flatMap((sec) => sec.items.map((i) => [i.id, sec.name] as [string, string])),
 );
 
+/**
+ * What the search field is looking for, where a screen makes it specific.
+ *
+ * A placeholder that says "Search a screen, customer or product" on the
+ * Messages desk is a field that has not read the screen it is sitting above:
+ * what you search for there is a person and what the message is about.
+ */
+const SEARCH_HINT: Record<string, string> = {
+  messages: 'Name, number, or what the message is about',
+};
+
 export default function DesktopApp(): ReactElement {
   const [section, setSection] = useState('today');
+  /**
+   * A third crumb, where a screen has somewhere inside it worth naming.
+   *
+   * Only the posting queue uses it — frame 1c draws "Sell › Messages ›
+   * Posting" — because a lens is not a destination and the other three are
+   * not places you say you are going.
+   */
+  const [trail, setTrail] = useState<string | null>(null);
   const search = useRef<HTMLInputElement>(null);
+
+  const onTrail = useCallback((next: string | null) => setTrail(next), []);
 
   // Ctrl/Cmd + K focuses the field. Escape gives it up.
   useEffect(() => {
@@ -65,6 +88,12 @@ export default function DesktopApp(): ReactElement {
             <span className={s.crumbStart}>{PARENTS.get(section) ?? 'Start'}</span>
             <Icon name="chevron-right" size={14} className={s.crumbSep} />
             <span className={s.crumbHere}>{NAMES.get(section) ?? 'Today'}</span>
+            {trail !== null && (
+              <>
+                <Icon name="chevron-right" size={14} className={s.crumbSep} />
+                <span className={s.crumbHere}>{trail}</span>
+              </>
+            )}
           </div>
 
           <div className={s.search}>
@@ -73,7 +102,7 @@ export default function DesktopApp(): ReactElement {
               ref={search}
               className={s.searchInput}
               type="search"
-              placeholder="Search a screen, customer or product"
+              placeholder={SEARCH_HINT[section] ?? 'Search a screen, customer or product'}
               aria-label="Search"
             />
             <span className={s.kbd} aria-hidden="true">
@@ -83,6 +112,17 @@ export default function DesktopApp(): ReactElement {
 
           <div className={s.spacer} />
 
+          {/**
+           * Messages puts its own door here instead of the stage chips.
+           * Broadcast was one of WhatsApp's two features and it survives the
+           * merge as a button; the order stages belong to the screens that
+           * are about orders.
+           */}
+          {section === 'messages' ? (
+            <button type="button" className={s.topAction}>
+              Broadcast
+            </button>
+          ) : (
           <div className={s.stages}>
             {STAGES.map((st) => (
               <span
@@ -99,6 +139,7 @@ export default function DesktopApp(): ReactElement {
               </span>
             ))}
           </div>
+          )}
 
           <div className={s.avatar}>KT</div>
         </header>
@@ -110,6 +151,10 @@ export default function DesktopApp(): ReactElement {
             <Quote />
           ) : section === 'invoices' ? (
             <Invoices />
+          ) : section === 'messages' ? (
+            <Messages onTrail={onTrail} />
+          ) : section === 'shop' ? (
+            <Shop onTrail={onTrail} />
           ) : (
             <NotBuiltYet name={NAMES.get(section) ?? section} />
           )}

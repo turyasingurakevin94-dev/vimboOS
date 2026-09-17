@@ -51,6 +51,16 @@ export const color = {
   rule: '#f0eeea',
   /** The trough of a segmented control, and a lens at hover. */
   track: '#f0eeea',
+  /**
+   * The lens group's own trough, and a lens at hover inside it.
+   *
+   * One step off `track`, and that is the mockup's value, not a slip: every
+   * Messages frame draws the lens group on `#efede9` while `Invoices.dc.html`
+   * draws its segmented control on `#f0eeea`. The rule is that the tokens
+   * move to meet the mockup and never round to the token that happens to be
+   * near, so both exist and each is named after what draws it.
+   */
+  lensTrack: '#efede9',
   /** The one strong rule under a page header. Heavier than a card border. */
   divider: '#dcdad4',
   /** Borders of buttons, selects and search fields sitting on the ground. */
@@ -105,6 +115,18 @@ export const color = {
   accentBtn: '#c2311f',
   /** That button, pressed. */
   accentBtnHover: '#a5291a',
+  /**
+   * The same red as a GROUND under white text where the thing is not a
+   * control: the avatar on a draft panel's navy header, the "21 days of
+   * stock" chip on a price card.
+   *
+   * It has to be `accentBtn`'s value and not `accent`'s, because white on
+   * `accent` is 3.66:1 — the failure at the other end of the rule. It has to
+   * be its own NAME because a test counts how many filled controls on a
+   * screen claim to be the one thing to do next, and an avatar is not one of
+   * them. One value, two jobs, both named.
+   */
+  accentGround: '#c2311f',
   /** Accent-coloured TYPE. Same value as `badInk`, and that is deliberate. */
   accentInk: '#b2301f',
 
@@ -123,6 +145,21 @@ export const color = {
   warnEdge: '#f6e2b8',
   warnInk: '#96600f',
   warnMeta: '#6b5a33',
+  /**
+   * A caution BLOCK — a paragraph of caution inside a card, rather than a
+   * chip or a tinted row.
+   *
+   * It is a paler ground and a much darker ink than the chip family: three
+   * lines of prose are read, not glanced at, and `warnInk` on `warnFill` is
+   * 4.89:1, which is a pass a paragraph should not be spending. This is
+   * 7.6:1. Messages draws it once, around the sentence that says no invoice
+   * stands behind a balance.
+   */
+  warnBlockFill: '#fff8e8',
+  warnBlockEdge: '#f4e3bd',
+  warnBlockInk: '#6b4a0d',
+  /** The amber bar in "which signals actually sell". A bar, never a word. */
+  warnBar: '#f0b323',
 
   goodFill: '#ecf8f2',
   /** The deep green chip. Only `goodInkStrong` clears the floor on it. */
@@ -234,6 +271,8 @@ export const neverCarriesText: readonly {
   { token: 'goodEdgeSoft', why: 'a card border' },
   { token: 'infoEdge', why: 'a card border' },
   { token: 'studyEdge', why: 'a card border' },
+  { token: 'warnBlockEdge', why: 'the border of a caution block' },
+  { token: 'warnBar', why: 'a bar segment' },
   { token: 'cashChip', why: 'an icon chip ground; its glyph is not text' },
   { token: 'badChipSoft', why: 'an icon chip ground; its glyph is not text' },
   { token: 'studyMuted', why: 'the left border of a move that is waiting' },
@@ -257,6 +296,10 @@ export const legalPairings: readonly {
   { ink: 'ink', ground: 'rowHover', floor: 'body', note: 'body on a hovered row' },
   { ink: 'ink', ground: 'rowAlt', floor: 'body', note: 'body on a banded row' },
   { ink: 'ink', ground: 'track', floor: 'body', note: 'the label of a hovered lens' },
+  { ink: 'ink', ground: 'lensTrack', floor: 'body', note: 'a hovered lens on the Messages track' },
+  { ink: 'ink', ground: 'neutralChip', floor: 'body', note: 'a chat bubble they sent' },
+  { ink: 'ink', ground: 'goodChipLight', floor: 'body', note: 'a chat bubble you sent' },
+  { ink: 'ink', ground: 'studyFill', floor: 'body', note: 'the row the draft box is showing' },
   { ink: 'ink', ground: 'field', floor: 'body', note: 'what you type in a field' },
 
   // The reasoning sentence.
@@ -271,6 +314,7 @@ export const legalPairings: readonly {
   { ink: 'ink2', ground: 'surface2', floor: 'body', note: 'secondary prose on a tile' },
   { ink: 'ink2', ground: 'rowAlt', floor: 'body', note: 'secondary prose on a banded row' },
   { ink: 'ink2', ground: 'field', floor: 'body', note: 'a field placeholder' },
+  { ink: 'ink2', ground: 'neutralChip', floor: 'body', note: "a grey avatar's initials" },
 
   // Labels, meta and basis lines — the widest-travelling ink in the app.
   { ink: 'ink3', ground: 'surface', floor: 'body', note: 'a label on a card' },
@@ -279,6 +323,7 @@ export const legalPairings: readonly {
   { ink: 'ink3', ground: 'rowHover', floor: 'body', note: 'a label on a hovered row' },
   { ink: 'ink3', ground: 'rowAlt', floor: 'body', note: 'a label on a banded row' },
   { ink: 'ink3', ground: 'track', floor: 'body', note: 'a lens at rest' },
+  { ink: 'ink3', ground: 'lensTrack', floor: 'body', note: 'a lens at rest on the Messages track' },
   { ink: 'ink3', ground: 'field', floor: 'body', note: 'a field label' },
   { ink: 'ink3', ground: 'cashFill', floor: 'body', note: 'basis on the cash card' },
   { ink: 'ink3', ground: 'badFill', floor: 'body', note: 'basis on the debt card' },
@@ -303,6 +348,7 @@ export const legalPairings: readonly {
   { ink: 'accentInk', ground: 'bg', floor: 'body', note: 'accent text on the ground' },
   { ink: 'accentInk', ground: 'badChip', floor: 'body', note: "the phone's active tab label" },
   { ink: 'onFill', ground: 'accentBtn', floor: 'body', note: 'the primary button' },
+  { ink: 'onFill', ground: 'accentGround', floor: 'body', note: 'an avatar, a stock chip' },
   { ink: 'onFill', ground: 'accentBtnHover', floor: 'body', note: 'the primary button, pressed' },
 
   // Meaning families: ink on its own fill, its chip, white and the ground.
@@ -318,6 +364,7 @@ export const legalPairings: readonly {
   { ink: 'warnInk', ground: 'surface', floor: 'body', note: 'a caution figure on a card' },
   { ink: 'warnInk', ground: 'bg', floor: 'body', note: 'a caution figure on the ground' },
   { ink: 'warnMeta', ground: 'warnFill', floor: 'body', note: 'meta under a name on a caution tint' },
+  { ink: 'warnBlockInk', ground: 'warnBlockFill', floor: 'body', note: 'a paragraph of caution in a card' },
 
   { ink: 'goodInk', ground: 'goodFill', floor: 'body', note: 'good figure on its tint' },
   { ink: 'goodInk', ground: 'goodChipLight', floor: 'body', note: 'a good chip' },
@@ -325,6 +372,13 @@ export const legalPairings: readonly {
   { ink: 'goodInk', ground: 'bg', floor: 'body', note: 'a gain on the ground' },
   { ink: 'goodInkStrong', ground: 'goodChip', floor: 'body', note: 'text on the deep green chip' },
   { ink: 'goodPanelInk', ground: 'goodFill', floor: 'body', note: 'a caption on the green panel' },
+  /**
+   * Green as a GROUND. The hand-off button — "Open WhatsApp with this" — is
+   * a door out of the app rather than the screen's next action, so it wears
+   * the green the design files give it and not the accent.
+   */
+  { ink: 'onFill', ground: 'goodInk', floor: 'body', note: 'the WhatsApp hand-off button' },
+  { ink: 'onFill', ground: 'goodInkStrong', floor: 'body', note: 'that button, pressed' },
 
   { ink: 'infoInk', ground: 'infoFill', floor: 'body', note: 'info figure on its tint' },
   { ink: 'infoInk', ground: 'infoChip', floor: 'body', note: 'an info chip' },
@@ -359,6 +413,11 @@ export const intentionalAliases: readonly (readonly [ColorToken, ColorToken])[] 
   ['neutralInk', 'ink3'],
   // The oldest aging segment IS the accent — that is the point of it.
   ['agingOldest', 'accent'],
+  // The filled button and the accent-as-a-ground are one colour: they are the
+  // same red doing a control's job and a chip's. Two names because a test
+  // counts filled CONTROLS, and because a future palette could move the
+  // button without moving every chip that wears the accent.
+  ['accentBtn', 'accentGround'],
   // Accent type and bad type are one colour. An overdue figure IS bad news,
   // and the design draws it once; two names because a future palette could
   // move "late" without moving "the next action".

@@ -130,6 +130,28 @@
   }
 }
 
+/**
+ * A screen's own door in the top bar, where it has one. The secondary
+ * recipe: a door that is not the screen's next action.
+ */
+.topAction {
+  flex: none;
+  height: 34px;
+  padding: 0 var(--ow-space-12);
+  border-radius: var(--ow-radius-button);
+  border: 1px solid var(--ow-color-divider);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  cursor: pointer;
+}
+
+.topAction:hover {
+  background: var(--ow-color-surface-2);
+}
+
 .avatar {
   width: 34px;
   height: 34px;

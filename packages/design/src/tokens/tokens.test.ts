@@ -240,12 +240,21 @@ describe('type', () => {
   it('is exactly the sizes the design file uses', () => {
     // Sorted, because JS hoists integer-like object keys ahead of the rest
     // however they are written. The set is the contract, not the order.
+    //
+    // 25, 26 and 30 arrived with the Messages handoff. The assertion did not
+    // stop being true because the rule loosened — the rule is still "exactly
+    // the sizes the design files use", and this is still an allowlist rather
+    // than a grid. Three more files draw three more sizes: a post card's
+    // price at 26 on the desktop and 25 on the phone, and the typed WhatsApp
+    // link code at 30, which is meant to be read across a yard into another
+    // device. Each is a display figure; none is a body size, and no size in
+    // the ramp moved.
     const px = Object.keys(size)
       .map(Number.parseFloat)
       .sort((a, b) => a - b);
     expect(px).toEqual([
       9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 16, 16.5, 17, 18,
-      19, 20, 22, 24, 27,
+      19, 20, 22, 24, 25, 26, 27, 30,
     ]);
   });
 
@@ -271,15 +280,28 @@ describe('space and radius', () => {
   it('names every radius after what wears it', () => {
     // A radius called "md" tells you nothing at the call site; one called
     // "card" cannot be used on a chip by accident.
+    //
+    // Three names joined the list for Messages, and the rule this test holds
+    // is why they are names rather than reuses. `checkbox` is 4px, the same
+    // value `barTop` already carries — and putting `--ow-radius-bar-top` on a
+    // checkbox is precisely the mistake the name rule exists to stop, so the
+    // duplicate value is correct and the shared name would not be.
+    // `bubbleTail` is the one corner of a chat bubble that is not a corner,
+    // and `checkboxPhone` is the same checkbox at the 17px the phone draws.
     expect(Object.keys(radius)).toEqual([
-      'barTop', 'chipSquare', 'segment', 'iconChip', 'button',
+      'bubbleTail', 'barTop', 'checkbox', 'checkboxPhone', 'chipSquare',
+      'segment', 'iconChip', 'button',
       'field', 'tile', 'block', 'card', 'sheet', 'frame', 'pill',
     ]);
   });
 
   it('orders the radii from chip to frame', () => {
+    // `checkbox` is not in this list, and cannot be: it ties with `barTop` at
+    // 4px, and a tie is not an order. The two are never adjacent and never
+    // compared, so nothing is lost by leaving one of them out of the ramp.
     const px = [
-      'barTop', 'chipSquare', 'segment', 'iconChip', 'button',
+      'bubbleTail', 'barTop', 'checkboxPhone', 'chipSquare', 'segment',
+      'iconChip', 'button',
       'field', 'tile', 'card', 'frame',
     ] as const;
     for (let i = 1; i < px.length; i++) {

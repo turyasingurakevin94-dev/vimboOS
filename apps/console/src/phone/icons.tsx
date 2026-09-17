@@ -143,4 +143,19 @@ export const PATH = {
   down: 'M16 17h6v-6M22 17l-8.5-8.5-5 5L2 7',
   dots: 'M12 12h.01M19 12h.01M5 12h.01',
   chevronDown: 'm6 9 6 6 6-6',
+  /* The Messages desk's own marks. */
+  back: 'm15 18-6-6 6-6',
+  check: 'M20 6 9 17l-5-5',
+  x: 'M18 6 6 18m0-12 12 12',
+  /** A square chat bubble. `message` is the round WhatsApp one. */
+  bubble: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  bubbleDots: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM8 10h.01M12 10h.01M16 10h.01',
+  /** The shop, as the phone header's brand mark. */
+  shop: 'M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21v-6h6v6',
+  lock: 'M6 10h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM8 10V7a4 4 0 0 1 8 0v3',
+  send: 'm3 11 18-5v12L3 13zM11.6 16.8a3 3 0 1 1-5.8-1.6',
+  bag: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0',
+  photo: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM21 15l-5-5L5 21',
+  eyeOff: 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7M2 2l20 20',
+  arrowDown: 'M12 19V5m-7 7 7 7 7-7',
 } as const;

@@ -39,8 +39,14 @@ export const space = {
 
 /** Each radius names what wears it, because that is how it stays consistent. */
 export const radius = {
+  /** The tail corner of a chat bubble — the one corner that is not a corner. */
+  bubbleTail: '3px',
   /** The top of a bar in a chart. Flat foot, rounded head. */
   barTop: '4px',
+  /** A checkbox on the desktop, at 15px square. */
+  checkbox: '4px',
+  /** The same checkbox on the phone, where it is 17px and rounder with it. */
+  checkboxPhone: '5px',
   /** A square chip — the rail's section abbreviations. */
   chipSquare: '6px',
   /** An inner segment: a ghost number field, a dashed placeholder square,
