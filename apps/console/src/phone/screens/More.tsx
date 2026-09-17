@@ -20,7 +20,8 @@
 
 import { type ReactElement } from 'react';
 import { lensCounts, owingBadge, read } from '@ow/domain';
-import { DEMO_TODAY, demoCustomers, demoDesk } from '@ow/data';
+import { useRegister } from '../../app/useRegister.js';
+import { useDesk } from '../../app/useDesk.js';
 import s from './More.module.css';
 import { Mark, PATH } from '../icons.js';
 
@@ -31,15 +32,34 @@ export interface MoreProps {
 }
 
 export function More({ onOpen }: MoreProps): ReactElement {
-  const owing = owingBadge(read(demoCustomers(), DEMO_TODAY));
-  const desk = demoDesk();
-  const owed = lensCounts(desk, DEMO_TODAY).find((c) => c.lens === 'money')?.count ?? 0;
+  /**
+   * The same books the screens behind these rows read.
+   *
+   * This list used to count demo rows while Customers and Messages had gone
+   * live, so the sheet promised eleven accounts owing and the screen it
+   * opened showed the shop's own number. A badge that disagrees with the
+   * screen it leads to is worse than no badge: it is the list inventing an
+   * obligation, which is the drift the note below already refuses.
+   *
+   * No count is shown until the books answer. A badge is a claim about how
+   * much wants you, and "not read yet" is not a quantity.
+   */
+  const register = useRegister();
+  const desk = useDesk();
+
+  const owing =
+    register.at === 'ready' ? owingBadge(read(register.data.customers, register.today)) : null;
+  const owed =
+    desk.at === 'ready'
+      ? (lensCounts(desk.data.desk, desk.today).find((c) => c.lens === 'money')?.count ?? 0)
+      : null;
 
   const rows: readonly {
     readonly id: MoreDestination;
     readonly label: string;
     readonly icon: string;
-    readonly badge: number;
+    /** `null` until the books have answered — not zero. */
+    readonly badge: number | null;
   }[] = [
     { id: 'customers', label: 'Customers', icon: PATH.users, badge: owing },
     { id: 'messages', label: 'Messages', icon: PATH.bubble, badge: owed },
@@ -65,7 +85,7 @@ export function More({ onOpen }: MoreProps): ReactElement {
               <Mark d={r.icon} size={17} />
             </span>
             <span className={s.name}>{r.label}</span>
-            {r.badge > 0 && <span className={s.badge}>{r.badge}</span>}
+            {r.badge !== null && r.badge > 0 && <span className={s.badge}>{r.badge}</span>}
             <span className={s.chevron}>
               <Mark d={PATH.chevron} size={15} />
             </span>
