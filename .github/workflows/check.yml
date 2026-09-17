@@ -40,6 +40,13 @@ jobs:
           npx --yes playwright install --with-deps chromium
           node tools/shoot.mjs "$RUNNER_TEMP/shots"
 
+      # Serves the build the way vercel.json says it is served — real files
+      # win, everything else gets index.html — and loads a deep path. A
+      # relative base passes every local check and 404s its own assets the
+      # moment a deep link is opened on the real host.
+      - name: Check the deploy shape
+        run: node tools/deploy-check.mjs
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

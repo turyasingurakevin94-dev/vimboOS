@@ -74,6 +74,36 @@ permitted colour pairing is measured against WCAG; the weakest is 5.11:1)
 and `apps/console/src/architecture.test.ts` (no cross-design imports, no raw
 hex, no pixel off the ramp, one accent per screen).
 
+## Deploying
+
+Vercel, and everything it needs is in `vercel.json` — importing the repo
+needs no settings filled in by hand.
+
+| | |
+| --- | --- |
+| Install | `pnpm install --frozen-lockfile` |
+| Build | `pnpm --filter @ow/console build` |
+| Output | `apps/console/dist` |
+
+No environment variables until the database is wired. When it is, the app
+defaults to **staging** and production needs an explicit
+`VITE_OW_TARGET=production` — so a preview deployment can never write to the
+real books by accident.
+
+Two things in that config are load-bearing:
+
+**The SPA rewrite.** Every path that is not a real file gets `index.html`.
+There is no router yet; the rewrite is there so adding one needs no change
+to the deploy config.
+
+**The base is `/`, not `./`.** Under that rewrite a relative base resolves
+`/customers/42`'s assets to `/customers/assets/…` and 404s. It passes every
+local check and fails only on the real host, so `tools/deploy-check.mjs`
+serves the build the way Vercel does and loads a deep path. CI runs it.
+
+To serve from a subpath instead — a GitHub Pages project site — build with
+`vite build --base=/vimboOS/`.
+
 ## Looking at a screen
 
 ```bash

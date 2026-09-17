@@ -4,6 +4,18 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), owTokens()],
+  /**
+   * Served from a domain root by default.
+   *
+   * NOT a relative `./`: the SPA rewrite hands index.html to every path, so
+   * at `/customers/42` a relative asset URL would resolve to
+   * `/customers/assets/…` and 404. There is no router yet, but the rewrite
+   * is already in `vercel.json` and this would break the day one lands.
+   *
+   * To serve from a subpath instead — a GitHub Pages project site, a static
+   * snapshot — pass it at build time: `vite build --base=/vimboOS/`.
+   */
+  base: '/',
   build: {
     // The two designs are separate entry points into the same app. Splitting
     // them means a phone never downloads the desktop console's table code,
