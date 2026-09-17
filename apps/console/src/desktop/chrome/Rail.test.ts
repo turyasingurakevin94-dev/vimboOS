@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { SECTIONS, TODAY, resolveTab } from './Rail.js';
+import { SECTIONS, TODAY, asksForBonus, resolveTab } from './Rail.js';
 
 const rows = SECTIONS.flatMap((s) => s.items);
 
@@ -62,6 +62,26 @@ describe('the map Rail.dc.html settles', () => {
   });
 });
 
+describe('a cut screen’s words land where its figures went', () => {
+  it.each(['commission', 'commissions', 'bonus', 'earnings', 'payout', 'the July payout'])(
+    '%s asks for the bonus block, not just the screen',
+    (query) => {
+      expect(resolveTab(query)).toBe('agents');
+      expect(asksForBonus(query)).toBe(true);
+    },
+  );
+
+  it('does not scroll the panel for someone who typed the screen’s own name', () => {
+    expect(resolveTab('Sales agents')).toBe('agents');
+    expect(asksForBonus('Sales agents')).toBe(false);
+  });
+
+  it('answers nothing for an empty query, rather than everything', () => {
+    expect(asksForBonus('')).toBe(false);
+    expect(asksForBonus('   ')).toBe(false);
+  });
+});
+
 describe('the words that used to reach a cut screen', () => {
   it.each([
     ['debtors', 'customers'],
@@ -76,6 +96,13 @@ describe('the words that used to reach a cut screen', () => {
     ['compare prices', 'pricing'],
     ['purchase analytics', 'analysis'],
     ['whatsapp', 'messages'],
+    // Commissions was cut this pass. Its four words reach Agents, where the
+    // three figures it existed to compare now sit on the agent panel.
+    ['commission', 'agents'],
+    ['commissions', 'agents'],
+    ['bonus', 'agents'],
+    ['earnings', 'agents'],
+    ['payout', 'agents'],
   ])('%s reaches %s', (query, id) => {
     expect(resolveTab(query)).toBe(id);
   });
@@ -105,7 +132,15 @@ describe('the words that used to reach a cut screen', () => {
 
   it('resolves every keyword to a row that actually exists', () => {
     const ids = new Set([TODAY, ...rows].map((r) => r.id));
-    for (const word of ['debtors', 'creditors', 'compare prices', 'purchase analytics', 'media']) {
+    for (const word of [
+      'debtors',
+      'creditors',
+      'compare prices',
+      'purchase analytics',
+      'media',
+      'commissions',
+      'payout',
+    ]) {
       const found = resolveTab(word);
       expect(found, `${word} resolves to nothing`).not.toBeNull();
       expect(ids.has(found ?? ''), `${word} resolves to ${found ?? 'null'}, which is not a row`).toBe(

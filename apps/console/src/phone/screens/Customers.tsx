@@ -22,6 +22,13 @@
  * Nothing here imports from `../../desktop/`. Both read `@ow/domain`, which
  * is what stops the two designs disagreeing about a debt while looking
  * nothing like each other.
+ *
+ * **This screen currently has no tab.** Its frame draws More active, and so
+ * does the Agents frame; the tab went to the newer one, and the thing that
+ * gives both a home is the More sheet generated from the rail's own index,
+ * which nobody has drawn yet. The screen is whole and its rules are still
+ * checked — it is one import in `PhoneApp.tsx` away from the tab bar, and
+ * one row away from the sheet when the sheet exists. See the note there.
  */
 
 import { useMemo, useState, type ReactElement } from 'react';

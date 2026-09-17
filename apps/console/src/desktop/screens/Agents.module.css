@@ -1,0 +1,849 @@
+/**
+ * Agents — the desktop console, to frame 1a's measurements.
+ *
+ * Every value here is the frame's own markup rather than a reading of its
+ * look. Three things it settles that the design system's prose does not:
+ *
+ *  - the row grid is `30 · 1fr · 108 · 100 · 112 · 62` and there are SIX
+ *    columns, because the agent's own client price is not one of them;
+ *  - the picked row is the studied violet — this app's "the thing you are
+ *    looking at", not a meaning tint;
+ *  - the waterfall's bars are 9px tall with a 2px radius, and the total's
+ *    bar is full width because it is a rule under a sum, not a measurement.
+ */
+
+/* --------------------------------- the page ------------------------------- */
+
+/* The page does not scroll: the strip is the answer to "where do I stand",
+   and scrolling it away to read row forty is the opposite of what it is
+   for. The list and the panel scroll separately. */
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ------------------------------- page header ------------------------------ */
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-16);
+  flex-wrap: wrap;
+  padding: var(--ow-space-18) var(--ow-space-22) 0;
+}
+
+.titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--ow-size-24);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading);
+}
+
+.sub {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-2);
+}
+
+/* ------------------------------- the lenses ------------------------------- */
+
+/* The period lens changes every figure on the screen, the panel included. */
+.lenses {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  flex: none;
+  padding: var(--ow-space-4);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-lens-track);
+}
+
+.lens {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 32px;
+  padding: 0 var(--ow-space-13);
+  border: 0;
+  border-radius: var(--ow-radius-icon-chip);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.lens:hover {
+  color: var(--ow-color-ink);
+}
+
+.lensOn {
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  box-shadow: var(--ow-elevation-lens);
+}
+
+/* ---------------------------- the position strip -------------------------- */
+
+.strip {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ow-space-12);
+  padding: var(--ow-space-14) var(--ow-space-22) 0;
+}
+
+.card {
+  padding: var(--ow-space-12) var(--ow-space-14);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  background: var(--ow-color-surface);
+}
+
+/* Two cards are tinted, and both are tinted because they could be misread:
+   what the shop kept is not what the agent kept, and what is owed is at the
+   shop's price rather than at his. */
+.cardGood {
+  border-color: var(--ow-color-good-edge-soft);
+  background: var(--ow-color-good-fill);
+}
+
+.cardWarn {
+  border-color: var(--ow-color-warn-panel-edge);
+  background: var(--ow-color-warn-panel);
+}
+
+.cardLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.cardLabelGood {
+  color: var(--ow-color-good-panel-ink);
+}
+
+.cardLabelWarn {
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.cardFig {
+  composes: fig from './Agents.fig.css';
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-20);
+}
+
+.cardFigGood {
+  color: var(--ow-color-good-ink);
+}
+
+.cardFigWarn {
+  color: var(--ow-color-warn-ink);
+}
+
+.cardBasis {
+  margin-top: var(--ow-space-1);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.cardBasisGood {
+  composes: cardBasis;
+  color: var(--ow-color-good-panel-ink);
+}
+
+.cardBasisWarn {
+  composes: cardBasis;
+  color: var(--ow-color-warn-panel-ink);
+}
+
+/* ---------------------------------- work ---------------------------------- */
+
+.work {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  gap: var(--ow-space-16);
+  padding: var(--ow-space-14) var(--ow-space-22) var(--ow-space-22);
+}
+
+/* --------------------------------- the list -------------------------------- */
+
+.list {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+}
+
+.listHead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-10) var(--ow-space-14);
+}
+
+.listTitle {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* The chip states the rule the columns depend on, where the columns are. */
+.ruleChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  height: 22px;
+  padding: 0 var(--ow-space-9);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-neutral-chip);
+  color: var(--ow-color-ink-2);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+/* One grid, shared by the column header and every row. Six columns: there is
+   no agent-markup column, and removing it is what makes a row readable in
+   one pass. */
+.columns {
+  flex: none;
+  display: grid;
+  grid-template-columns: 30px minmax(180px, 1fr) 108px 100px 112px 62px;
+  align-items: center;
+  column-gap: var(--ow-space-10);
+  padding: var(--ow-space-7) var(--ow-space-14);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.column {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.columnRight {
+  text-align: right;
+}
+
+.rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* -------------------------------- group band ------------------------------- */
+
+.band {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-8) var(--ow-space-14);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.bandCount {
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.bandReads {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  height: 22px;
+  padding: 0 var(--ow-space-9);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.chipGood {
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  background: var(--ow-color-good-chip-light);
+  color: var(--ow-color-good-ink);
+}
+
+.chipBad {
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  background: var(--ow-color-bad-chip);
+  color: var(--ow-color-bad-ink);
+}
+
+.chipNeutral {
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  background: var(--ow-color-neutral-chip);
+  color: var(--ow-color-ink-2);
+}
+
+/* ---------------------------------- a row ---------------------------------- */
+
+.row {
+  display: grid;
+  grid-template-columns: 30px minmax(180px, 1fr) 108px 100px 112px 62px;
+  align-items: center;
+  column-gap: var(--ow-space-10);
+  padding: var(--ow-space-9) var(--ow-space-14);
+  border-bottom: 1px solid var(--ow-color-rule);
+  cursor: pointer;
+  text-align: left;
+}
+
+.row:hover {
+  background: var(--ow-color-row-hover);
+}
+
+/* Nothing about him is violet; the CURSOR is. */
+.rowOn {
+  background: var(--ow-color-study-fill);
+}
+
+.rowRolled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ow-radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-bold);
+  flex: none;
+}
+
+.identity {
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rolledName {
+  font-size: var(--ow-size-13-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marks {
+  margin-top: var(--ow-space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  overflow: hidden;
+}
+
+.pill {
+  composes: fig from './Agents.fig.css';
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-4);
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-10-5);
+  white-space: nowrap;
+  flex: none;
+}
+
+.markFact {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  white-space: nowrap;
+}
+
+.figure {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-13-5);
+  text-align: right;
+}
+
+.figureGood {
+  color: var(--ow-color-good-ink);
+}
+
+.figureWarn {
+  color: var(--ow-color-warn-ink);
+}
+
+/* A zero is a fact here, not an alarm: he owes nothing. */
+.figureQuiet {
+  color: var(--ow-color-ink-2);
+}
+
+.termsCell {
+  text-align: right;
+}
+
+.mixed {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+/* -------------------------------- the panel -------------------------------- */
+
+.panel {
+  width: 390px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ow-space-12);
+  overflow-y: auto;
+}
+
+.panelCard {
+  flex: none;
+  overflow: hidden;
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+}
+
+.identityHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-12) var(--ow-space-14);
+  background: var(--ow-color-navy);
+}
+
+.headAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ow-radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--ow-color-accent-mark);
+  color: var(--ow-color-on-fill);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-bold);
+}
+
+.headName {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-on-fill);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headSince {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.kebab {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+  cursor: pointer;
+}
+
+.block {
+  padding: var(--ow-space-12) var(--ow-space-14);
+}
+
+.blockPlain {
+  padding: var(--ow-space-12) var(--ow-space-14);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.cardTitle {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+/* ------------------------------- the waterfall ----------------------------- */
+
+.waterfall {
+  margin-top: var(--ow-space-8);
+}
+
+.wf {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 92px;
+  align-items: center;
+  column-gap: var(--ow-space-9);
+  padding: var(--ow-space-6) 0;
+}
+
+.wfTotal {
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.wfLabel {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.wfLabelTotal {
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.wfBar {
+  height: 9px;
+  border-radius: var(--ow-radius-bar-waterfall);
+}
+
+.wfFig {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12-5);
+  text-align: right;
+}
+
+.wfFigGood {
+  color: var(--ow-color-good-ink);
+}
+
+.reading {
+  margin-top: var(--ow-space-10);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* --------------------------------- he owes --------------------------------- */
+
+.owesBlock {
+  padding: var(--ow-space-11) var(--ow-space-14);
+  background: var(--ow-color-warn-panel);
+  border-top: 1px solid var(--ow-color-warn-panel-edge);
+}
+
+.owesHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.owesLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.owesFig {
+  composes: fig from './Agents.fig.css';
+  margin-left: auto;
+  font-size: var(--ow-size-15);
+  color: var(--ow-color-warn-ink);
+}
+
+.owesReading {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-warn-panel-ink);
+  text-wrap: pretty;
+}
+
+.owesActions {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  gap: var(--ow-space-8);
+}
+
+/* The screen's ONE accent-filled control. */
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 34px;
+  padding: 0 var(--ow-space-12);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.primary:hover {
+  background: var(--ow-color-accent-btn-hover);
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  height: 34px;
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.secondary:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/* ------------------------------- the commission ---------------------------- */
+
+.bonusBlock {
+  padding: var(--ow-space-11) var(--ow-space-14);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.bonusHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.bonusHead .chip,
+.bonusHead .chipGood,
+.bonusHead .chipBad,
+.bonusHead .chipNeutral {
+  margin-left: auto;
+}
+
+.three {
+  margin-top: var(--ow-space-8);
+  display: flex;
+  gap: var(--ow-space-12);
+}
+
+.cell {
+  flex: 1;
+  min-width: 0;
+}
+
+.cellLabel {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.cellFig {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-15);
+}
+
+.cellFigWarn {
+  color: var(--ow-color-warn-ink);
+}
+
+.bonusBlock .secondary {
+  margin-top: var(--ow-space-10);
+}
+
+/* ------------------------------ which lines ------------------------------- */
+
+.lines {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+}
+
+.lineRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-7) 0 0;
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.lineFirst {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.lineName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineShare {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.lineMargin {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-good-ink);
+}
+
+/* ---------------------------- orders through them -------------------------- */
+
+.bars {
+  margin-top: var(--ow-space-10);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-8);
+  height: 60px;
+}
+
+.barCell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ow-space-5);
+}
+
+.bar {
+  width: 100%;
+  border-radius: var(--ow-radius-bar-small);
+}
+
+.barLabel {
+  font-size: var(--ow-size-10);
+  color: var(--ow-color-ink-2);
+}
+
+/* ---------------------------------- empty ---------------------------------- */
+
+.empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  padding: var(--ow-space-14) var(--ow-space-22) var(--ow-space-22);
+}
+
+.emptyWords {
+  max-width: var(--ow-measure);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* ------------------------- the desktop, on a laptop ------------------------ */
+
+/**
+ * The desktop reflows WITHIN ITSELF. This is not the phone arriving early —
+ * nothing resizes, no target changes, and every column stays.
+ *
+ * The number is arithmetic, not taste. The row grid needs
+ * 30 + 180 + 108 + 100 + 112 + 62 and five 10px gaps = 642px; the card adds
+ * 28 of padding and 2 of border, the work row adds a 16px gap and the 390px
+ * panel, and the page adds 44 of gutter on top of a 236px rail. That is
+ * 1358. Below it something has to give, and the thing that must NOT give is
+ * a column — a clipped `Terms` column is a register that has stopped saying
+ * whether the money comes before the goods, which is half of what the row
+ * is for.
+ */
+@media (max-width: 1357px) {
+  .work {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* The list stops owning a scroll box of its own and lets the page scroll:
+     two nested scrolls on one screen is a wheel that does nothing the first
+     time you turn it. */
+  .list {
+    flex: none;
+  }
+
+  .rows {
+    overflow-y: visible;
+  }
+
+  .panel {
+    width: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    overflow-y: visible;
+  }
+
+  /* The identity card is the tall one — it takes the left half, and the two
+     readings stack beside it rather than under a column of white. */
+  .panelCard:first-child {
+    grid-row: span 2;
+  }
+}

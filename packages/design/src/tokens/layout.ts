@@ -40,6 +40,12 @@ export const space = {
 /** Each radius names what wears it, because that is how it stays consistent. */
 export const radius = {
   /**
+   * A bar inside a row, 9px tall — the waterfall on the agent panel. At this
+   * height anything rounder is a lozenge; this is a bar with its corners
+   * taken off.
+   */
+  barWaterfall: '2px',
+  /**
    * A bar in a small inline series — the five months on the customer panel.
    * Not `barTop`: the shortest of those bars is 5px tall, and a 4px radius on
    * a 5px bar is a lozenge rather than a bar.
@@ -47,6 +53,11 @@ export const radius = {
   barSmall: '3px',
   /** The top of a bar in a chart. Flat foot, rounded head. */
   barTop: '4px',
+  /**
+   * A tick box, 16px square. The design system's prose says 4; every
+   * reference file that draws one draws 5, and the file wins.
+   */
+  checkbox: '5px',
   /** A square chip — the rail's section abbreviations. */
   chipSquare: '6px',
   /** An inner segment: a ghost number field, a dashed placeholder square,
@@ -82,6 +93,11 @@ export const elevation = {
   lens: '0 1px 2px rgba(23, 34, 60, 0.08)',
   /** Something genuinely floating: a menu, the phone sheet, a toast. */
   floating: '0 18px 40px rgba(23, 34, 60, 0.16)',
+  /**
+   * A sheet rising from the bottom of the phone. It throws its shadow UP,
+   * onto the screen it covers — the same light, from the other side.
+   */
+  sheet: '0 -10px 30px rgba(23, 34, 60, 0.22)',
 } as const;
 
 /** Chrome dimensions, named. */

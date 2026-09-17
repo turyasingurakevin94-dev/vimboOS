@@ -18,7 +18,7 @@ import { TabMark, type TabIcon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
-import { Customers } from './screens/Customers.js';
+import { Agents } from './screens/Agents.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
 /**
@@ -72,15 +72,24 @@ export default function PhoneApp(): ReactElement {
         <Invoices />
       ) : tab === 'more' ? (
         /**
-         * More lands on Customers, which is what frame 1b draws.
+         * More lands on Agents, and that leaves Customers with no tab.
          *
-         * When the More sheet is built — generated from the rail's own index,
-         * never a second hand-kept list — Customers becomes a row in it and
-         * this becomes a push. Until then the destination the frame shows
-         * under this tab is the destination this tab reaches, rather than a
-         * sheet nobody has designed standing between them.
+         * Two handoffs now draw their phone screen with **More** active:
+         * Customers 1b and Agents 1b. Both are right — More is where
+         * everything that is not one of the four tabs lives — and the thing
+         * that resolves them is the More sheet, generated from the rail's own
+         * index. That sheet has not been drawn, and inventing a layout to
+         * stand in for it would anchor the design it is meant to be.
+         *
+         * So the newest frame gets the tab, exactly as it draws it, and
+         * Customers keeps its screen, its stylesheet and its tests while
+         * waiting for the sheet that will carry both. This is the second
+         * time this shell has had to park a frame's own placement (Invoices
+         * wants slot two, which Sell has) and it is the same answer: say
+         * which frame is being served, and leave the other reachable in one
+         * edit rather than quietly reflowed into something else.
          */
-        <Customers />
+        <Agents />
       ) : (
         <NotBuiltYet name={TITLES[tab]} />
       )}

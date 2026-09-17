@@ -53,7 +53,9 @@ export type IconName =
   | 'more-horizontal'
   | 'trash'
   | 'sort'
-  | 'alert-triangle';
+  | 'alert-triangle'
+  | 'alert-circle'
+  | 'x';
 
 const P: Record<IconName, ReactElement> = {
   /* Deleting a payment moves money, so the glyph is the one everybody reads
@@ -191,6 +193,22 @@ const P: Record<IconName, ReactElement> = {
     <>
       <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />
       <path d="M9 21v-6h6v6" />
+    </>
+  ),
+  /* A caution that is a note rather than an alarm: the chip stating the rule
+     a column depends on. */
+  'alert-circle': (
+    <>
+      <path d="M12 8v4" />
+      <path d="M12 16h.01" />
+      <circle cx="12" cy="12" r="9" />
+    </>
+  ),
+  /* Shut this dialog. Nothing is recorded. */
+  x: (
+    <>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
     </>
   ),
   'alert-triangle': (

@@ -10,13 +10,14 @@ import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { owingBadge, read } from '@ow/domain';
 import { DEMO_TODAY, demoCustomers } from '@ow/data';
 import s from './DesktopApp.module.css';
-import { Rail, SECTIONS, TODAY, resolveTab } from './chrome/Rail.js';
+import { Rail, SECTIONS, TODAY, asksForBonus, resolveTab } from './chrome/Rail.js';
 import { Icon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
 import { Customers } from './screens/Customers.js';
+import { Agents } from './screens/Agents.js';
 
 /**
  * What a screen puts in the top bar, where the stage chips otherwise sit.
@@ -29,6 +30,7 @@ import { Customers } from './screens/Customers.js';
  */
 const CHROME: Record<string, { readonly hint: string; readonly action: string }> = {
   customers: { hint: 'Name, phone, or "owes over 1m"', action: 'New customer' },
+  agents: { hint: 'Agent, order no., or "owes the shop"', action: 'Invite an agent' },
 };
 
 /** The order-stage chips in the top bar. They replace the old status bar. */
@@ -54,8 +56,32 @@ const PARENTS = new Map<string, string>(
 
 export default function DesktopApp(): ReactElement {
   const [section, setSection] = useState('today');
+  /**
+   * The top bar's action belongs to the SCREEN, not the shell.
+   *
+   * The bar is chrome, so the button is drawn here; what it opens is the
+   * screen's — *Invite an agent* raises frame 2g, which reads the same
+   * agents the list reads. The shell holds one flag and hands it down, and
+   * the screen hands back the close. A screen that owned the button would
+   * have to own the bar.
+   */
+  const [topAction, setTopAction] = useState(false);
+  /**
+   * Which part of the screen the search was asking for.
+   *
+   * "payout" resolves to Agents, and a cut screen is only really absorbed if
+   * the word lands on the figures it used to show rather than on the top of
+   * whatever swallowed it. It counts up so that typing it twice scrolls
+   * twice.
+   */
+  const [bonusAsk, setBonusAsk] = useState(0);
   const search = useRef<HTMLInputElement>(null);
   const chrome = CHROME[section];
+
+  const navigate = (id: string): void => {
+    setTopAction(false);
+    setSection(id);
+  };
 
   /**
    * The Customers badge, from the same reckoning the screen reads.
@@ -87,7 +113,7 @@ export default function DesktopApp(): ReactElement {
 
   return (
     <div className={s.shell}>
-      <Rail current={section} onNavigate={setSection} badges={badges} />
+      <Rail current={section} onNavigate={navigate} badges={badges} />
 
       <div className={s.work}>
         <header className={s.topbar}>
@@ -108,9 +134,13 @@ export default function DesktopApp(): ReactElement {
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return;
                 // "debtors" still reaches the list it used to name.
-                const found = resolveTab(e.currentTarget.value);
+                const typed = e.currentTarget.value;
+                const found = resolveTab(typed);
                 if (found !== null) {
-                  setSection(found);
+                  navigate(found);
+                  if (found === 'agents' && asksForBonus(typed)) {
+                    setBonusAsk((n) => n + 1);
+                  }
                   e.currentTarget.blur();
                 }
               }}
@@ -140,7 +170,7 @@ export default function DesktopApp(): ReactElement {
               ))}
             </div>
           ) : (
-            <button type="button" className={s.topAction}>
+            <button type="button" className={s.topAction} onClick={() => setTopAction(true)}>
               <Icon name="plus" size={15} />
               {chrome.action}
             </button>
@@ -158,6 +188,12 @@ export default function DesktopApp(): ReactElement {
             <Invoices />
           ) : section === 'customers' ? (
             <Customers />
+          ) : section === 'agents' ? (
+            <Agents
+              inviting={topAction}
+              bonusAsk={bonusAsk}
+              onInviteClose={() => setTopAction(false)}
+            />
           ) : (
             <NotBuiltYet name={NAMES.get(section) ?? section} />
           )}

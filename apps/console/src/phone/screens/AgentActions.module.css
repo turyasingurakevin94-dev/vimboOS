@@ -1,0 +1,501 @@
+/**
+ * The four actions on the phone — frames 2b, 2d, 2f and 2h.
+ *
+ * No width media query, ever: the phone is one width.
+ *
+ * Two shapes. A **full screen** covers the tab bar as well, because a form
+ * that can take money should not sit beside a way out of it; a **sheet**
+ * rises over a scrim with what it is about still visible behind it. Fields
+ * are 46px, commits are 48px, and every one of them is at the bottom.
+ */
+
+/* ------------------------------- full screen ------------------------------- */
+
+.full {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ow-layer-modal);
+  display: flex;
+  flex-direction: column;
+  background: var(--ow-color-surface);
+}
+
+.fullHead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-11) var(--ow-space-12) var(--ow-space-13);
+  background: var(--ow-color-navy);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  margin: 0 calc(var(--ow-space-12) * -1) 0 calc(var(--ow-space-13) * -1);
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+}
+
+.fullTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------ what he owes ------------------------------- */
+
+.owedBand {
+  flex: none;
+  padding: var(--ow-space-11) var(--ow-space-13);
+  background: var(--ow-color-warn-panel);
+  border-bottom: 1px solid var(--ow-color-warn-panel-edge);
+}
+
+.owedLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.owedFig {
+  composes: fig from './Agents.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-24);
+  color: var(--ow-color-warn-ink);
+}
+
+.owedWords {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-warn-panel-ink);
+  text-wrap: pretty;
+}
+
+/* --------------------------------- the body -------------------------------- */
+
+.fullBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-13);
+  background: var(--ow-color-surface);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.labelSpaced {
+  composes: label;
+  margin-top: var(--ow-space-14);
+}
+
+.labelWarn {
+  composes: label;
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.labelCount {
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-normal);
+  color: var(--ow-color-ink);
+}
+
+.field {
+  margin-top: var(--ow-space-6);
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ow-space-7);
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-block);
+  font-size: var(--ow-size-13);
+}
+
+/* The field the work starts in wears the navy edge. */
+.fieldLive {
+  composes: field;
+  border-color: var(--ow-color-navy);
+}
+
+.amountField {
+  composes: field;
+  border-color: var(--ow-color-navy);
+}
+
+.amountFig {
+  composes: fig from './Agents.fig.css';
+  flex: 1;
+  font-size: var(--ow-size-19);
+}
+
+.unit {
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+}
+
+.input::placeholder {
+  color: var(--ow-color-ink-3);
+}
+
+.inputFig {
+  composes: input;
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-15);
+}
+
+.select {
+  composes: field;
+  position: relative;
+  padding: 0;
+}
+
+.selectInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--ow-space-12);
+  border: 0;
+  border-radius: var(--ow-radius-block);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+  appearance: none;
+}
+
+.caret {
+  position: absolute;
+  right: var(--ow-space-12);
+  display: flex;
+  color: var(--ow-color-ink-4);
+  pointer-events: none;
+}
+
+.dateText {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-13);
+}
+
+/* ------------------------------- the orders -------------------------------- */
+
+.orders {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+}
+
+.order {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--ow-space-11);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  text-align: left;
+}
+
+/* Paid for at pickup: in the cycle, with nothing to take off it. */
+.orderQuiet {
+  composes: order;
+  opacity: 0.75;
+}
+
+.tick {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-checkbox);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-on-fill);
+}
+
+.tickOn {
+  composes: tick;
+  border-color: var(--ow-color-navy);
+  background: var(--ow-color-navy);
+}
+
+.orderWho {
+  flex: 1;
+  min-width: 0;
+}
+
+.orderDoc {
+  composes: fig from './Agents.fig.css';
+  display: block;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+}
+
+.orderWhen {
+  display: block;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.orderRest {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+}
+
+.orderFig {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+}
+
+.orderFigQuiet {
+  composes: orderFig;
+  color: var(--ow-color-ink-2);
+}
+
+/* ---------------------------------- foot ----------------------------------- */
+
+.foot {
+  flex: none;
+  padding: var(--ow-space-11) var(--ow-space-13) var(--ow-space-13);
+  background: var(--ow-color-surface);
+  border-top: 1px solid var(--ow-color-hairline);
+}
+
+.footWords {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* The one accent-filled control in this file, in the thumb's reach. */
+.primary {
+  margin-top: var(--ow-space-8);
+  width: 100%;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-7);
+  border: 0;
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.primary:disabled {
+  opacity: 0.5;
+}
+
+.primaryWide {
+  composes: primary;
+  margin-top: var(--ow-space-12);
+}
+
+.secondaryWide {
+  margin-top: var(--ow-space-8);
+  width: 100%;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/* Navy, not accent: holding is not the screen's next action. */
+.darkWide {
+  composes: secondaryWide;
+  margin-top: var(--ow-space-14);
+  border-color: var(--ow-color-navy);
+  background: var(--ow-color-navy);
+  color: var(--ow-color-on-fill);
+}
+
+/* --------------------------------- a sheet --------------------------------- */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ow-layer-modal);
+  background: var(--ow-scrim);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--ow-space-13) var(--ow-space-13) var(--ow-space-15);
+  background: var(--ow-color-surface);
+  border-radius: var(--ow-radius-frame) var(--ow-radius-frame) 0 0;
+  box-shadow: var(--ow-elevation-sheet);
+}
+
+.grab {
+  display: block;
+  width: 38px;
+  height: 4px;
+  margin: 0 auto var(--ow-space-12);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-field-edge);
+}
+
+.sheetTitle {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+}
+
+.sheetSub {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.sheetWords {
+  margin-top: var(--ow-space-12);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+.inlineFig {
+  composes: fig from './Agents.fig.css';
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+}
+
+/* Claimable leads; not yet counted sits beside it with its reason. */
+.claimRow {
+  margin-top: var(--ow-space-12);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-16);
+}
+
+.claimFig {
+  composes: fig from './Agents.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-24);
+}
+
+.claimSide {
+  padding-bottom: var(--ow-space-3);
+}
+
+.claimSideFig {
+  composes: fig from './Agents.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-14);
+  color: var(--ow-color-warn-ink);
+}
+
+/* What the agent will read, before it is done to him. */
+.quote {
+  margin-top: var(--ow-space-6);
+  padding: var(--ow-space-10) var(--ow-space-11);
+  background: var(--ow-color-row-hover);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-field);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-prose);
+}
+
+/* --------------------------------- the terms ------------------------------- */
+
+.terms {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+}
+
+.term {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--ow-space-12);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  text-align: left;
+}
+
+.termOn {
+  composes: term;
+  border-color: var(--ow-color-navy);
+  background: var(--ow-color-row-hover);
+}
+
+.termHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+.termName {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-ink);
+}
+
+.termWords {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}

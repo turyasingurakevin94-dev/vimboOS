@@ -319,6 +319,34 @@ describe('every className resolves to a real rule', () => {
   });
 });
 
+describe('the agent’s own client price never reaches a frame', () => {
+  /**
+   * The Agents handoff's first check before a screen is called done: *is the
+   * agent's own client price absent from every frame, including the
+   * settlement table?*
+   *
+   * An agent buys from the shop and sells on at his own price; the shop never
+   * collects from his clients, so `agentSellPrice` is not the shop's record
+   * to show. The domain carries it on the line — `hisPrice` — because the
+   * line carries it, and reads exactly one thing off it: whether he is
+   * selling at the shop price, which is a fact about him rather than a
+   * figure of his.
+   *
+   * Nothing a person can read may print it. That is one grep, and it is
+   * cheaper than the argument this check exists to prevent.
+   */
+  it.each([...files(['.tsx']), ...files(['.css'])])('%s', (file) => {
+    const printed = read(file)
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+      .includes('hisPrice');
+    expect(
+      printed,
+      `${show(file)} reads hisPrice. The agent's own client price is not the shop's record to show — the screen states the FACT ("sells at the shop price") and never the figure.`,
+    ).toBe(false);
+  });
+});
+
 describe('every design token a stylesheet asks for exists', () => {
   /**
    * `var(--ow-color-ink-2)` where the generated name is `--ow-color-ink2` is
