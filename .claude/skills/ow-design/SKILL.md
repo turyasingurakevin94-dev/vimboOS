@@ -17,13 +17,62 @@ as a test can reach, and it is not optional.
 
 ## 0. The objective, above everything else
 
-**The user experience is the core objective.** Not feature count, not
-fidelity to a mockup, not how clever the implementation is. Every decision
-in this file resolves toward one question: *does the person in front of this
-screen know what matters, what needs attention, and what to do next?*
+**The user experience is the core objective.** Not feature count, not how
+clever the implementation is. Every decision in this file resolves toward one
+question: *does the person in front of this screen know what matters, what
+needs attention, and what to do next?*
 
-If a rule in this file ever obstructs that, the rule is wrong and should be
-argued with in a commit — not quietly ignored.
+Matching the owner's mockup (§0.5) is not in tension with that — the mockup
+IS their answer to that question, for their own shop and their own working
+day. Building it faithfully is how the objective is served, not a detour
+around it. Where a mockup would genuinely fail the person using it — a
+pairing under the contrast floor, a target too small for a thumb in a yard —
+name it, show the measurement, and propose the smallest change that fixes
+it. Never deviate silently.
+
+If a rule in this file ever obstructs the objective, the rule is wrong and
+should be argued with in a commit — not quietly ignored.
+
+---
+
+## 0.5 The mockup is the design
+
+**The owner supplies a mockup for each screen, generated in Claude design.
+Match it exactly. Do not reinterpret it.**
+
+This is the point of the rewrite. Rebuilding the same interface in a
+different language buys nothing — the old app already works. What is being
+bought is the *design*, and the mockup is the design. A screen that is
+"in the spirit of" the mockup is a screen the owner now has to argue with.
+
+So the order of work for any screen is:
+
+1. **Ask for the mockup before designing anything.** If there is no mockup
+   for a screen yet, build the domain and the data for it and stop. Do not
+   invent a layout to fill the gap — it will be thrown away, and worse, it
+   will anchor the conversation.
+2. **Read the mockup for its measurements**, not just its look: the exact
+   colours, type sizes, weights, spacing, radii, and the structure of every
+   component on it.
+3. **Reconcile it with the tokens, in that direction.** Where the mockup uses
+   a value the system does not have, **the token system moves to meet the
+   mockup** — add the value in `tokens/`, with its contrast pairings, in the
+   same commit. Never hand-code a literal in a component to match a mockup,
+   and never bend the mockup to a token that happens to be close. The system
+   exists to make the mockup repeatable, not to overrule it.
+   The one thing that does not bend is the contrast floor: if a pairing in a
+   mockup measures below 4.5:1, say so, show the measurement, and propose the
+   nearest value that clears it.
+4. **A mockup is one design.** The two-designs law still holds, so each
+   screen needs a desktop mockup and a phone mockup. Given only one, build
+   that one and ask for the other rather than deriving it — a derived phone
+   layout is the responsive compromise wearing a disguise.
+5. **Compare before saying it is done.** Screenshot the built screen at the
+   mockup's width and put the two side by side. Differences get named, not
+   quietly kept.
+
+Everything below this section still applies — it is how the mockup gets
+BUILT, not a second opinion about how it should look.
 
 ---
 

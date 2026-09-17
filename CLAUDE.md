@@ -28,15 +28,28 @@ same Supabase project, same 95 migrations, same live books.
 The user asked for this explicitly and it is the standing rule of the
 project. A screen built without it is rework, however good it looks.
 
+> ### THE SECOND RULE: the mockup is the design.
+>
+> The owner supplies a mockup per screen, generated in Claude design.
+> **Match it exactly.** Rebuilding the same interface in a different
+> language buys nothing — the design is the thing being bought.
+>
+> No mockup for a screen yet? Build its domain and data, and stop. Do not
+> invent a layout to fill the gap. Where a mockup uses a value the tokens
+> do not have, the TOKENS move to meet it — see §0.5 of the design skill.
+
 ---
 
 ## The core objective
 
-**User experience, above everything else.** Not feature count, not fidelity
-to a mockup, not implementation cleverness. Every screen is a
-decision-making workspace, not a place that displays data. The person should
-know what matters, what needs attention and what to do next — within three
-seconds.
+**User experience, above everything else.** Not feature count, not
+implementation cleverness. Every screen is a decision-making workspace, not a
+place that displays data. The person should know what matters, what needs
+attention and what to do next — within three seconds.
+
+The mockup is not in tension with this: it is the owner's own answer to that
+question. Build it faithfully. Where it would genuinely fail the person using
+it, name the measurement and propose a fix — never deviate quietly.
 
 Every screen surfaces 3–5 actionable insights automatically. See §5 of the
 design skill.
