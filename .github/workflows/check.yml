@@ -1,0 +1,47 @@
+name: Check
+
+# Every push and every pull request, on all branches. Deliberately no
+# `paths:` filter: the design tokens, the domain types and the screens all
+# assert things about each other, so almost any change can break the suite
+# and a filter would mostly serve to hide the ones that did.
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Typecheck, lint and test — the same three the contributor runs.
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+
+      # A screen that renders while throwing is not correct, so the build
+      # and the screenshot harness run too. The harness fails on any page
+      # error at either design's width.
+      - run: pnpm --filter @ow/console build
+      - name: Look at both designs
+        run: |
+          npx --yes playwright install --with-deps chromium
+          node tools/shoot.mjs "$RUNNER_TEMP/shots"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens
+          path: ${{ runner.temp }}/shots

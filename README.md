@@ -1,5 +1,8 @@
 # Omni-Ware
 
+> The repository is `vimboOS`; the product inside it is **Omni-Ware**. The
+> package scope is `@ow/*`. Nothing depends on those names matching.
+
 Order, stock and money management for a wholesale hardware shop in Uganda.
 One owner, a phone in a yard in daylight, a computer on a desk. Every figure
 on screen is money that is really theirs.
