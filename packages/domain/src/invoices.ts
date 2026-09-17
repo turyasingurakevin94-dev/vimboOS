@@ -282,6 +282,111 @@ export function readBand(
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Grouping                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export interface LedgerGroup {
+  readonly key: 'overdue' | 'open' | 'settled';
+  readonly label: string;
+  readonly count: number;
+  /**
+   * Still due for the first two groups; **collected** for settled. They are
+   * different questions — "how much is out there" and "how much came in" —
+   * and the phone's group headers say which by their wording.
+   */
+  readonly total: Amount;
+  readonly invoices: readonly SalesInvoice[];
+}
+
+/**
+ * The three groups the phone ledger draws: Overdue, Open, Settled.
+ *
+ * Three, not four — `part` lives in Open, for the reason `ATTENTION` gives.
+ * A group with nothing in it is dropped rather than drawn empty: a header
+ * reading "Overdue · 0" is a heading for an absence, and the screen has
+ * better ways to say nothing is late.
+ *
+ * An invoice whose state cannot be derived goes in Overdue, the same place
+ * the sort puts it, because the two must not disagree about where a row is.
+ */
+export function groupLedger(
+  sales: readonly SalesInvoice[],
+  now: Date,
+): readonly LedgerGroup[] {
+  const live = sales.filter((s) => s.voided === undefined);
+  const settled = live.filter((s) => Money.isZero(balanceDue(s)));
+  const unsettled = live.filter((s) => !Money.isZero(balanceDue(s)));
+  const overdue = unsettled.filter((s) => attentionRank(s, now) <= ATTENTION.unknown);
+  const open = unsettled.filter((s) => attentionRank(s, now) > ATTENTION.unknown);
+
+  const sort = [...sales].sort(byAttention(now));
+  const inOrder = (set: readonly SalesInvoice[]): readonly SalesInvoice[] =>
+    sort.filter((s) => set.includes(s));
+
+  return [
+    {
+      key: 'overdue' as const,
+      label: 'Overdue',
+      count: overdue.length,
+      total: Money.add(...overdue.map(balanceDue)),
+      invoices: inOrder(overdue),
+    },
+    {
+      key: 'open' as const,
+      label: 'Open',
+      count: open.length,
+      total: Money.add(...open.map(balanceDue)),
+      invoices: inOrder(open),
+    },
+    {
+      key: 'settled' as const,
+      label: 'Settled',
+      count: settled.length,
+      total: Money.add(...settled.map(receivedSoFar)),
+      invoices: inOrder(settled),
+    },
+  ].filter((g) => g.count > 0);
+}
+
+export interface SettledDay {
+  readonly on: Date;
+  readonly count: number;
+  readonly collected: Amount;
+}
+
+/**
+ * Settled invoices, collapsed to one row a day, newest first.
+ *
+ * 141 rows of "paid, nothing to do" is 141 rows of nothing to do. The day is
+ * when the invoice was FINISHED — the date of its last payment — not when it
+ * was raised, because a ledger of settled money is a record of what came in
+ * and the day it came in is the useful one.
+ */
+export function settledByDay(sales: readonly SalesInvoice[]): readonly SettledDay[] {
+  const days = new Map<string, { on: Date; count: number; amounts: Amount[] }>();
+
+  for (const inv of sales) {
+    if (inv.voided !== undefined || !Money.isZero(balanceDue(inv))) continue;
+    const last = inv.payments.reduce<Date | null>(
+      (latest, p) => (latest === null || p.on > latest ? p.on : latest),
+      null,
+    );
+    // Settled with no payment recorded is a written-off or zero invoice. It
+    // is not money that came in on a day, so it gets no day row.
+    if (last === null) continue;
+    const key = `${last.getFullYear()}-${last.getMonth()}-${last.getDate()}`;
+    const bucket = days.get(key) ?? { on: last, count: 0, amounts: [] };
+    bucket.count += 1;
+    bucket.amounts.push(receivedSoFar(inv));
+    days.set(key, bucket);
+  }
+
+  return [...days.values()]
+    .map((b) => ({ on: b.on, count: b.count, collected: Money.add(...b.amounts) }))
+    .sort((a, b) => b.on.getTime() - a.on.getTime());
+}
+
+/* -------------------------------------------------------------------------- */
 /*  The link between the two ledgers                                          */
 /* -------------------------------------------------------------------------- */
 

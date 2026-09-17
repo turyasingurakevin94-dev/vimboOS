@@ -1,0 +1,385 @@
+/**
+ * Invoices — the phone. Frame 1c of the Invoices phone handoff.
+ *
+ * **One ledger at a time.** The desktop faces two ledgers at each other; at
+ * 390 that is not a layout, so the switch moves into the header and the
+ * LINK moves onto the row. Hiding the purchases column loses nothing because
+ * the row that has purchases against it now states them — a doc pill and
+ * "bought for it · 95,000 still owed".
+ *
+ * The skin is this app's, by the owner's decision; the mapping from the
+ * handoff's steel palette is written out at the head of the desktop
+ * `Invoices.module.css` and is the same here.
+ *
+ * Only ONE row in the list owns an action. Everything else is a tap-through
+ * with a chevron, and the chevron is affordance, not a second control.
+ */
+
+.screen {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --------------------------------- header --------------------------------- */
+
+.header {
+  flex: none;
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-11) var(--ow-space-13) var(--ow-space-12);
+  padding-top: calc(var(--ow-space-11) + env(safe-area-inset-top));
+}
+
+.headTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.headTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading-soft);
+  color: var(--ow-color-on-fill);
+}
+
+.headBtn {
+  width: var(--ow-chrome-tap);
+  height: var(--ow-chrome-tap);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Pulled back out to the header's edge: a 44px target that does not cost
+     44px of header. */
+  margin: calc(var(--ow-space-11) * -1) calc(var(--ow-space-13) * -1)
+    calc(var(--ow-space-11) * -1) 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+}
+
+.headLabel {
+  margin-top: var(--ow-space-10);
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-rail-ink-2);
+}
+
+/* Written in full. The phone abbreviates money in exactly one place — the
+   Today strip — and this is not it. */
+.headFig {
+  composes: fig from './Invoices.fig.css';
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-24);
+  font-weight: var(--ow-weight-medium);
+  line-height: var(--ow-leading-tight);
+  color: var(--ow-color-on-fill);
+}
+
+.headUnit {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.headBasis {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-rail-ink);
+}
+
+/* The switch sits ON the navy, so its trough is translucent white — no flat
+   token can let the navy through. */
+.seg {
+  margin-top: var(--ow-space-11);
+  display: flex;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--ow-radius-icon-chip);
+  padding: var(--ow-space-2);
+}
+
+.side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-4);
+  height: 30px;
+  border: 0;
+  border-radius: var(--ow-radius-chip-square);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-rail-ink);
+  white-space: nowrap;
+}
+
+.sideOn {
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+}
+
+.sideCount {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-11);
+}
+
+/* ---------------------------------- list ---------------------------------- */
+
+/* Edge to edge: at 390 a card border separates the list from nothing. */
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--ow-color-surface);
+}
+
+.group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-7) var(--ow-space-13);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.group:first-child {
+  border-top: 0;
+}
+
+.groupLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-2);
+}
+
+.groupCount {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.groupFig {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-medium);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  width: 100%;
+  /* 11/13 with two lines of content clears the 44px floor by itself. */
+  padding: var(--ow-space-11) var(--ow-space-13);
+  border-top: 1px solid var(--ow-color-rule);
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: none;
+  text-align: left;
+  font-family: var(--ow-font-ui);
+  color: var(--ow-color-ink);
+}
+
+/* The one row that needs you is tinted and stops being a tap-through. */
+.rowNeedsYou {
+  composes: row;
+  align-items: flex-start;
+  background: var(--ow-color-surface-2);
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.line1 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.doc {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-accent-ink);
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 19px;
+  padding: 0 var(--ow-space-6);
+  border-radius: var(--ow-radius-chip-square);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.line2 {
+  margin-top: var(--ow-space-5);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.line2Big {
+  composes: line2;
+  margin-top: var(--ow-space-6);
+}
+
+/* The figure that matters, with its basis beside it — never alone. */
+.owed {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-medium);
+}
+
+.owedBig {
+  composes: owed;
+  font-size: var(--ow-size-17);
+  color: var(--ow-color-bad-ink);
+}
+
+.basis {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------ the row's link ---------------------------- */
+
+/**
+ * What the desktop puts in a facing column, the row states in words.
+ *
+ * This is the whole reason one ledger at a time costs nothing: the sale that
+ * has purchases against it carries them.
+ */
+.link {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+}
+
+.linkPill {
+  composes: fig from './Invoices.fig.css';
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 19px;
+  padding: 0 var(--ow-space-6);
+  border: 1px solid var(--ow-color-warn-edge);
+  border-radius: var(--ow-radius-chip-square);
+  background: var(--ow-color-warn-fill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-warn-ink);
+}
+
+.linkPillPaid {
+  composes: linkPill;
+  border-color: var(--ow-color-good-edge);
+  background: var(--ow-color-good-chip-light);
+  color: var(--ow-color-good-ink);
+}
+
+/* --------------------------------- action --------------------------------- */
+
+/**
+ * The single primary action, full width in the row that owns it.
+ *
+ * 44px, and the figure it acts on is on the line above — the handoff's first
+ * check is that the primary is at least 44px with its figure still visible.
+ */
+.act {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-6);
+  width: 100%;
+  height: var(--ow-chrome-tap);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+}
+
+.actFig {
+  composes: fig from './Invoices.fig.css';
+  font-size: var(--ow-size-14);
+}
+
+.chevron {
+  flex: none;
+  color: var(--ow-color-ink-faint);
+}
+
+/* ------------------------------ settled day ------------------------------- */
+
+.dayWhen {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+}
+
+.dayFig {
+  composes: fig from './Invoices.fig.css';
+  flex: none;
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-good-ink);
+}
+
+/* ---------------------------------- empty --------------------------------- */
+
+/* Never a blank list: it says so, and names what to do instead. */
+.empty {
+  padding: var(--ow-space-24) var(--ow-space-13);
+  text-align: center;
+}
+
+.emptySay {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.emptyWhy {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+}

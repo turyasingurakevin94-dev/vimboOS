@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import * as Money from './money.js';
 import {
   afterDeleting,
+  groupLedger,
+  settledByDay,
   attentionRank,
   balanceDue,
   byAttention,
@@ -301,5 +303,76 @@ describe('the link that lets the two ledgers dim each other', () => {
     // The resting state is "no question asked yet", not "all dimmed".
     expect(linkedTo(null, sales, purchases).size).toBe(6);
     expect(linkedTo('not-a-doc', sales, purchases).size).toBe(6);
+  });
+});
+
+describe('the three groups the phone ledger draws', () => {
+  const now = NOW;
+  const rows = [
+    sale({ doc: 'late-1', total: m(270_000), dueOn: daysBefore(20), issued: daysBefore(34) }),
+    sale({ doc: 'late-2', total: m(100_000), dueOn: daysBefore(1), payments: [pay('x', 10_000)] }),
+    sale({ doc: 'part', total: m(740_000), payments: [pay('y', 700_000)] }),
+    sale({ doc: 'open', total: m(310_000) }),
+    sale({ doc: 'settled', total: m(500_000), payments: [pay('z', 500_000)] }),
+    sale({ doc: 'gone', total: m(999_000), voided: { replacedBy: null, on: now } }),
+  ];
+
+  it('is three groups, and part-paid lives in Open', () => {
+    expect(groupLedger(rows, now).map((g) => [g.label, g.count])).toEqual([
+      ['Overdue', 2],
+      ['Open', 2],
+      ['Settled', 1],
+    ]);
+  });
+
+  it('totals what is STILL DUE for the first two and what CAME IN for settled', () => {
+    const [overdue, open, settled] = groupLedger(rows, now);
+    expect(overdue?.total).toBe(270_000 + 90_000);
+    expect(open?.total).toBe(40_000 + 310_000);
+    // Not the balance — that is zero. The question a settled group answers
+    // is how much came in.
+    expect(settled?.total).toBe(500_000);
+  });
+
+  it('drops an empty group rather than heading an absence', () => {
+    expect(groupLedger([sale({ doc: 'only-open' })], now).map((g) => g.label)).toEqual(['Open']);
+    expect(groupLedger([], now)).toEqual([]);
+  });
+
+  it('puts an underivable row in Overdue, where the SORT also puts it', () => {
+    // The two must not disagree about where a row is.
+    const unknown = sale({ doc: 'no-terms', dueOn: null, payments: [pay('p', 1)] });
+    const groups = groupLedger([unknown, sale({ doc: 'open' })], now);
+    expect(groups[0]?.label).toBe('Overdue');
+    expect(groups[0]?.invoices.map((i) => i.doc)).toEqual(['no-terms']);
+  });
+});
+
+describe('settled invoices collapse to one row a day', () => {
+  it('buckets by the day the invoice was FINISHED, newest first', () => {
+    // Raised on different days, both finished on the same one.
+    const rows = [
+      sale({ doc: 'a', total: m(100_000), issued: daysBefore(9), payments: [pay('a1', 100_000, { on: daysBefore(3) })] }),
+      sale({ doc: 'b', total: m(200_000), issued: daysBefore(4), payments: [pay('b1', 200_000, { on: daysBefore(3) })] }),
+      sale({ doc: 'c', total: m(50_000), issued: daysBefore(8), payments: [pay('c1', 50_000, { on: daysBefore(1) })] }),
+    ];
+    expect(settledByDay(rows).map((d) => [d.count, d.collected])).toEqual([
+      [1, 50_000],
+      [2, 300_000],
+    ]);
+  });
+
+  it('leaves out anything still owing, and anything voided', () => {
+    const rows = [
+      sale({ doc: 'owing', total: m(100_000), payments: [pay('p', 40_000)] }),
+      sale({ doc: 'gone', total: m(100_000), payments: [pay('q', 100_000)], voided: { replacedBy: null, on: NOW } }),
+    ];
+    expect(settledByDay(rows)).toEqual([]);
+  });
+
+  it('gives no day row to a zero invoice that was never paid', () => {
+    // Settled with no payment is written off or was never worth anything.
+    // It is not money that came in on a day.
+    expect(settledByDay([sale({ doc: 'nil', total: Money.ZERO, payments: [] })])).toEqual([]);
   });
 });

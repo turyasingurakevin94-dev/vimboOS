@@ -1,0 +1,7 @@
+/** The figure face, alone so no variant's weight is decided by file order. */
+.fig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+}

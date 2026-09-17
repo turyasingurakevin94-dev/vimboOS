@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { balanceDue, paidOffShare, readBand, state } from '@ow/domain';
+import { Money, balanceDue, paidOffShare, readBand, settledByDay, state } from '@ow/domain';
 import { DEMO_TODAY, demoPurchaseInvoices, demoSalesInvoices } from './demo-invoices.js';
 
 /**
@@ -65,5 +65,29 @@ describe('the six rows frame 1b draws', () => {
     expect(state(find('INV-0175'), DEMO_TODAY)).toMatchObject({ value: 'late' });
     expect(state(find('INV-0209'), DEMO_TODAY)).toMatchObject({ value: 'late' });
     expect(state(find('INV-0363'), DEMO_TODAY)).toMatchObject({ value: 'open' });
+  });
+});
+
+describe('the settled tail reads like trading, not like a generator', () => {
+  const days = settledByDay(demoSalesInvoices());
+
+  it('still sums to the shilling', () => {
+    // The point of `allocateBy`: vary the invoices, keep the total exact.
+    expect(Money.add(...days.map((d) => d.collected))).toBe(77_043_995);
+    expect(days.reduce((n, d) => n + d.count, 0)).toBe(141);
+  });
+
+  it('does not draw the same day six times', () => {
+    // The first version spread 141 invoices with `i % 27`, so the phone's
+    // settled group showed "6 invoices · 3,278,468" over and over. Demo data
+    // that is obviously generated stops the screen being judged on its
+    // design.
+    expect(new Set(days.map((d) => d.count)).size).toBeGreaterThan(3);
+    expect(new Set(days.map((d) => d.collected)).size).toBe(days.length);
+  });
+
+  it('is newest first', () => {
+    const times = days.map((d) => d.on.getTime());
+    expect([...times].sort((a, b) => b - a)).toEqual(times);
   });
 });

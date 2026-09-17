@@ -106,9 +106,39 @@ const REGULARS = [
   'Shafik Katwe',
 ] as const;
 
+/**
+ * How many invoices were finished on each of the past days, newest first.
+ *
+ * Hand-varied on purpose. The first version spread 141 invoices evenly with
+ * `i % 27` and split the total with `allocate`, so the phone's settled group
+ * drew six identical rows — "6 invoices · 3,278,468" over and over. Demo
+ * data that is obviously generated stops the screen being judged: a reviewer
+ * reads the repetition instead of the design. Real trading days differ.
+ */
+const PER_DAY = [9, 4, 7, 3, 11, 5, 8, 2, 6, 10, 4, 7, 5, 9, 3, 6, 8, 4, 11, 5, 7, 3, 9, 6];
+
+/** The day each settled invoice was finished, as whole days before today. */
+function settledDayOffsets(): readonly number[] {
+  const out: number[] = [];
+  for (const [d, n] of PER_DAY.entries()) {
+    for (let k = 0; k < n && out.length < SETTLED_COUNT; k += 1) out.push(d + 1);
+  }
+  // Any remainder lands on the oldest day rather than being dropped — the
+  // count has to stay 141, because the band derives from it.
+  while (out.length < SETTLED_COUNT) out.push(PER_DAY.length + 1);
+  return out;
+}
+
 function settledTail(): readonly SalesInvoice[] {
-  return Money.allocate(m(SETTLED_TOTAL), SETTLED_COUNT).map((total, i) => {
-    const issuedAgo = 2 + (i % 27);
+  const offsets = settledDayOffsets();
+  // `allocateBy` keeps the sum EXACT while letting the invoices differ in
+  // size — odd shillings go to the largest weights, so 141 varied totals
+  // still come to 77,043,995 to the shilling.
+  const weights = offsets.map((_, i) => ((i * 13) % 17) + 6);
+
+  return Money.allocateBy(m(SETTLED_TOTAL), weights).map((total, i) => {
+    const paidAgo = offsets[i] ?? 1;
+    const issuedAgo = paidAgo + 3 + (i % 9);
     const doc = `INV-${String(100 + i).padStart(4, '0')}`;
     return {
       kind: 'sale' as const,
@@ -117,7 +147,7 @@ function settledTail(): readonly SalesInvoice[] {
       total,
       issued: day(-issuedAgo),
       dueOn: day(-issuedAgo + 30),
-      payments: [took(`${doc}-1`, total, Math.max(0, issuedAgo - 1))],
+      payments: [took(`${doc}-1`, total, paidAgo)],
     };
   });
 }

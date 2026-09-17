@@ -17,6 +17,7 @@ import s from './PhoneApp.module.css';
 import { TabMark, type TabIcon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { Quote } from './screens/Quote.js';
+import { Invoices } from './screens/Invoices.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 
 const TABS: readonly { readonly id: TabIcon; readonly label: string }[] = [
@@ -48,6 +49,18 @@ export default function PhoneApp(): ReactElement {
         // the handoff removed the saved-quote lens, and a list of drafts was
         // never the thing anyone opened this tab to reach.
         <Quote />
+      ) : tab === 'money' ? (
+        /**
+         * Invoices lands under Money, and that is an OPEN QUESTION.
+         *
+         * Frame 1c draws the tab bar as Today · **Invoices** · Money ·
+         * Manager · More — Invoices in the slot where Sell sits, and Sell is
+         * where the Quote phone screens live. Two handoffs disagree about
+         * the second tab, so neither is silently overwritten: Invoices is a
+         * money screen and Money was a stub, so it goes there and stays
+         * reachable while the owner decides which of the two owns slot two.
+         */
+        <Invoices />
       ) : (
         <NotBuiltYet name={TITLES[tab]} />
       )}
