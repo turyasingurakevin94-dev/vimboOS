@@ -12,6 +12,7 @@ import { Rail, SECTIONS, TODAY } from './chrome/Rail.js';
 import { Icon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
+import { Quote } from './screens/Quote.js';
 
 /** The order-stage chips in the top bar. They replace the old status bar. */
 const STAGES = [
@@ -24,6 +25,15 @@ const NAMES = new Map<string, string>([
   [TODAY.id, TODAY.label],
   ...SECTIONS.flatMap((sec) => sec.items.map((i) => [i.id, i.label] as [string, string])),
 ]);
+
+/**
+ * The breadcrumb's parent is the section the destination lives in — frame 4a
+ * reads "Sell › New quote". Today belongs to no section, so it keeps "Start",
+ * which is what screen 2a draws.
+ */
+const PARENTS = new Map<string, string>(
+  SECTIONS.flatMap((sec) => sec.items.map((i) => [i.id, sec.name] as [string, string])),
+);
 
 export default function DesktopApp(): ReactElement {
   const [section, setSection] = useState('today');
@@ -51,7 +61,7 @@ export default function DesktopApp(): ReactElement {
       <div className={s.work}>
         <header className={s.topbar}>
           <div className={s.crumbs}>
-            <span className={s.crumbStart}>Start</span>
+            <span className={s.crumbStart}>{PARENTS.get(section) ?? 'Start'}</span>
             <Icon name="chevron-right" size={14} className={s.crumbSep} />
             <span className={s.crumbHere}>{NAMES.get(section) ?? 'Today'}</span>
           </div>
@@ -95,6 +105,8 @@ export default function DesktopApp(): ReactElement {
         <div className={s.body}>
           {section === 'today' ? (
             <Today />
+          ) : section === 'quote' ? (
+            <Quote />
           ) : (
             <NotBuiltYet name={NAMES.get(section) ?? section} />
           )}

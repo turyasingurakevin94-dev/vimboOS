@@ -6,6 +6,14 @@
  * the file won.
  */
 
+/* The whole page scrolls as one — this screen has no fixed foot. */
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-20) var(--ow-space-22) var(--ow-space-24);
+}
+
 /* ------------------------------- page header ------------------------------ */
 
 .head {

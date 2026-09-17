@@ -146,9 +146,20 @@
 
 /* ---------------------------------- body ---------------------------------- */
 
+/**
+ * The shell hands a screen the whole area below the top bar and nothing else
+ * — no padding, no scroll box.
+ *
+ * It used to own both, and that is fine until a screen has chrome of its own:
+ * the Quote dock is 72px of fixed foot that the lines scroll UNDER, and a
+ * sticky child cannot escape its parent's padding box. The phone hit exactly
+ * this and the bar sat 112px too high. So the gutter belongs to whichever
+ * part of a screen actually scrolls, which only the screen knows.
+ */
 .body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  padding: var(--ow-space-20) var(--ow-space-22) var(--ow-space-24);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

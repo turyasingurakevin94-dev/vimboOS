@@ -179,12 +179,13 @@
   min-width: 0;
 }
 
-/* A folded section still shows its count. Hiding both the rows AND the
-   number would make the fold a place things go to be forgotten. */
+/* A SHUT section shows its count. Hiding both the rows AND the number would
+   make the fold a place things go to be forgotten — and an open section needs
+   neither, because the rows are the count. */
 .sectionCount {
   font-family: var(--ow-font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: var(--ow-size-11);
+  font-size: var(--ow-size-10);
   font-weight: var(--ow-weight-semibold);
   color: var(--ow-color-rail-head);
   flex: none;
@@ -193,11 +194,6 @@
 .sectionCaret {
   color: var(--ow-color-rail-head);
   flex: none;
-  transition: transform var(--ow-motion-fast) var(--ow-motion-ease);
-}
-
-.sectionCaretOpen {
-  transform: rotate(180deg);
 }
 
 /* ---------------------------------- foot ---------------------------------- */

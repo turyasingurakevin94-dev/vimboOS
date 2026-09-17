@@ -48,9 +48,18 @@ export type IconName =
   | 'warehouse'
   | 'wallet'
   | 'scale'
-  | 'truck';
+  | 'truck'
+  | 'more-horizontal';
 
 const P: Record<IconName, ReactElement> = {
+  /* Three dots: everything this screen can do that is not the next action. */
+  'more-horizontal': (
+    <>
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+      <circle cx="5" cy="12" r="1" />
+    </>
+  ),
   sunrise: (
     <>
       <path d="M12 2v8M4.93 10.93l1.41 1.41M2 18h2M20 18h2M17.66 12.34l1.41-1.41M22 22H2M8 6l4-4 4 4" />

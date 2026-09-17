@@ -1,0 +1,812 @@
+/**
+ * Quote — the desktop console, frame 4a of the Quote handoff, drawn at 1440.
+ *
+ * Every measurement is read out of `Quote.dc.html`'s markup rather than
+ * approximated from the README's prose. The page is three fixed bands and one
+ * scrolling one: header, work, dock. The dock does not move, because the
+ * question "what does this come to" is the one the person is holding in their
+ * head for the whole call.
+ */
+
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/**
+ * The figure face. Every number that is money, a count, a percentage or a
+ * document number wears it, and `composes` is used rather than two class
+ * names at the call site so that a variant's weight cannot be overruled by
+ * whichever rule happens to sit lower in this file.
+ */
+.fig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+}
+
+/* ------------------------------- page header ------------------------------ */
+
+.head {
+  flex: none;
+  padding: var(--ow-space-18) var(--ow-space-22) 0;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-16);
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: var(--ow-size-24);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading);
+}
+
+.sub {
+  margin-top: var(--ow-space-3);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}
+
+/* --------------------------------- columns -------------------------------- */
+
+.work {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-14) var(--ow-space-22) 0;
+  display: flex;
+  gap: var(--ow-space-16);
+  align-items: flex-start;
+}
+
+.lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-12);
+}
+
+/* The derivations about this quote. Not navigation — every card here is a
+   thing the app worked out from the lines to the left of it. */
+.aside {
+  width: 310px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-12);
+}
+
+/**
+ * Under 1440 the aside goes below the lines rather than squeezing them. This
+ * is the desktop design reorganising for a narrower desktop — nothing resizes
+ * and no target moves — not the phone design arriving early.
+ *
+ * **1440 is not a round number picked for a laptop; it is the arithmetic.**
+ * The line table's fixed columns come to 535px, its eight gaps to 64 and its
+ * gutters to 28, so with the item column at its 200px floor it needs 827px.
+ * Beside a 310px aside, a 16px gap, 44px of page gutter and the 236px rail,
+ * that is 1433px — and the handoff draws this frame at 1440, which leaves
+ * seven pixels. Under that the buy-side columns are the ones that fall off
+ * the right edge, which is exactly the half of the table this screen exists
+ * to put beside the other half.
+ *
+ * The design system's "~1200px" is the lane board's number, not this one.
+ */
+@media (max-width: 1439px) {
+  .work {
+    flex-wrap: wrap;
+  }
+
+  .aside {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .aside > * {
+    flex: 1 1 280px;
+  }
+}
+
+/* ---------------------------------- cards --------------------------------- */
+
+.card {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-card);
+  box-shadow: var(--ow-elevation-card);
+}
+
+.cardPad {
+  padding: var(--ow-space-13) var(--ow-space-14);
+}
+
+.clip {
+  overflow: hidden;
+}
+
+/* ------------------------------ client strip ------------------------------ */
+
+/* Five cells in one line. It is the client's record, not a form — nothing
+   here is typed, and the divisions are rules rather than field borders. */
+.strip {
+  display: flex;
+  align-items: stretch;
+}
+
+.cell {
+  min-width: 0;
+  padding: var(--ow-space-11) var(--ow-space-14);
+  border-right: 1px solid var(--ow-color-rule);
+}
+
+.cell:last-child {
+  border-right: 0;
+}
+
+.cellLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.cellValue {
+  margin-top: var(--ow-space-2);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--ow-space-2) var(--ow-space-8);
+}
+
+/**
+ * The name is never abbreviated and the number is never broken.
+ *
+ * The frame gives this cell `flex:1.5` of 5.3, which at 1440 leaves 195px of
+ * content for a name that wants 129 and a number that wants 84. Something has
+ * to give, and in the frame's own markup it is the number, which carries no
+ * `nowrap` and breaks mid-digits.
+ *
+ * So the cell takes **1.9**, which is 229px against the 221 it needs. The
+ * other four give up 12, 24, 12 and 20px and every one of them still has
+ * room to spare — measured, not guessed: they need 90 of 109, 16 of 85, 34 of
+ * 109 and 122 of 157. If a name is longer still, the NUMBER drops to a line
+ * of its own, whole, rather than either being cut: "Jackson M…" is not a
+ * client and "0772 481" is not a phone number.
+ */
+.cellClient {
+  composes: cell;
+  flex: 1.9;
+}
+
+.clientName {
+  flex: none;
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+/* The number never wraps and never shortens: it is what you dial, and half a
+   phone number is worse than none. The NAME gives way instead. */
+.clientPhone {
+  composes: fig;
+  flex: none;
+  white-space: nowrap;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-3);
+}
+
+/* The strip's own figures: a date, a count, a total. */
+.cellFig {
+  composes: fig;
+  font-size: var(--ow-size-14);
+}
+
+.cellFigLight {
+  composes: cellFig;
+  font-weight: var(--ow-weight-medium);
+}
+
+/* Owing nothing is good news, and the strip says so with a tint rather than
+   with a word. */
+.cellGood {
+  background: var(--ow-color-good-fill);
+}
+
+.cellGood .cellLabel {
+  color: var(--ow-color-good-panel-ink);
+}
+
+.unit {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.cellGood .unit {
+  color: var(--ow-color-good-panel-ink);
+}
+
+.when {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+/* -------------------------------- add item -------------------------------- */
+
+.addRow {
+  padding: var(--ow-space-11) var(--ow-space-14);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.addField {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-field);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  color: var(--ow-color-ink);
+}
+
+.addField::placeholder {
+  color: var(--ow-color-ink-3);
+}
+
+.addFieldText {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: var(--ow-size-13-5);
+  color: var(--ow-color-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.key {
+  flex: none;
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+  background: var(--ow-color-field);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-chip-square);
+  padding: var(--ow-space-2) var(--ow-space-6);
+}
+
+.suggests {
+  padding: 0 var(--ow-space-14) var(--ow-space-10);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  overflow: hidden;
+}
+
+.suggestLabel {
+  flex: none;
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+/* A pill that puts something on the quote in one tap. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  flex: none;
+  height: 26px;
+  padding: 0 var(--ow-space-10);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.pill:hover {
+  border-color: var(--ow-color-control-edge);
+  background: var(--ow-color-row-hover);
+}
+
+/* Dashed: it opens something rather than adding something. */
+.pillOpen {
+  border-style: dashed;
+  color: var(--ow-color-ink-3);
+}
+
+.pillFig {
+  composes: fig;
+  font-size: var(--ow-size-11-5);
+}
+
+/* ------------------------------- line table ------------------------------- */
+
+/**
+ * The column that is one pixel wide is the boundary between what the client
+ * sees and what the shop sees. Everything right of it is the shop's side, and
+ * it is a rule rather than a heading because the client never sees this
+ * screen — the divide is for the person holding the phone, not a secret.
+ */
+.row {
+  display: grid;
+  grid-template-columns: 26px minmax(200px, 1fr) 68px 92px 100px 1px 108px 88px 52px;
+  align-items: center;
+  column-gap: var(--ow-space-8);
+  padding: var(--ow-space-9) var(--ow-space-14);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.row:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.headRow {
+  composes: row;
+  padding: var(--ow-space-8) var(--ow-space-14);
+  background: var(--ow-color-row-hover);
+}
+
+.colLabel {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-column);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.right {
+  text-align: right;
+}
+
+/* The head's divider is a stub; a row's runs the full height of the row. */
+.divideHead {
+  width: 1px;
+  height: 14px;
+  background: var(--ow-color-divider);
+}
+
+.divide {
+  width: 1px;
+  height: 100%;
+  background: var(--ow-color-rule);
+}
+
+.num {
+  composes: fig;
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.itemName {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemMeta {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaWarn {
+  color: var(--ow-color-warn-ink);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.metaBad {
+  color: var(--ow-color-bad-ink);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/**
+ * A figure edited in place.
+ *
+ * It is a field that does not look like one until you reach for it: no border
+ * at rest, a border on hover, navy on focus. A quantity typed on a call must
+ * not cost a dialog — the old app opened one for every line and that is where
+ * the time went.
+ */
+.editable {
+  composes: fig;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--ow-radius-segment);
+  padding: var(--ow-space-4) var(--ow-space-7);
+  text-align: right;
+  width: 100%;
+}
+
+.editable:hover {
+  border-color: var(--ow-color-field-edge);
+  background: var(--ow-color-row-hover);
+}
+
+.editable:focus {
+  outline: none;
+  border-color: var(--ow-color-navy);
+  background: var(--ow-color-surface);
+}
+
+.editableBuy {
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-3);
+}
+
+.qtyCell {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+}
+
+.qtyUnit {
+  flex: none;
+  padding-left: var(--ow-space-2);
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-ink-3);
+}
+
+.lineTotal {
+  composes: fig;
+  font-size: var(--ow-size-13-5);
+  text-align: right;
+}
+
+.supplier {
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  height: 19px;
+  padding: 0 var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+/* A charge is the shop's line, not the client's item: it sits on its own
+   band and its shop-side cells are empty rather than zero. */
+.rowCharge {
+  composes: row;
+  background: var(--ow-color-row-alt);
+}
+
+.chargeName {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chargeBasis {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+/* ------------------------------ the next line ----------------------------- */
+
+.nextLine {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-10) var(--ow-space-14);
+  border-top: 1px solid var(--ow-color-rule);
+  overflow: hidden;
+}
+
+.nextMark {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 1px dashed var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-segment);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ow-color-ink-3);
+}
+
+.nextSay {
+  flex: none;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-3);
+}
+
+/* -------------------------------- the aside ------------------------------- */
+
+.noticeWarn {
+  background: var(--ow-color-warn-fill);
+  border: 1px solid var(--ow-color-warn-edge);
+  border-radius: var(--ow-radius-card);
+  padding: var(--ow-space-13) var(--ow-space-14);
+}
+
+.asideHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+}
+
+.asideMark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-warn-chip);
+  color: var(--ow-color-warn-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asideTitle {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-bold);
+}
+
+.asideCount {
+  margin-left: auto;
+}
+
+.asideWhen {
+  margin-left: auto;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.asideBody {
+  margin-top: var(--ow-space-10);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.asideItem {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asideMeta {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-warn-meta);
+}
+
+.asideFig {
+  composes: fig;
+  font-size: var(--ow-size-14);
+  color: var(--ow-color-warn-ink);
+}
+
+.asideAction {
+  margin-top: var(--ow-space-10);
+  width: 100%;
+  height: 34px;
+  justify-content: center;
+  font-size: var(--ow-size-12-5);
+}
+
+.stockList {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+}
+
+.stockRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.stockName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stockShort {
+  color: var(--ow-color-bad-ink);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.stockFig {
+  composes: fig;
+  font-size: var(--ow-size-12-5);
+}
+
+.stockOrderIn {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-medium);
+}
+
+.pillWrap {
+  margin-top: var(--ow-space-8);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ow-space-7);
+}
+
+.pastRow {
+  margin-top: var(--ow-space-9);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+}
+
+.pastRow + .pastRow {
+  margin-top: var(--ow-space-6);
+}
+
+/* ---------------------------------- dock ---------------------------------- */
+
+/**
+ * 72px that never scrolls. The four figures are `Client pays`, `Costs you`,
+ * `You keep` and the share — the same four, in the same order, as the phone
+ * dock, the shop-side sheet and the item picker's foot.
+ */
+.dock {
+  flex: none;
+  height: 72px;
+  background: var(--ow-color-surface);
+  border-top: 1px solid var(--ow-color-hairline);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--ow-space-22);
+}
+
+.dockFirst {
+  padding-right: var(--ow-space-22);
+}
+
+.dockCell {
+  padding: 0 var(--ow-space-22);
+  border-left: 1px solid var(--ow-color-rule);
+}
+
+.dockKeep {
+  composes: dockCell;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+.dockLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  color: var(--ow-color-ink-3);
+}
+
+.dockPays {
+  composes: fig;
+  font-size: var(--ow-size-22);
+  white-space: nowrap;
+}
+
+.dockPaysUnit {
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.dockFig {
+  composes: fig;
+  font-size: var(--ow-size-15);
+  white-space: nowrap;
+}
+
+.dockCost {
+  composes: dockFig;
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.dockActions {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  flex: none;
+}
+
+/* -------------------------------- buttons --------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  font-family: var(--ow-font-ui);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.btnSecondary {
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-divider);
+  color: var(--ow-color-ink);
+}
+
+.btnSecondary:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/* The one accent-filled control on the screen: the thing this page exists
+   to do. `accentBtn`, not `accent` — white on #ef4b39 is 3.66:1. */
+.btnPrimary {
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-bold);
+}
+
+.btnPrimary:hover {
+  background: var(--ow-color-accent-btn-hover);
+}
+
+.btnDock {
+  height: 42px;
+  padding: 0 var(--ow-space-14);
+  font-size: var(--ow-size-13-5);
+}
+
+.btnDockPrimary {
+  composes: btnDock;
+  padding: 0 var(--ow-space-18);
+  font-size: var(--ow-size-14);
+}
+
+.btnSquare {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  justify-content: center;
+}

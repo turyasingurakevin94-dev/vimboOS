@@ -93,6 +93,9 @@ export const tracking = {
   headingSoft: '-0.01em',
   /** Labels at 600. */
   label: '0.03em',
+  /** A table's column heading: 10px, 600, uppercase, and wider than a label
+   * because at ten pixels the letters close up. */
+  column: '0.07em',
   /** Section heads: 700, uppercase. */
   section: '0.12em',
   normal: '0',

@@ -1,5 +1,8 @@
 .wrap {
-  padding: var(--ow-space-24) 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-24) var(--ow-space-22);
   max-width: var(--ow-measure);
 }
 .title {

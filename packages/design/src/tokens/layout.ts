@@ -43,8 +43,9 @@ export const radius = {
   barTop: '4px',
   /** A square chip — the rail's section abbreviations. */
   chipSquare: '6px',
-  /** The phone's small brand mark. */
-  markSmall: '7px',
+  /** An inner segment: a ghost number field, a dashed placeholder square,
+   * and the phone's small brand mark. */
+  segment: '7px',
   /** An icon chip. */
   iconChip: '8px',
   /** A button, and a rail row. */

@@ -245,7 +245,7 @@ export function Today(): ReactElement {
     });
 
   return (
-    <>
+    <div className={s.page}>
       <header className={s.head}>
         <div className={s.greeting}>
           <h1 className={s.title}>Good morning, Kevin</h1>
@@ -533,6 +533,6 @@ export function Today(): ReactElement {
           </section>
         </aside>
       </div>
-    </>
+    </div>
   );
 }

@@ -33,7 +33,7 @@
 .mark {
   width: 24px;
   height: 24px;
-  border-radius: var(--ow-radius-mark-small);
+  border-radius: var(--ow-radius-segment);
   background: var(--ow-color-accent);
   color: var(--ow-color-on-fill);
   display: flex;

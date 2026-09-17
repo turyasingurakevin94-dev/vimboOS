@@ -272,14 +272,14 @@ describe('space and radius', () => {
     // A radius called "md" tells you nothing at the call site; one called
     // "card" cannot be used on a chip by accident.
     expect(Object.keys(radius)).toEqual([
-      'barTop', 'chipSquare', 'markSmall', 'iconChip', 'button',
+      'barTop', 'chipSquare', 'segment', 'iconChip', 'button',
       'field', 'tile', 'block', 'card', 'sheet', 'frame', 'pill',
     ]);
   });
 
   it('orders the radii from chip to frame', () => {
     const px = [
-      'barTop', 'chipSquare', 'markSmall', 'iconChip', 'button',
+      'barTop', 'chipSquare', 'segment', 'iconChip', 'button',
       'field', 'tile', 'card', 'frame',
     ] as const;
     for (let i = 1; i < px.length; i++) {

@@ -21,18 +21,25 @@ export interface Section {
   readonly chip: string;
   readonly chipInk: string;
   readonly items: readonly Destination[];
-  /** Sell, Buy, Money and Insight are open at rest. */
+  /** Only Sell. Every frame in `Rail.dc.html` and in `Quote.dc.html` 4a
+   * opens Sell and shuts the rest; the fold is then the person's own. */
   readonly openAtRest: boolean;
 }
 
 /**
  * **The rail is the complete map.**
  *
- * The design file shows it abridged to fit a screenshot; the handoff is
- * explicit that the real one carries every destination, and that nothing may
- * go behind a hover or a click. Sections may fold — and a folded section
- * still shows its count, so the fold is not a place things go to be
- * forgotten.
+ * `Rail.dc.html` is the authority on navigation — the Quote handoff says so
+ * in those words — and it settles two things the Today handoff left open.
+ *
+ * **Sell changed.** A quote is no longer saved into a list of its own:
+ * *Save quote* hands it to Order tracking at the stage *Taken*. So
+ * `Saved quotes` and `Follow-ups` are gone, `WhatsApp` is now `Messages`,
+ * and `Order tracking` is the second row.
+ *
+ * **A section shows its count only when it is SHUT.** Open, the rows are
+ * the count and a chevron beside them says nothing the rows do not. Shut,
+ * both appear, so the fold is never a place things go to be forgotten.
  */
 export const TODAY: Destination = { id: 'today', label: 'Today', icon: 'sunrise', badge: 8 };
 
@@ -45,12 +52,13 @@ export const SECTIONS: readonly Section[] = [
     openAtRest: true,
     items: [
       { id: 'quote', label: 'New quote', icon: 'tag' },
-      { id: 'saved-quotes', label: 'Saved quotes', icon: 'bookmark', count: 8 },
-      { id: 'invoices', label: 'Invoices', icon: 'file-text', count: 20 },
-      { id: 'customers', label: 'Customers', icon: 'users' },
-      { id: 'agents', label: 'Sales agents', icon: 'users' },
-      { id: 'whatsapp', label: 'WhatsApp', icon: 'message-circle', badge: 13 },
-      { id: 'followups', label: 'Follow-ups', icon: 'inbox', badge: 6 },
+      { id: 'orders', label: 'Order tracking', icon: 'truck', badge: 5 },
+      { id: 'invoices', label: 'Invoices', icon: 'file-text', badge: 4 },
+      { id: 'customers', label: 'Customers', icon: 'users', badge: 11 },
+      { id: 'messages', label: 'Messages', icon: 'message-square', badge: 13 },
+      // The mark is the one the file draws — a parcel, for the person who
+      // carries the goods, not a second pair of shoulders beside Customers.
+      { id: 'agents', label: 'Sales agents', icon: 'package' },
     ],
   },
   {
@@ -58,7 +66,7 @@ export const SECTIONS: readonly Section[] = [
     abbr: 'Bu',
     chip: 'var(--ow-color-buy-chip)',
     chipInk: 'var(--ow-color-buy-chip-ink)',
-    openAtRest: true,
+    openAtRest: false,
     items: [
       { id: 'compare', label: 'Compare prices', icon: 'scale' },
       { id: 'sourcing', label: 'Sourcing', icon: 'search' },
@@ -74,10 +82,9 @@ export const SECTIONS: readonly Section[] = [
     openAtRest: false,
     items: [
       { id: 'products', label: 'Products', icon: 'package' },
-      { id: 'prices', label: 'Prices', icon: 'tag' },
-      { id: 'inventory', label: 'Inventory', icon: 'layers', badge: 3, badgeTone: 'warn' },
-      { id: 'fasteners', label: 'Fasteners', icon: 'layout-grid' },
-      { id: 'media', label: 'Media', icon: 'image' },
+      { id: 'pricing', label: 'Pricing', icon: 'tag', badge: 14 },
+      { id: 'inventory', label: 'Inventory', icon: 'layers' },
+      { id: 'goes-with', label: 'What goes with what', icon: 'layout-grid' },
     ],
   },
   {
@@ -85,7 +92,7 @@ export const SECTIONS: readonly Section[] = [
     abbr: 'Mo',
     chip: 'var(--ow-color-money-chip)',
     chipInk: 'var(--ow-color-money-chip-ink)',
-    openAtRest: true,
+    openAtRest: false,
     items: [
       { id: 'cashbook', label: 'Cash book', icon: 'wallet' },
       { id: 'debtors', label: 'Debtors', icon: 'trending-down', badge: 9 },
@@ -100,7 +107,7 @@ export const SECTIONS: readonly Section[] = [
     abbr: 'In',
     chip: 'var(--ow-color-insight-chip)',
     chipInk: 'var(--ow-color-insight-chip-ink)',
-    openAtRest: true,
+    openAtRest: false,
     items: [
       { id: 'analytics', label: 'Sales analytics', icon: 'line-chart' },
       { id: 'map', label: 'Map', icon: 'map-pin' },
@@ -110,8 +117,8 @@ export const SECTIONS: readonly Section[] = [
   {
     name: 'Setup',
     abbr: 'Su',
-    chip: 'var(--ow-color-neutral-chip)',
-    chipInk: 'var(--ow-color-neutral-ink)',
+    chip: 'var(--ow-color-setup-chip)',
+    chipInk: 'var(--ow-color-setup-chip-ink)',
     openAtRest: false,
     items: [
       { id: 'staff', label: 'Staff', icon: 'users' },
@@ -173,12 +180,14 @@ export function Rail({ current, onNavigate }: RailProps): ReactElement {
                   {section.abbr}
                 </span>
                 <span className={s.sectionName}>{section.name}</span>
-                <span className={s.sectionCount}>{section.items.length}</span>
-                <Icon
-                  name="chevron-down"
-                  size={14}
-                  className={`${s.sectionCaret} ${open ? s.sectionCaretOpen : ''}`}
-                />
+                {/* Open, the rows ARE the count and the chevron says nothing
+                    they do not. Shut, both appear. */}
+                {!open && (
+                  <>
+                    <span className={s.sectionCount}>{section.items.length}</span>
+                    <Icon name="chevron-down" size={13} className={s.sectionCaret} />
+                  </>
+                )}
               </button>
               {open &&
                 section.items.map((item) => (
