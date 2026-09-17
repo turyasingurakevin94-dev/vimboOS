@@ -143,6 +143,19 @@
   background: var(--ow-color-surface);
 }
 
+/* A qualification on every total on the screen, so it sits above them all
+   rather than inside one group. Warn, not bad: the books are readable, some
+   of what they say is not. */
+.note {
+  margin: 0;
+  padding: var(--ow-space-9) var(--ow-space-11);
+  background: var(--ow-color-warn-fill);
+  border-bottom: 1px solid var(--ow-color-warn-edge);
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-warn-ink);
+}
+
 .group {
   display: flex;
   align-items: baseline;

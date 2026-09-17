@@ -22,6 +22,20 @@ export interface Project {
 const STAGING_URL = 'https://lmmyzhqdxixjnkkkgnnu.supabase.co';
 const PRODUCTION_URL = 'https://hgywjaifdmgrcnwxstxg.supabase.co';
 
+/**
+ * Staging's publishable key, committed on purpose.
+ *
+ * It is already committed in the old app (`index.html`, the `STAGING`
+ * block) — a publishable key is public by design, and RLS is what protects
+ * the rows behind it. Having it here means a clean clone RUNS: no `.env`,
+ * no key hunt, and the thing it runs against is the database nobody's
+ * livelihood depends on.
+ *
+ * Production has no such default and never will. It takes the explicit
+ * target AND a key supplied by the deployment, which is two deliberate acts.
+ */
+const STAGING_PUBLISHABLE = 'sb_publishable_K7A4jZC6RSgFtyiSfV2P_w_oh8crHa5';
+
 const refOf = (url: string): string => url.replace(/^https:\/\/([^.]+)\..*$/, '$1');
 
 /**
@@ -83,20 +97,23 @@ export function readKey(key: string): KeyFacts {
  */
 export function resolveProject(env: Record<string, string | undefined>): Project {
   const target = env.VITE_OW_TARGET === 'production' ? 'production' : 'staging';
-  const key = env.VITE_OW_SUPABASE_KEY;
+  const supplied = env.VITE_OW_SUPABASE_KEY;
+  const given = supplied !== undefined && supplied.trim() !== '';
 
-  if (key === undefined || key.trim() === '') {
+  // Staging falls back to its committed key so a clone runs; production
+  // never does, so reaching the real books needs both the target AND a key.
+  const key = given ? supplied.trim() : target === 'staging' ? STAGING_PUBLISHABLE : '';
+
+  if (key === '') {
     throw new Error(
-      'VITE_OW_SUPABASE_KEY is not set. Put the publishable key for the ' +
-        `${target} project in .env.local — either the modern ` +
-        '`sb_publishable_…` or the legacy anon JWT. It is a public key — but ' +
-        'it is not committed, so that pointing a build at production is ' +
-        'always a deliberate act.',
+      'VITE_OW_TARGET is production but VITE_OW_SUPABASE_KEY is not set. The ' +
+        "real books take a key supplied by the deployment — that is the " +
+        'second half of the opt-in, and there is no default for it.',
     );
   }
 
   const url = target === 'production' ? PRODUCTION_URL : STAGING_URL;
-  const facts = readKey(key.trim());
+  const facts = readKey(key);
 
   if (facts.kind === 'secret') {
     throw new Error(
@@ -127,7 +144,7 @@ export function resolveProject(env: Record<string, string | undefined>): Project
     );
   }
 
-  return { name: target, url, publishableKey: key.trim() };
+  return { name: target, url, publishableKey: key };
 }
 
 /** True when this build is writing to the shop's real books. */

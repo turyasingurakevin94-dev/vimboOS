@@ -44,8 +44,21 @@ describe('what the build refuses to start with', () => {
     expect(() => resolveProject({ VITE_OW_SUPABASE_KEY: 'hunter2' })).toThrow(/refuses to start/);
   });
 
-  it('says which variable is missing rather than failing at the first query', () => {
-    expect(() => resolveProject({})).toThrow(/VITE_OW_SUPABASE_KEY is not set/);
+  it('RUNS with no configuration at all, against staging', () => {
+    // A clean clone should start. The key it falls back to is staging's,
+    // already committed in the old app, and staging is the database nobody's
+    // livelihood depends on.
+    const p = resolveProject({});
+    expect(p.name).toBe('staging');
+    expect(p.publishableKey).toMatch(/^sb_publishable_/);
+  });
+
+  it('will NOT fall back to a default for production', () => {
+    // Reaching the real books takes two deliberate acts, and this is the
+    // second one. There is no default for it and there will not be.
+    expect(() => resolveProject({ VITE_OW_TARGET: 'production' })).toThrow(
+      /no default for it/,
+    );
   });
 
   it('CATCHES the right key pointed at the wrong project', () => {
