@@ -805,3 +805,13 @@
   font-weight: var(--ow-weight-bold);
   white-space: nowrap;
 }
+
+/* `at least` / `at most` beside a figure that is only part of its column.
+   Which of the two depends on which figure it is: a cost missing a line is
+   at least what is shown, and the margin left over is at most. */
+.bound {
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+}

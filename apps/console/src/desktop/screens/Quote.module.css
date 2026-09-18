@@ -158,6 +158,7 @@
 }
 
 .cellValue {
+  position: relative;
   margin-top: var(--ow-space-2);
   display: flex;
   align-items: baseline;
@@ -920,4 +921,81 @@
   text-align: right;
   font-size: var(--ow-size-12-5);
   color: var(--ow-color-ink-2);
+}
+
+/* --------------------------- finding the account --------------------------- */
+
+/* The accounts the typed name matches, under the field that is matching
+   them. Positioned on the cell rather than the field so it clears both
+   lines of the name. */
+.found {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: var(--ow-layer-dropdown);
+  min-width: 260px;
+  max-width: 340px;
+  margin-top: var(--ow-space-4);
+  padding: var(--ow-space-4);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  box-shadow: var(--ow-elevation-floating);
+}
+
+.foundRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 var(--ow-space-10);
+  width: 100%;
+  padding: var(--ow-space-7) var(--ow-space-9);
+  border: 0;
+  border-radius: var(--ow-radius-chip-square);
+  background: none;
+  text-align: left;
+  font-family: var(--ow-font-ui);
+}
+
+.foundRow:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.foundName {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.foundMeta {
+  grid-column: 1;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What they already owe, said where the account is chosen rather than after
+   the order is on it. */
+.foundOwes {
+  composes: fig;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-bad-ink);
+  white-space: nowrap;
+}
+
+/* A charge that is on the order. The pill that put it there is where it
+   comes off, because a charge has no line number to hang a handle on. */
+.pillOn {
+  border-color: var(--ow-color-study-fill);
+  background: var(--ow-color-study-fill);
+  color: var(--ow-color-study-ink);
+  font-weight: var(--ow-weight-semibold);
 }

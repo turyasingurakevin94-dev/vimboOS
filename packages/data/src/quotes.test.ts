@@ -74,14 +74,21 @@ describe('an order as a row', () => {
     const row = quoteRow(
       'shop',
       1,
-      order({ items: [line(), line({ lineId: 2 })], charges: [{ name: 'Delivery', amount: 30_000 }] }),
+      order({
+        items: [line(), line({ lineId: 2 })],
+        charges: [
+          { id: 1, label: 'Transport', type: 'fixed', value: 5_000, service: 'Transport', cost: null },
+        ],
+      }),
       NOW,
     );
 
     expect((row.payload.items as readonly QuoteLineWrite[]).map((i) => i.lineId)).toEqual(
       lineIds(2),
     );
-    expect(row.payload.charges).toEqual([{ name: 'Delivery', amount: 30_000 }]);
+    expect(row.payload.charges).toEqual([
+      { id: 1, label: 'Transport', type: 'fixed', value: 5_000, service: 'Transport', cost: null },
+    ]);
   });
 
   it('writes a payload of nothing but keys the old app names', () => {
@@ -219,7 +226,15 @@ describe('a quote on screen, as lines in the books', () => {
         },
         lines: [
           item(),
-          { kind: 'charge', id: 'ch1', name: 'Transport', basis: 'charge', amount: Money.money(60_000) },
+          {
+            kind: 'charge',
+            id: 'ch1',
+            name: 'Transport',
+            basis: 'charge',
+            rule: { type: 'fixed', value: 5_000 },
+            service: 'Transport',
+            cost: null,
+          },
           item({ id: asId('v2'), name: 'Normal Mulper — Flat' }),
         ],
       },
@@ -231,7 +246,14 @@ describe('a quote on screen, as lines in the books', () => {
       'Soft Close Mulper — Half Bend',
       'Normal Mulper — Flat',
     ]);
-    expect(written.charges).toEqual([{ name: 'Transport', amount: 60_000 }]);
+    /**
+     * The rule, not the shillings. `chargeAmount` in the old app reads
+     * `Number(ch.value) || 0`, so a charge written as `{name, amount}` comes
+     * to nothing on the customer's invoice — quietly, and only there.
+     */
+    expect(written.charges).toEqual([
+      { id: 1, label: 'Transport', type: 'fixed', value: 5_000, service: 'Transport', cost: null },
+    ]);
     expect(written.client).toEqual({ name: 'Adinan', phone: '0702301512' });
     expect(written.customerId).toBe('C019');
   });

@@ -434,6 +434,30 @@ export const QUOTE_ID_KIND = 'row:saved_quote';
  */
 export const WRITE_IS_INSERT_ONLY = true;
 
+/**
+ * A charge, in the exact shape the old app writes one.
+ *
+ * It carries the RULE — `type` and `value` — and not the shillings, because
+ * a percent frozen at the moment it was tapped goes stale on the next line
+ * added. `chargeAmount` in the old app reads `Number(ch.value) || 0`, so a
+ * charge written as `{name, amount}` comes to **nothing** on its invoice —
+ * quietly, and only on the customer's copy.
+ *
+ * `label` is the frozen one and `service` says which of the shop's services
+ * it came from. `cost` is what the charge cost the SHOP, which is a payment
+ * and not a figure somebody typed: null until one is recorded, and
+ * `costTxnId` is the cash entry when it is. This app records neither, so
+ * both stay absent rather than being asserted as zero.
+ */
+export interface ChargeWrite {
+  readonly id: number;
+  readonly label: string;
+  readonly type: 'fixed' | 'percent';
+  readonly value: number;
+  readonly service: string | null;
+  readonly cost: null;
+}
+
 /** A quote line, in the exact shape the old app's own item picker pushes. */
 export interface QuoteLineWrite {
   readonly lineId: number;
@@ -485,7 +509,7 @@ export const lineIds = (count: number): readonly number[] =>
 export function newQuotePayload(input: {
   readonly client: { readonly name: string; readonly phone: string };
   readonly items: readonly QuoteLineWrite[];
-  readonly charges: readonly { readonly name: string; readonly amount: number }[];
+  readonly charges: readonly ChargeWrite[];
   readonly customerId: string | null;
   readonly now: Date;
 }): Record<string, unknown> {

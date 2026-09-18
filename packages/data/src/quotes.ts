@@ -44,6 +44,7 @@ import {
   QUOTE_ID_KIND,
   lineIds,
   newQuotePayload,
+  type ChargeWrite,
   type QuoteLineWrite,
 } from './savedQuotes.js';
 import { idFloor, isRefusedByPolicy, issueRowId, writer, type Written } from './writer.js';
@@ -70,7 +71,7 @@ export interface NewQuote {
   /** The customer this is charged to, where it is one of the shop's own. */
   readonly customerId: string | null;
   readonly items: readonly QuoteLineWrite[];
-  readonly charges: readonly { readonly name: string; readonly amount: number }[];
+  readonly charges: readonly ChargeWrite[];
 }
 
 /** Kampala is UTC+3, and every day-string in both apps is a UTC one. */
@@ -260,6 +261,17 @@ export function writeQuote(
     items: items.map((line, at) => writeLine(line, lineIds(items.length)[at] ?? at + 1)),
     charges: quote.lines
       .filter((l): l is ChargeLine => l.kind === 'charge')
-      .map((c) => ({ name: c.name, amount: c.amount })),
+      .map((c, at) => ({
+        // Per-order, from one, exactly as a line id is.
+        id: at + 1,
+        // The label as it was agreed, never re-read from the preset.
+        label: c.name,
+        type: c.rule.type,
+        value: c.rule.value,
+        service: c.service,
+        // What the charge cost the shop is a payment, not a figure somebody
+        // typed. This app records none, so it says nothing rather than zero.
+        cost: null,
+      })),
   };
 }

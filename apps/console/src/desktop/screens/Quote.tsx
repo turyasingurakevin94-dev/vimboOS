@@ -34,7 +34,11 @@ import {
   Money,
   asId,
   askedFor,
+  balance,
+  chargeAmount,
+  clientFrom,
   clientPays,
+  goodsTotal,
   costsYou,
   keepPercent,
   keepTone,
@@ -48,20 +52,14 @@ import {
   youKeep,
   type ChargeLine,
   type Client,
+  type Customer,
   type ItemLine,
   type QuoteLine,
 } from '@ow/domain';
-import {
-  commonCharges,
-  goesWithIt,
-  lastOrder,
-  raiseQuote,
-  usuallyBuys,
-  whyNotSaveable,
-  writeQuote,
-} from '@ow/data';
+import { raiseQuote, whyNotSaveable, writeQuote, type Service } from '@ow/data';
 import { useCatalogue } from '../../app/useCatalogue.js';
 import { useBooks } from '../../app/Books.js';
+import { useRegister } from '../../app/useRegister.js';
 import { Picker, type Picked } from './QuotePicker.js';
 import s from './Quote.module.css';
 import { Icon } from '../icons.js';
@@ -79,20 +77,28 @@ const TONE = {
  * A figure that could not be derived is written as an em dash and says why on
  * hover. It is never written as a zero — absence is not zero, and a dock
  * reading `0` would be a claim the shop makes no margin.
+ *
+ * **Which way a partial figure is wrong depends on which figure it is**, and
+ * it used to wear `+` either way. A cost missing a line is at LEAST what is
+ * shown; the margin left over is at MOST what is shown. `5,150 +` on a
+ * margin said the opposite of the truth, in the direction that flatters the
+ * shop — the same direction the charge's own missing cost already leans.
  */
 function DerivedFigure({
   value,
   className,
+  bound,
 }: {
   readonly value: ReturnType<typeof youKeep>;
   readonly className: string | undefined;
+  readonly bound: 'at least' | 'at most';
 }): ReactElement {
   return match(value, {
     known: (amount) => <span className={className}>{Money.format(amount)}</span>,
     partial: (amount, _basis, missing) => (
-      <span className={className} title={`at least this much — ${missing}`}>
+      <span className={className} title={`${bound} this much — ${missing}`}>
         {Money.format(amount)}
-        <span className={s.dockPaysUnit}> +</span>
+        <span className={s.dockPaysUnit}> {bound}</span>
       </span>
     ),
     unavailable: (reason) => (
@@ -174,13 +180,29 @@ function Desk({
   readonly read: Extract<ReturnType<typeof useCatalogue>, { at: 'ready' }>;
 }): ReactElement {
   const books = useBooks();
+  // Read here rather than inside the strip: the same register answers the
+  // aside panels, and two reads of it are two answers about one account.
+  const people = useRegister();
   const [lines, setLines] = useState<readonly QuoteLine[]>([]);
   const [client, setClient] = useState<Client>(NOBODY);
+  /**
+   * The account behind the name, where the name is one the books know.
+   *
+   * Held beside the client rather than folded into it: `Client` is what the
+   * quote's own strip reads, and what they usually buy is a fact about the
+   * ACCOUNT. Pushing it onto the quote would be the quote carrying a copy
+   * of the register.
+   */
+  const [account, setAccount] = useState<Customer | null>(null);
   const [picking, setPicking] = useState(false);
   /** What came of the last press of Save, in words. */
   const [said, setSaid] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Worked out once for the whole document: every percent charge is a
+  // percent of THIS, so two of them come to the same total whichever was
+  // added first, and neither is ever a percent of the other.
+  const goods = goodsTotal(lines);
   const pays = clientPays(lines);
   const cost = costsYou(lines);
   const keep = youKeep(lines);
@@ -190,6 +212,36 @@ function Desk({
   const add = (picked: Picked): void => {
     setPicking(false);
     setLines((prior) => [...prior, lineFrom(picked)]);
+    setSaid(null);
+  };
+
+  /**
+   * A charge, at the rule the shop set — never at the shillings it happens
+   * to come to now. A percent frozen at the moment it was tapped goes stale
+   * on the next line added.
+   *
+   * The label is copied rather than referenced, which is the opposite rule
+   * for the opposite reason: an order is a record of what was agreed, and
+   * renaming the service next month must not rewrite it.
+   */
+  /** Whether this charge is already on the order. */
+  const on = (service: Service): boolean =>
+    lines.some((l) => l.kind === 'charge' && l.service === service.name);
+
+  const addCharge = (service: Service): void => {
+    setLines((prior) => [
+      ...prior,
+      {
+        kind: 'charge',
+        id: `charge:${service.name}`,
+        name: service.name,
+        basis: service.type === 'percent' ? `${service.value}% of the goods` : 'charge',
+        rule: { type: service.type, value: service.value },
+        service: service.name,
+        // What it costs the shop is a payment, and none has been made.
+        cost: null,
+      },
+    ]);
     setSaid(null);
   };
 
@@ -269,7 +321,16 @@ function Desk({
 
       <div className={s.work}>
         <div className={s.lines}>
-          <ClientStrip client={client} date={dayReads(read.today)} onClient={setClient} />
+          <ClientStrip
+            client={client}
+            date={dayReads(read.today)}
+            onClient={(next, who) => {
+              setClient(next);
+              setAccount(who);
+            }}
+            register={people.at === 'ready' ? people.data.customers : []}
+            account={account}
+          />
 
           <section className={`${s.card} ${s.clip}`}>
             <div className={s.addRow}>
@@ -284,17 +345,23 @@ function Desk({
               </button>
             </div>
 
-            {client.id !== '' && (
+            {/* What this account actually buys, from the sales analytics
+                derivation the Customers panel already draws — the share of
+                their spend each line takes. Not a guess at what they might
+                want: a fact about what they have bought. */}
+            {account !== null && account.buys.length > 0 && (
               <div className={s.suggests}>
                 <span className={s.suggestLabel}>Usually buys</span>
-                {usuallyBuys.map((u) => (
-                  <button key={u.name} type="button" className={s.pill}>
-                    {u.name} <span className={s.pillFig}>{u.rate}</span>
+                {account.buys.slice(0, 3).map((u) => (
+                  <button key={u.product} type="button" className={s.pill}>
+                    {u.product} <span className={s.pillFig}>{u.shareOfSpend}%</span>
                   </button>
                 ))}
-                <button type="button" className={`${s.pill} ${s.pillOpen}`}>
-                  +3 more
-                </button>
+                {account.buys.length > 3 && (
+                  <button type="button" className={`${s.pill} ${s.pillOpen}`}>
+                    +{account.buys.length - 3} more
+                  </button>
+                )}
               </div>
             )}
 
@@ -321,24 +388,43 @@ function Desk({
                 line.kind === 'item' ? (
                   <ItemRow key={line.id} line={line} at={i + 1} onQty={retype} onDrop={drop} />
                 ) : (
-                  <ChargeRow key={line.id} line={line} />
+                  <ChargeRow key={line.id} line={line} amount={chargeAmount(line, goods)} />
                 ),
               )
             )}
 
+            {/* The charges the shop has agreed it makes, off its own
+                services list — a name, a kind and a figure it set up once.
+                These were three invented rates, and this shop has one. */}
             <div className={s.nextLine}>
               <span className={s.nextMark} aria-hidden="true">
                 <Icon name="plus" size={13} strokeWidth={2.2} />
               </span>
-              <span className={s.nextSay}>Next item, a charge, or credit terms</span>
-              {commonCharges.map((c) => (
-                <button key={c.name} type="button" className={s.pill}>
-                  {c.name} <span className={s.pillFig}>{c.rate}</span>
+              <span className={s.nextSay}>
+                {read.data.services.length === 0
+                  ? 'Next item. No charges are set up for this shop yet.'
+                  : 'Next item, or a charge'}
+              </span>
+              {read.data.services.map((service) => (
+                <button
+                  key={service.name}
+                  type="button"
+                  // A toggle, not a one-way door. A charge added by mistake
+                  // has to come off, and a charge has no line number to
+                  // hang a handle on — the pill that put it there is the
+                  // obvious place to take it back.
+                  className={`${s.pill} ${on(service) ? s.pillOn : ''}`}
+                  aria-pressed={on(service)}
+                  onClick={() => (on(service) ? drop(`charge:${service.name}`) : addCharge(service))}
+                >
+                  {service.name}{' '}
+                  <span className={s.pillFig}>
+                    {service.type === 'percent'
+                      ? `${service.value}%`
+                      : Money.format(Money.roundDown(service.value))}
+                  </span>
                 </button>
               ))}
-              <button type="button" className={`${s.pill} ${s.pillOpen}`}>
-                Other
-              </button>
             </div>
           </section>
         </div>
@@ -347,38 +433,15 @@ function Desk({
           <CheaperElsewhere lines={lines} />
           <StockToCover items={items} />
 
-          {/* Both of these are about a customer the books know, and both
-              are still the frame's own figures. `Goes with it` needs what
-              this shop's orders actually carry together, and `Last order`
-              needs the client picked rather than typed — neither is read
-              yet, so neither is drawn about nobody. */}
-          {client.id !== '' && (
-            <>
-              <section className={`${s.card} ${s.cardPad}`}>
-                <div className={s.asideTitle}>Goes with it</div>
-                <div className={s.pillWrap}>
-                  {goesWithIt.map((g) => (
-                    <button key={g.name} type="button" className={s.pill}>
-                      {g.name} <span className={s.pillFig}>{g.rate}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
+          {/* `Goes with it` and the last order's LINES are the two things
+              this panel asked for that nothing here can answer. What goes
+              with what is its own derivation across the shop's orders, and
+              a `CustomerInvoice` carries a document and a total but not the
+              lines under it. Drawn from the frame's own figures, both would
+              be fiction pinned to a real account — which is worse than the
+              gap, because the account makes it look checked.
 
-              <section className={`${s.card} ${s.cardPad}`}>
-                <div className={s.asideHead}>
-                  <span className={s.asideTitle}>Last order</span>
-                  <span className={s.asideWhen}>{lastOrder.when}</span>
-                </div>
-                {lastOrder.lines.map((l) => (
-                  <div key={l.name} className={s.pastRow}>
-                    <span className={s.stockName}>{l.name}</span>
-                    <span className={s.stockFig}>{Money.format(l.total)}</span>
-                  </div>
-                ))}
-              </section>
-            </>
-          )}
+              What the account DOES say is above, on `Usually buys`. */}
         </aside>
       </div>
 
@@ -393,12 +456,12 @@ function Desk({
         </div>
         <div className={s.dockCell}>
           <div className={s.dockLabel}>Costs you</div>
-          <DerivedFigure value={cost} className={s.dockCost} />
+          <DerivedFigure value={cost} className={s.dockCost} bound="at least" />
         </div>
         <div className={s.dockKeep}>
           <div>
             <div className={s.dockLabel}>You keep</div>
-            <DerivedFigure value={keep} className={s.dockFig} />
+            <DerivedFigure value={keep} className={s.dockFig} bound="at most" />
           </div>
           {lines.length === 0
             ? null
@@ -504,17 +567,41 @@ function ShareChip({
 
 /* ------------------------------ client strip ------------------------------ */
 
+/**
+ * Who the order is for: typed, and matched against the register as it goes.
+ *
+ * A name typed freehand is a counter sale, and a real thing — but most
+ * orders are for somebody the books already know, and the three cells to
+ * the right of the name only mean anything about one of those. So the field
+ * offers what it matches rather than making somebody go and look the
+ * account up: the same words, in the same order, as the item search, which
+ * is the only other thing on this screen that finds something.
+ */
 function ClientStrip({
   client,
   date,
   onClient,
+  register,
+  account,
 }: {
   readonly client: Client;
   readonly date: string;
-  readonly onClient: (client: Client) => void;
+  readonly onClient: (client: Client, account: Customer | null) => void;
+  readonly register: readonly Customer[];
+  /** The account behind the name, where the books know one. */
+  readonly account: Customer | null;
 }): ReactElement {
+  const [looking, setLooking] = useState(false);
   const owesNothing = Money.isZero(client.owesNow);
   const known = client.id !== '';
+
+  const words = client.name.trim().toLowerCase();
+  const hits =
+    words === ''
+      ? []
+      : register
+          .filter((c) => `${c.name} ${c.phone} ${c.area}`.toLowerCase().includes(words))
+          .slice(0, 6);
 
   return (
     <section className={`${s.card} ${s.clip} ${s.strip}`}>
@@ -526,15 +613,55 @@ function ClientStrip({
             value={client.name}
             placeholder="Who it is for"
             aria-label="Who the order is for"
-            onChange={(e) => onClient({ ...client, name: e.target.value })}
+            autoComplete="off"
+            onFocus={() => setLooking(true)}
+            onChange={(e) => {
+              setLooking(true);
+              // Typing over a matched account unmatches it: the figures
+              // beside the name belong to whoever the name says, and a
+              // half-edited name pointing at the old account's balance is
+              // the wrong customer's debt on somebody else's quote.
+              onClient({ ...NOBODY, name: e.target.value, phone: known ? '' : client.phone }, null);
+            }}
+            onBlur={() => window.setTimeout(() => setLooking(false), 120)}
           />
           <input
             className={`${s.clientPhone} ${s.clientField}`}
             value={client.phone}
             placeholder="Phone"
             aria-label="Their phone number"
-            onChange={(e) => onClient({ ...client, phone: e.target.value })}
+            // A phone corrected on a matched account is a correction to
+            // this order, not to the register — the account it points at is
+            // unchanged, and this app does not edit customers.
+            onChange={(e) => onClient({ ...client, phone: e.target.value }, account)}
           />
+
+          {looking && hits.length > 0 && (
+            <div className={s.found}>
+              {hits.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={s.foundRow}
+                  // mousedown, not click: the field's own blur would close
+                  // the list out from under the press.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onClient(clientFrom({ ...c, balance: balance(c) }), c);
+                    setLooking(false);
+                  }}
+                >
+                  <span className={s.foundName}>{c.name}</span>
+                  <span className={s.foundMeta}>
+                    {c.area === '' ? c.phone : `${c.area} · ${c.phone}`}
+                  </span>
+                  {!Money.isZero(balance(c)) && (
+                    <span className={s.foundOwes}>{Money.format(balance(c))} owing</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className={s.cell} style={{ flex: 0.9 }}>
@@ -747,7 +874,19 @@ function StockNote({ line }: { readonly line: ItemLine }): ReactElement {
   );
 }
 
-function ChargeRow({ line }: { readonly line: ChargeLine }): ReactElement {
+/**
+ * A charge is drawn at what it comes to, worked out from the goods on the
+ * quote right now — never from a figure frozen when somebody tapped it. A
+ * percent that does not move when a line is added is a document printing
+ * `3%` beside a figure that is three per cent of something else.
+ */
+function ChargeRow({
+  line,
+  amount,
+}: {
+  readonly line: ChargeLine;
+  readonly amount: Money.Money;
+}): ReactElement {
   return (
     <div className={s.rowCharge}>
       <span />
@@ -759,7 +898,7 @@ function ChargeRow({ line }: { readonly line: ChargeLine }): ReactElement {
       <span />
       <span />
       <div className={s.lineTotal}>
-        {Money.format(line.amount)} <span className={s.unit}>UGX</span>
+        {Money.format(amount)} <span className={s.unit}>UGX</span>
       </div>
       {/* The shop-side cells are EMPTY, not zero: a charge has no supplier and
           no buying price, and a dash in three columns would suggest it does. */}

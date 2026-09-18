@@ -87,13 +87,30 @@ export function demoQuote(): Quote {
           countedIn: 'unit',
         },
       },
-      { kind: 'charge', id: 'transport', name: 'Transport', basis: 'charge', amount: m(60_000) },
       {
+        kind: 'charge',
+        id: 'transport',
+        name: 'Transport',
+        basis: 'charge',
+        rule: { type: 'fixed', value: 60_000 },
+        service: 'Transport',
+        // Nobody has been paid for the delivery yet, which is not the same
+        // as it being free — the dock says `at most`.
+        cost: null,
+      },
+      {
+        // 3% of the 504,000 of goods is the 15,120 the frame draws — and it
+        // is held as the RULE, so it is still 3% of the goods after the next
+        // line is added rather than 15,120 of whatever is there by then.
         kind: 'charge',
         id: 'credit',
         name: 'Credit terms',
         basis: '+3% on 30 days',
-        amount: m(15_120),
+        rule: { type: 'percent', value: 3 },
+        service: null,
+        // Credit terms cost the shop nothing to hand over. This one really
+        // is zero, and says so.
+        cost: m(0),
       },
     ],
   };

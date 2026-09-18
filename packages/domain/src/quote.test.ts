@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { asId } from './ids.js';
 import * as Money from './money.js';
 import {
+  chargeAmount,
   clientPays,
+  goodsTotal,
   costsYou,
   keepPercent,
   keepTone,
@@ -45,7 +47,9 @@ const charge = (over: Partial<ChargeLine> = {}): ChargeLine => ({
   id: 'transport',
   name: 'Transport',
   basis: 'charge',
-  amount: Money.money(60_000),
+  rule: { type: 'fixed', value: 60_000 },
+  service: 'Transport',
+  cost: null,
   ...over,
 });
 
@@ -58,16 +62,35 @@ describe('what a line is worth', () => {
     expect(lineTotal(charge())).toBe(60_000);
   });
 
-  it('costs a charge NOTHING — and that is a known zero, not a gap', () => {
+  /**
+   * This test used to assert the opposite, and it was wrong in the
+   * direction that flatters the shop.
+   *
+   * What a charge costs the shop is a PAYMENT, not a figure somebody typed:
+   * a delivery costs what the driver was handed, and that leaves the till
+   * later. Read as a known zero, a 5,000 delivery on a 7,050 order reported
+   * `you keep 5,150` — 73% — on an order where most of the fee is about to
+   * walk out of the door. It reads `at most 5,150` now, which is the same
+   * money and a different claim.
+   */
+  it('cannot cost a charge nobody has paid out on yet', () => {
     const cost = lineCost(charge());
-    expect(cost.status).toBe('known');
+    expect(cost.status).toBe('partial');
     expect(cost.status !== 'unavailable' && cost.value).toBe(0);
+    expect(cost.status === 'partial' ? cost.missing : '').toContain('not recorded until it is paid');
   });
 
-  it('keeps the whole of a charge, which is why its column reads "all"', () => {
-    const keep = lineKeep(charge());
-    expect(keep.status !== 'unavailable' && keep.value).toBe(60_000);
-    expect(lineKeepPercent(charge())).toMatchObject({ value: 100 });
+  it('costs a charge at what it actually cost, once that is recorded', () => {
+    const paid = lineCost(charge({ cost: Money.money(18_000) }));
+    expect(paid.status).toBe('known');
+    expect(paid.status === 'known' ? paid.value : 0).toBe(18_000);
+  });
+
+  /** Credit terms cost the shop nothing to hand over, and really are zero. */
+  it('keeps the whole of a charge that genuinely costs nothing', () => {
+    const free = charge({ cost: Money.money(0) });
+    expect(lineKeep(free)).toMatchObject({ status: 'known', value: 60_000 });
+    expect(lineKeepPercent(free)).toMatchObject({ value: 100 });
   });
 
   it('cannot cost an item nobody has bought yet', () => {
@@ -85,7 +108,7 @@ describe('what the quote is worth', () => {
     item({ qty: 2, priceEach: Money.money(105_000), buyAt: known(Money.money(95_000), 'x') }),
     item({ qty: 1, priceEach: Money.money(29_000), buyAt: known(Money.money(27_500), 'x') }),
     charge(),
-    charge({ id: 'credit', name: 'Credit terms', amount: Money.money(15_120) }),
+    charge({ id: 'credit', name: 'Credit terms', rule: { type: 'percent', value: 3 } }),
   ];
 
   /**
@@ -110,11 +133,18 @@ describe('what the quote is worth', () => {
    * transport is not charged to the client, the fix belongs in the table, not
    * in the total.
    */
+  /**
+   * The figures are the mockup's, to the shilling. What changed is the
+   * CONFIDENCE: the transport on this quote has not been paid out, so the
+   * cost column is `at least 467,500` and the margin `at most 111,620`.
+   * 467,500 read as the whole column was the shop being told a delivery is
+   * free until the driver is paid.
+   */
   it('adds its own lines up, whatever the mockup dock says', () => {
     expect(clientPays(lines)).toBe(579_120);
-    expect(costsYou(lines)).toMatchObject({ status: 'known', value: 467_500 });
-    expect(youKeep(lines)).toMatchObject({ status: 'known', value: 111_620 });
-    expect(keepPercent(lines)).toMatchObject({ status: 'known', value: 19 });
+    expect(costsYou(lines)).toMatchObject({ status: 'partial', value: 467_500 });
+    expect(youKeep(lines)).toMatchObject({ status: 'partial', value: 111_620 });
+    expect(keepPercent(lines)).toMatchObject({ status: 'partial', value: 19 });
   });
 
   it("reconstructs the mockup's 519,120 from the lines it actually summed", () => {
@@ -183,5 +213,59 @@ describe('what switching suppliers would save', () => {
 
   it('is nothing at all when no line has an alternative', () => {
     expect(totalSaving([item(), charge()])).toMatchObject({ status: 'known', value: 0 });
+  });
+});
+
+describe('a charge carries its rule, not its shillings', () => {
+  const goods = [
+    item({ qty: 1, priceEach: Money.money(265_000), buyAt: known(Money.money(250_000), 'x') }),
+    item({ qty: 2, priceEach: Money.money(105_000), buyAt: known(Money.money(95_000), 'x') }),
+    item({ qty: 1, priceEach: Money.money(29_000), buyAt: known(Money.money(27_500), 'x') }),
+  ];
+  const credit = charge({
+    id: 'credit',
+    name: 'Credit terms',
+    rule: { type: 'percent', value: 3 },
+    service: null,
+  });
+
+  it('is a percent of the goods, and only of the goods', () => {
+    expect(goodsTotal(goods)).toBe(504_000);
+    expect(chargeAmount(credit, goodsTotal(goods))).toBe(15_120);
+  });
+
+  /**
+   * The whole reason it is a rule. Frozen at the moment it was tapped, the
+   * document goes on printing `3%` beside a figure that is three per cent of
+   * something that is no longer on it.
+   */
+  it('moves when a line is added under it', () => {
+    const more = [...goods, item({ qty: 1, priceEach: Money.money(96_000) }), credit];
+
+    expect(goodsTotal(more)).toBe(600_000);
+    expect(chargeAmount(credit, goodsTotal(more))).toBe(18_000);
+    expect(clientPays(more)).toBe(618_000);
+  });
+
+  /**
+   * Compounding settled without a rule about ordering: every percent
+   * resolves against the goods, so two of them come to the same total
+   * whichever was tapped first.
+   */
+  it('never charges a percent on another percent', () => {
+    const also = charge({ id: 'urgent', name: 'Urgent', rule: { type: 'percent', value: 5 } });
+    const oneWay = [...goods, credit, also];
+    const other = [...goods, also, credit];
+
+    expect(clientPays(oneWay)).toBe(clientPays(other));
+    // 504,000 + 3% + 5% of the GOODS, not of each other.
+    expect(clientPays(oneWay)).toBe(504_000 + 15_120 + 25_200);
+  });
+
+  /** A charge is money the shop is owed, and a discount is not one. */
+  it('comes to nothing at zero or less', () => {
+    const on = Money.money(504_000);
+    expect(chargeAmount(charge({ rule: { type: 'fixed', value: 0 } }), on)).toBe(0);
+    expect(chargeAmount(charge({ rule: { type: 'percent', value: -5 } }), on)).toBe(0);
   });
 });

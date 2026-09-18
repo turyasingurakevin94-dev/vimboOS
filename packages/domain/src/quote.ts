@@ -33,7 +33,7 @@ import {
 } from './derived.js';
 import * as Money from './money.js';
 import type { Money as Amount } from './money.js';
-import type { CustomerId, SupplierId, VariantId } from './ids.js';
+import { asId, type CustomerId, type SupplierId, type VariantId } from './ids.js';
 
 /** One line of the quote the client can see. */
 export interface ItemLine {
@@ -98,14 +98,43 @@ export interface LineSource {
  * Transport, credit terms, a discount. It has an amount and no cost, so the
  * shop keeps all of it — which is why the shop-side sheet writes "all" in its
  * keep column rather than a per-cent.
+ *
+ * **It carries the RULE, not the shillings.** A percent frozen at the moment
+ * it was tapped goes stale on the next line added, and the document would
+ * then print `5%` beside a figure that is five per cent of nothing on it. It
+ * also settles compounding without needing a rule about ordering: every
+ * percent resolves against the GOODS, so two of them come to the same total
+ * whichever was tapped first.
+ *
+ * **The label is frozen, which is the opposite rule for the opposite
+ * reason.** An invoice is a record of what was agreed, so renaming a service
+ * next month must not rewrite what a customer was charged for last month.
  */
 export interface ChargeLine {
   readonly kind: 'charge';
   readonly id: string;
+  /** The label, as it was when this was agreed. Never re-read from the preset. */
   readonly name: string;
   /** What kind of charge, in the words the line shows: `charge`, `+3% on 30 days`. */
   readonly basis: string;
-  readonly amount: Amount;
+  readonly rule: ChargeRule;
+  /** Which of the shop's services it came from, where it came from one. */
+  readonly service: string | null;
+  /**
+   * What the charge cost the SHOP, where that has been paid out.
+   *
+   * A delivery costs what the driver was handed, and that is a payment
+   * rather than a figure somebody typed — `null` until it leaves the till.
+   * Null is not zero: a fee nobody has paid out on yet is a fee whose margin
+   * is not yet known, and the dock says so.
+   */
+  readonly cost: Amount | null;
+}
+
+/** A charge, as the shop agreed it: a flat figure, or a share of the goods. */
+export interface ChargeRule {
+  readonly type: 'fixed' | 'percent';
+  readonly value: number;
 }
 
 export type QuoteLine = ItemLine | ChargeLine;
@@ -131,20 +160,60 @@ export interface Quote {
 /*  What a line is worth                                                      */
 /* -------------------------------------------------------------------------- */
 
-/** What the client pays for this line. Always knowable — it is what was typed. */
-export const lineTotal = (line: QuoteLine): Amount =>
-  line.kind === 'charge' ? line.amount : Money.times(line.priceEach, line.qty);
+/** The goods, and only the goods — what a percent charge is a percent OF. */
+export const goodsTotal = (lines: readonly QuoteLine[]): Amount =>
+  Money.add(...lines.filter((l): l is ItemLine => l.kind === 'item').map(itemTotal));
+
+/** What the client pays for one item line. What was typed, times how many. */
+export const itemTotal = (line: ItemLine): Amount => Money.times(line.priceEach, line.qty);
+
+/**
+ * What a charge comes to, against the goods it is charged on.
+ *
+ * Whole shillings: a fee is a figure somebody says out loud. A value of zero
+ * or less comes to nothing — a charge is money the shop is owed, and a
+ * discount is not one.
+ */
+export function chargeAmount(line: ChargeLine, goods: Amount): Amount {
+  if (line.rule.value <= 0) return Money.ZERO;
+  return line.rule.type === 'percent'
+    ? Money.money(Math.round((goods * line.rule.value) / 100))
+    : Money.money(Math.round(line.rule.value));
+}
+
+/**
+ * What the client pays for this line.
+ *
+ * A charge needs the goods to be a percent of, so it is given them. Passing
+ * the whole document rather than a total means no caller can hand it a
+ * figure that already had a charge in it.
+ */
+export const lineTotal = (line: QuoteLine, lines: readonly QuoteLine[] = []): Amount =>
+  line.kind === 'charge' ? chargeAmount(line, goodsTotal(lines)) : itemTotal(line);
 
 /**
  * What this line costs the shop.
  *
- * A charge costs nothing — a **known** zero, not a missing figure. An item
- * costs the last price paid times the quantity, and if that price was never
- * recorded the cost of the line cannot be derived at all.
+ * An item costs the last price paid times the quantity, and where that price
+ * was never recorded the cost of the line cannot be derived at all.
+ *
+ * **A charge is not a known zero.** It was, and it is the difference between
+ * a 5,000 delivery on a 7,050 order reading `you keep 5,150` and reading
+ * `you keep at most 5,150`. What a charge costs the shop is a PAYMENT, not a
+ * figure somebody typed — a delivery costs what the driver was handed, and
+ * that money leaves the till later, against `cost` and `costTxnId` on the
+ * charge. At the moment of quoting it is not known, and a dock that treats
+ * it as nothing reports the whole fee as margin.
+ *
+ * A charge the shop has recorded a cost for is costed at it. One it has not
+ * is `partial` at zero, which says "this much at most" — the figure is real
+ * money and it is not the whole column.
  */
 export const lineCost = (line: QuoteLine): Derived<Amount> =>
   line.kind === 'charge'
-    ? known(Money.ZERO, 'a charge carries no cost')
+    ? line.cost === null
+      ? partial(Money.ZERO, 'nothing has been paid out on it yet', `what ${line.name} costs the shop is not recorded until it is paid`)
+      : known(line.cost, `what ${line.name} cost the shop`)
     : map(line.buyAt, (at) => Money.times(at, line.qty));
 
 /** What the shop keeps on this line. */
@@ -156,8 +225,15 @@ export const lineKeep = (line: QuoteLine): Derived<Amount> =>
 /* -------------------------------------------------------------------------- */
 
 /** The client's figure. Every line has one, so this is never in doubt. */
-export const clientPays = (lines: readonly QuoteLine[]): Amount =>
-  Money.add(...lines.map(lineTotal));
+export const clientPays = (lines: readonly QuoteLine[]): Amount => {
+  const goods = goodsTotal(lines);
+  return Money.add(
+    goods,
+    ...lines
+      .filter((l): l is ChargeLine => l.kind === 'charge')
+      .map((c) => chargeAmount(c, goods)),
+  );
+};
 
 /**
  * The shop's figure.
@@ -292,3 +368,45 @@ export const askedFor = (line: ItemLine): number =>
  * is how a shop with eight on the shelf was told it had none.
  */
 export const shortOf = (line: ItemLine): number => Math.max(0, askedFor(line) - line.inStock);
+
+/* -------------------------------------------------------------------------- *
+ * Who the order is for
+ * -------------------------------------------------------------------------- */
+
+/**
+ * A customer the books know, as the quote's own strip reads them.
+ *
+ * Derived rather than stored on the quote: the strip's `orders`, `owes now`
+ * and `last order` are all facts about the account, and a quote holding its
+ * own copy of them is a copy that is wrong the moment a payment lands.
+ */
+export function clientFrom(customer: {
+  readonly id: string;
+  readonly name: string;
+  readonly phone: string;
+  readonly invoices: readonly {
+    readonly issued: Date;
+    readonly total: Amount;
+  }[];
+  readonly balance: Amount;
+}): Client {
+  // Newest by the day it was issued, not by where it sits in the array: the
+  // register hands invoices back in whatever order the books held them.
+  const newest = [...customer.invoices].sort(
+    (a, b) => b.issued.getTime() - a.issued.getTime(),
+  )[0];
+
+  return {
+    id: asId(customer.id),
+    name: customer.name,
+    phone: customer.phone,
+    orders: customer.invoices.length,
+    owesNow: customer.balance,
+    lastOrder:
+      newest === undefined
+        ? null
+        : { total: newest.total, when: `${newest.issued.getUTCDate()} ${MONTH[newest.issued.getUTCMonth()] ?? ''}` },
+  };
+}
+
+const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

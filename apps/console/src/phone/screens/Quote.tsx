@@ -23,7 +23,9 @@
 import { useState, type ReactElement } from 'react';
 import {
   Money,
+  chargeAmount,
   clientPays,
+  goodsTotal,
   costsYou,
   keepPercent,
   keepTone,
@@ -147,6 +149,10 @@ function Lines({
   const cost = costsYou(lines);
   const keep = youKeep(lines);
   const share = keepPercent(lines);
+  // Every percent charge is a percent of THIS — the goods, and only the
+  // goods — so two of them come to the same total whichever was added
+  // first, and neither is ever a percent of the other.
+  const goods = goodsTotal(lines);
 
   return (
     <>
@@ -174,7 +180,7 @@ function Lines({
               onOpen={() => onOpen(line.id)}
             />
           ) : (
-            <ChargeRow key={line.id} line={line} />
+            <ChargeRow key={line.id} line={line} amount={chargeAmount(line, goods)} />
           ),
         )}
 
@@ -195,8 +201,9 @@ function Lines({
         {/* Everything right of the desktop's one-pixel divider, folded. */}
         <button type="button" className={s.shopSide}>
           <span className={s.shopSay}>
-            Shop side · costs you <DerivedFigure value={cost} className={s.shopFig} /> · you
-            keep <DerivedFigure value={keep} className={s.shopKeep} />
+            Shop side · costs you{' '}
+            <DerivedFigure value={cost} className={s.shopFig} bound="at least" /> · you keep{' '}
+            <DerivedFigure value={keep} className={s.shopKeep} bound="at most" />
           </span>
           {match(share, {
             known: (pc) => (
@@ -284,7 +291,14 @@ function ItemRow({
   );
 }
 
-function ChargeRow({ line }: { readonly line: ChargeLine }): ReactElement {
+/** Drawn at what it comes to against the goods now, never at a frozen figure. */
+function ChargeRow({
+  line,
+  amount,
+}: {
+  readonly line: ChargeLine;
+  readonly amount: Money.Money;
+}): ReactElement {
   return (
     <div className={s.rowCharge}>
       <span />
@@ -294,7 +308,7 @@ function ChargeRow({ line }: { readonly line: ChargeLine }): ReactElement {
       {/* A charge you typed carries the dotted rule; one the app worked out
           from a rate does not, because changing it would change the rate. */}
       <div className={`${s.total} ${line.basis === 'charge' ? s.typed : ''}`}>
-        {Money.format(line.amount)}
+        {Money.format(amount)}
       </div>
     </div>
   );
@@ -460,18 +474,27 @@ function ClientAndStock({
  * never a zero. A partial one carries a `+`: this much is real, and there is
  * more that the app could not work out.
  */
+/**
+ * Which way a partial figure is wrong depends on which figure it is: a cost
+ * missing a line is at LEAST what is shown, and the margin left over is at
+ * MOST what is shown. It wore `+` either way, which said the opposite of
+ * the truth about a margin, in the direction that flatters the shop.
+ */
 function DerivedFigure({
   value,
   className,
+  bound,
 }: {
   readonly value: ReturnType<typeof youKeep>;
   readonly className: string | undefined;
+  readonly bound: 'at least' | 'at most';
 }): ReactElement {
   return match(value, {
     known: (amount) => <span className={className}>{Money.format(amount)}</span>,
     partial: (amount, _basis, missing) => (
-      <span className={className} title={`at least this much — ${missing}`}>
-        {Money.format(amount)}+
+      <span className={className} title={`${bound} this much — ${missing}`}>
+        {Money.format(amount)}
+        <span className={s.bound}> {bound}</span>
       </span>
     ),
     unavailable: (reason) => (

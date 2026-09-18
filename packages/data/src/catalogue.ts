@@ -84,8 +84,24 @@ export interface Sellable {
 
 export interface Catalogue {
   readonly sellables: readonly Sellable[];
+  /**
+   * The charges the shop has agreed it makes: transport, urgency, credit.
+   *
+   * `app_settings.presets.services`, which is a list of RULES — a name, a
+   * kind and a figure. This shop has exactly one, `Transport fixed 5,000`,
+   * where the screen had been offering three invented ones at a dozen times
+   * the rate.
+   */
+  readonly services: readonly Service[];
   /** Rows that were read and could not be understood, in words. */
   readonly unreadable: readonly string[];
+}
+
+/** One charge the shop makes, as the shop set it up. */
+export interface Service {
+  readonly name: string;
+  readonly type: 'fixed' | 'percent';
+  readonly value: number;
 }
 
 const obj = (v: unknown): Record<string, unknown> | null =>
@@ -182,6 +198,23 @@ function stockRuleFor(
     markupOn(product, `stock_${side}_markup_type`, `stock_${side}_markup_value`, 'product-stock') ??
     ruleFor(product, variant, side, shopDefault)
   );
+}
+
+/** The charges the shop has agreed it makes, out of `app_settings.presets`. */
+export function shopServices(presets: unknown): readonly Service[] {
+  const out: Service[] = [];
+
+  for (const raw of arr(obj(presets)?.services)) {
+    const one = obj(raw);
+    const name = one === null ? null : readText(one.name);
+    const value = one === null ? null : num(one.value);
+    // A service with no figure is not a charge the shop makes; it is a row
+    // somebody started and left. Offering it would put a zero on an invoice.
+    if (one === null || name === null || value === null || value <= 0) continue;
+    out.push({ name, type: readText(one.type) === 'percent' ? 'percent' : 'fixed', value });
+  }
+
+  return out;
 }
 
 /** The shop's own default markup, out of `app_settings.presets`. */
@@ -396,7 +429,7 @@ export function assembleCatalogue(
     }
   }
 
-  return { sellables, unreadable };
+  return { sellables, services: shopServices(presets), unreadable };
 }
 
 /** How many rows a page of a table holds before the next one is asked for. */
@@ -536,6 +569,8 @@ export function demoCatalogue(): Catalogue {
 
   return {
     unreadable: [],
+    // What this shop actually charges for, and it is one thing.
+    services: [{ name: 'Transport', type: 'fixed', value: 5_000 }],
     sellables: [
       thing('P044', 0, 'Soft Close Mulper — Flat', 'FLAT', 'Furniture', {
         markups: byThePack(15_000),
