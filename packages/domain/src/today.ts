@@ -27,9 +27,10 @@ import { known, partial, unavailable, type Derived } from './derived.js';
 import * as Money from './money.js';
 import type { Money as Amount } from './money.js';
 import type { CashPosition, CashTxn } from './cash.js';
-import { isMoneyIn, isMoneyOut, monthsOfCover } from './cash.js';
+import { ACCOUNTS, isMoneyIn, isMoneyOut, monthsOfCover } from './cash.js';
 import {
   agingBands,
+  oldestDebtDays,
   read as readBook,
   totalOwed,
   type AgingBand,
@@ -687,5 +688,139 @@ export function yesterday(
     newDebt: Money.add(
       ...raised.map((s) => Money.max(Money.ZERO, Money.subtract(s.total, settled(s)))),
     ),
+  };
+}
+
+/* --------------------------- what the books flagged ----------------------- */
+
+/** One reading the books flagged. Arithmetic, never advice. */
+export interface Flag {
+  readonly id: string;
+  readonly tone: 'bad' | 'caution' | 'info' | 'neutral';
+  /** The headline, with the subject named. */
+  readonly first: string;
+  /**
+   * Both ends of the comparison, so the row can be checked rather than
+   * believed — the design system's own rule for a basis line.
+   */
+  readonly second: string;
+  /** The figure, when there is one. Never a nought standing in for none. */
+  readonly figure: Amount | null;
+  /** A short verdict chip, when the row earns one. */
+  readonly judgement: string | null;
+}
+
+export interface Watch {
+  readonly flags: readonly Flag[];
+  /**
+   * Readings this panel is supposed to carry and cannot, each named.
+   *
+   * The handoff draws five rows and captions them "five of five shown".
+   * Three of them need books this app does not read yet, and drawing three
+   * rows under that caption would be a quieter lie than leaving the
+   * sentences hard-coded. The panel says how many it could answer and what
+   * it could not.
+   */
+  readonly notYet: readonly string[];
+}
+
+export interface WatchInputs {
+  readonly customers: readonly Customer[];
+  readonly cash: CashPosition;
+  readonly deadLines: number;
+  readonly deadValue: Derived<Amount>;
+  /** How long a line stays quiet before it is called dead, per the shop. */
+  readonly quietDays: number;
+}
+
+/**
+ * The readings the books can make on their own.
+ *
+ * Every row here is arithmetic over rows this screen already read — none of
+ * it is a second query, and none of it is advice. Advice is the Manager's,
+ * and it is the list on the left.
+ *
+ * **A flag is not raised for a quiet fact.** No debtor, no broken word, no
+ * misfiled row and no dead line each produce no row at all, rather than a
+ * row reading zero — §7 forbids drawing a badge for zero and the same
+ * reasoning holds here.
+ */
+export function watch(inputs: WatchInputs, now: Date): Watch {
+  const book = readBook(inputs.customers, now);
+  const flags: Flag[] = [];
+
+  // The single oldest debt, named. An aging total says how much; this says
+  // who, which is the one the owner can pick up a phone about.
+  const aged = inputs.customers
+    .map((c) => ({ c, age: oldestDebtDays(c, now) }))
+    .filter((x): x is { c: Customer; age: Extract<Derived<number>, { status: 'known' }> } =>
+      x.age.status === 'known',
+    )
+    .sort((a, b) => b.age.value - a.age.value);
+
+  const oldest = aged[0];
+  if (oldest !== undefined) {
+    flags.push({
+      id: 'oldest-debt',
+      tone: 'bad',
+      first: `${oldest.c.name} has owed ${oldest.age.value} days`,
+      second: oldest.age.basis,
+      figure: totalOwed([oldest.c]),
+      judgement: null,
+    });
+  }
+
+  // A broken promise is a date the CUSTOMER named and missed, which is why
+  // it outranks an aging band as evidence.
+  if (book.brokeWord.length > 0) {
+    const broken = totalOwed(book.brokeWord);
+    flags.push({
+      id: 'broke-word',
+      tone: 'bad',
+      first: `${book.brokeWord.length} ${book.brokeWord.length === 1 ? 'account has' : 'accounts have'} broken their word`,
+      second: `${Money.format(broken)} of the ${Money.format(totalOwed(book.owing))} owed, across ${book.owing.length} accounts`,
+      figure: broken,
+      judgement: null,
+    });
+  }
+
+  // A row filed under an account the shop does not have is invisible to
+  // every cash total — which is exactly what once made a movement look
+  // recorded when nothing could see it.
+  if (inputs.cash.misfiled.length > 0) {
+    flags.push({
+      id: 'misfiled-cash',
+      tone: 'caution',
+      first: `${inputs.cash.misfiled.length} cash ${inputs.cash.misfiled.length === 1 ? 'movement is' : 'movements are'} filed under no account you have`,
+      second: `filed under ${inputs.cash.misfiled.join(', ')} · your accounts are ${ACCOUNTS.map((a) => a.label).join(', ')}`,
+      figure: null,
+      judgement: 'not in any total',
+    });
+  }
+
+  if (inputs.deadLines > 0) {
+    flags.push({
+      id: 'dead-stock',
+      tone: 'neutral',
+      first: `${inputs.deadLines} ${inputs.deadLines === 1 ? 'line has' : 'lines have'} stopped selling`,
+      // The basis, and only the basis. Why it cannot be valued is the
+      // chip's job — spelling the whole reason out here ran the row to
+      // three lines and said twice what one word already said.
+      second: `nothing sold on them in ${inputs.quietDays} days`,
+      figure: inputs.deadValue.status === 'unavailable' ? null : inputs.deadValue.value,
+      judgement: inputs.deadValue.status === 'unavailable' ? 'not yet valued' : null,
+    });
+  }
+
+  return {
+    flags,
+    // Named individually rather than counted, because each is a different
+    // job and the owner is entitled to know which readings are missing
+    // rather than that some number of them are.
+    notYet: [
+      'which lines run out within the week, and what refilling them costs',
+      'which suppliers have raised their prices, and by how much',
+      'which sales agents sell at a thinner margin than the rest',
+    ],
   };
 }

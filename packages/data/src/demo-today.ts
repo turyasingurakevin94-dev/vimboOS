@@ -47,6 +47,7 @@ import {
   readStrip,
   soldByWeek,
   unavailable,
+  watch,
   wantsYou,
   type CashPosition,
   type MarginInput,
@@ -238,14 +239,16 @@ const demoMoves = (): readonly MoveRecord[] => [
 
 export function demoToday(): TodayBooks {
   const moves = rankMoves(demoMoves());
+  const cash = demoCash();
+  const stock = demoStock();
   const strip = readStrip(
     {
-      cash: demoCash(),
+      cash,
       burn: demoBurn(),
       customers: demoCustomers(),
       purchases: demoPurchaseInvoices(),
       margin: demoMargin(),
-      stock: demoStock(),
+      stock,
     },
     DEMO_TODAY,
   );
@@ -261,6 +264,18 @@ export function demoToday(): TodayBooks {
     // margin cell are reading the same rows.
     profit: profitByProduct(demoSoldLines(), DEMO_TODAY),
     yesterday: demoYesterday(),
+    // Over the same example accounts the strip's second cell reads, so a
+    // row here and the figure up there cannot disagree about a debt.
+    watch: watch(
+      {
+        customers: demoCustomers(),
+        cash,
+        deadLines: stock.deadLines,
+        deadValue: stock.dead,
+        quietDays: 60,
+      },
+      DEMO_TODAY,
+    ),
     moves,
     openMoves: moves.length,
     wantsYou: wantsYou(strip, moves.length),

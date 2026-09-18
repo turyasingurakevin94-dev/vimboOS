@@ -43,6 +43,7 @@ import {
   rankMoves,
   SOLD_WEEKS,
   soldByWeek,
+  watch,
   yesterday,
   Money,
   monthlyBurn,
@@ -62,6 +63,7 @@ import {
   type ShelfLine,
   type SoldByWeek,
   type SoldLine,
+  type Watch,
   type Yesterday,
   type StockLot,
   type TodayStrip,
@@ -108,6 +110,8 @@ export interface TodayBooks {
   readonly profit: ProfitByProduct;
   /** The four tiles: what the shop did on the last full day. */
   readonly yesterday: Yesterday;
+  /** The readings the books made on their own, and the ones they could not. */
+  readonly watch: Watch;
   /** Manager moves still open. The mockup draws three; the shop has 39. */
   readonly openMoves: number;
   /** The page's sub-line and the rail badge, as one number. */
@@ -471,9 +475,14 @@ export function assembleToday(rows: {
     unreadable.push('the manager’s moves could not be read');
   }
 
+  const cash = cashOnHand(isoDay(rows.now), txns, days);
+  const deadValue = unavailable(
+    'dead stock is valued at FIFO cost in the shop’s own books, and that reckoning is not ported yet',
+  );
+
   const strip = readStrip(
     {
-      cash: cashOnHand(isoDay(rows.now), txns, days),
+      cash,
       burn: monthlyBurn(rows.now, txns),
       customers: rows.customers,
       purchases,
@@ -481,9 +490,7 @@ export function assembleToday(rows: {
       stock: {
         shelf,
         // Named, not guessed. See the header.
-        dead: unavailable(
-          'dead stock is valued at FIFO cost in the shop’s own books, and that reckoning is not ported yet',
-        ),
+        dead: deadValue,
         deadLines: deadCount ?? 0,
       },
     },
@@ -497,6 +504,16 @@ export function assembleToday(rows: {
     sold: soldByWeek(sales, rows.now),
     profit: profitByProduct(soldLines, rows.now),
     yesterday: yesterday(sales, txns, rows.now),
+    watch: watch(
+      {
+        customers: rows.customers,
+        cash,
+        deadLines: deadCount ?? 0,
+        deadValue,
+        quietDays,
+      },
+      rows.now,
+    ),
     moves: moves ?? [],
     openMoves,
     wantsYou: wantsYou(strip, openMoves),

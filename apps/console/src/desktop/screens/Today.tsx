@@ -36,6 +36,7 @@ import {
   SOLD_WEEKS,
   type AgingBand,
   type Derived,
+  type Flag,
   type ManagerMove,
   type ProfitLine,
   type SoldByWeek,
@@ -327,61 +328,22 @@ function derivation(m: ManagerMove): string {
 
 /* --------------------------------- watch ---------------------------------- */
 
-interface Alert {
-  readonly icon: IconName;
-  readonly chip: string;
-  readonly chipInk: string;
-  readonly first: string;
-  /** Both ends of the comparison, so it can be checked rather than believed. */
-  readonly second: string;
-  readonly figure?: string;
-  readonly figureInk?: string;
-  readonly judgement?: { readonly text: string; readonly fill: string; readonly ink: string };
-}
-
-const WATCH: readonly Alert[] = [
-  {
-    icon: 'clock',
-    chip: v('bad-chip'),
-    chipInk: v('bad-ink'),
-    first: 'Nakawa Traders has owed 74 days',
-    second: 'Invoiced 5 July, part-paid 18 July · nothing since',
-    figure: '2,410,000',
-    figureInk: v('bad-ink'),
-  },
-  {
-    icon: 'package',
-    chip: v('warn-chip'),
-    chipInk: v('warn-ink'),
-    first: '7 lines run out within 10 days',
-    second: '14,200,000 to refill against 8,420,000 held',
-    judgement: { text: '5,780,000 short', fill: v('warn-fill'), ink: v('warn-ink') },
-  },
-  {
-    icon: 'trending-up',
-    chip: v('bad-chip'),
-    chipInk: v('bad-ink'),
-    first: 'Kampala Steel is billing 30% more',
-    second: '10,000 on 1 May, 13,000 now · across 9 invoices',
-    judgement: { text: '+30%', fill: v('bad-chip'), ink: v('bad-ink') },
-  },
-  {
-    icon: 'users',
-    chip: v('info-chip'),
-    chipInk: v('info-ink'),
-    first: 'Nsubuga sells at 11% margin against 19% for the rest',
-    second: '344,000 commission on 3,100,000 sold, last 30 days',
-    judgement: { text: '−8 pts', fill: v('warn-fill'), ink: v('warn-ink') },
-  },
-  {
-    icon: 'layers',
-    chip: v('owed-chip'),
-    chipInk: v('ink-2'),
-    first: '3,100,000 has not moved in 120 days',
-    second: '9 lines · oldest bought 14 March',
-    figure: '3,100,000',
-  },
-];
+/**
+ * How each flag is painted. Presentation only — the tone is the domain's.
+ *
+ * §2: a tint means something. Coral-red is late or wrong, amber is waiting
+ * or part-done, grey is inert. Nothing here tints for variety, and a
+ * reading that could not be valued takes the inert one rather than the
+ * warning one.
+ */
+const FLAG_SKIN: Readonly<
+  Record<Flag['tone'], { readonly icon: IconName; readonly chip: string; readonly ink: string }>
+> = {
+  bad: { icon: 'clock', chip: v('bad-chip'), ink: v('bad-ink') },
+  caution: { icon: 'alert-triangle', chip: v('warn-chip'), ink: v('warn-ink') },
+  info: { icon: 'users', chip: v('info-chip'), ink: v('info-ink') },
+  neutral: { icon: 'layers', chip: v('owed-chip'), ink: v('ink-2') },
+};
 
 /* ------------------------------ insight rail ------------------------------ */
 
@@ -636,38 +598,60 @@ function Morning({
             <div className={s.watchHead}>
               <span className={s.watchTitle}>What the books flagged</span>
               <span className={s.watchNote}>
-                arithmetic, not advice · five of five shown
+                {/* Counted, and honest about the ones it cannot make. The
+                    handoff captions this "five of five shown" over five
+                    hand-written rows. */}
+                arithmetic, not advice · {books.watch.flags.length} of{' '}
+                {books.watch.flags.length + books.watch.notYet.length}
               </span>
             </div>
-            {WATCH.map((a) => (
-              <button type="button" className={s.watchRow} key={a.first}>
+            {books.watch.flags.map((f) => (
+              <button type="button" className={s.watchRow} key={f.id}>
                 <span
                   className={s.watchIcon}
-                  style={{ background: a.chip, color: a.chipInk }}
+                  style={{ background: FLAG_SKIN[f.tone].chip, color: FLAG_SKIN[f.tone].ink }}
                   aria-hidden="true"
                 >
-                  <Icon name={a.icon} size={16} />
+                  <Icon name={FLAG_SKIN[f.tone].icon} size={16} />
                 </span>
                 <span className={s.watchBody}>
-                  <span className={s.watchFirst}>{a.first}</span>
-                  <span className={s.watchSecond}>{a.second}</span>
+                  <span className={s.watchFirst}>{f.first}</span>
+                  <span className={s.watchSecond}>{f.second}</span>
                 </span>
-                {a.figure !== undefined && (
-                  <span className={s.watchFig} style={{ color: a.figureInk }}>
-                    {a.figure}
+                {f.figure !== null && (
+                  <span className={s.watchFig} style={{ color: FLAG_SKIN[f.tone].ink }}>
+                    {Money.format(f.figure)}
                   </span>
                 )}
-                {a.judgement !== undefined && (
+                {f.judgement !== null && (
                   <span
                     className={s.chip}
-                    style={{ background: a.judgement.fill, color: a.judgement.ink }}
+                    style={{ background: FLAG_SKIN[f.tone].chip, color: FLAG_SKIN[f.tone].ink }}
                   >
-                    {a.judgement.text}
+                    {f.judgement}
                   </span>
                 )}
                 <Icon name="chevron-right" size={16} className={s.watchCaret} />
               </button>
             ))}
+
+            {/* Every list states its own emptiness and names what is next —
+                §5. A panel with nothing to flag is a good morning, and it
+                should say so rather than showing an empty card. */}
+            {books.watch.flags.length === 0 && (
+              <p className={s.watchEmpty}>
+                Nothing in the books wants you this morning.
+              </p>
+            )}
+
+            {/* The readings this panel owes and cannot yet make, named one
+                by one. Drawing four rows under a "five of five" caption
+                would be a quieter lie than the hard-coded sentences were. */}
+            {books.watch.notYet.length > 0 && (
+              <p className={s.watchEmpty}>
+                Not yet read from the books: {books.watch.notYet.join('; ')}.
+              </p>
+            )}
           </section>
         </div>
 

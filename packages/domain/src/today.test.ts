@@ -22,7 +22,9 @@ import {
   type StockLot,
   profitByProduct,
   soldByWeek,
+  watch,
   yesterday,
+  type WatchInputs,
   type SoldLine,
   type StripInputs,
   weekStart,
@@ -578,5 +580,81 @@ describe('yesterday', () => {
 
     expect(yesterday([void_], [], NOW).sold).toBe(Money.ZERO);
     expect(yesterday([void_], [], NOW).newDebt).toBe(Money.ZERO);
+  });
+});
+
+describe('what the books flagged', () => {
+  const quiet: WatchInputs = {
+    customers: [],
+    cash: {
+      byAccount: [],
+      total: known(Money.ZERO, 'nothing'),
+      accountsInUse: 0,
+      misfiled: [],
+    },
+    deadLines: 0,
+    deadValue: unavailable('not ported'),
+    quietDays: 60,
+  };
+
+  it('raises nothing on a quiet morning, rather than four rows of zero', () => {
+    // §7: never draw a badge for zero. The same reasoning holds for a row.
+    expect(watch(quiet, NOW).flags).toEqual([]);
+  });
+
+  it('names who has owed longest, not just how much is old', () => {
+    const [flag] = watch(
+      {
+        ...quiet,
+        customers: [
+          customer('1', [{ total: 2_410_000, received: 0, age: 74 }]),
+          customer('2', [{ total: 9_000_000, received: 0, age: 12 }]),
+        ],
+      },
+      NOW,
+    ).flags;
+
+    // The bigger debt is younger. An aging total says how much; this says
+    // who, which is the one somebody can ring.
+    expect(flag?.first).toBe('Account 1 has owed 74 days');
+    expect(flag?.figure).toBe(Money.money(2_410_000));
+  });
+
+  it('flags a movement filed under an account the shop does not have', () => {
+    const flag = watch(
+      { ...quiet, cash: { ...quiet.cash, misfiled: ['petty', 'till 2'] } },
+      NOW,
+    ).flags.find((f) => f.id === 'misfiled-cash');
+
+    // Invisible to every cash total, which is what makes it worth a row.
+    expect(flag?.first).toContain('2 cash movements');
+    expect(flag?.second).toContain('petty, till 2');
+    expect(flag?.judgement).toBe('not in any total');
+  });
+
+  it('says dead lines are not yet valued rather than valuing them at nothing', () => {
+    const flag = watch({ ...quiet, deadLines: 15 }, NOW).flags.find((f) => f.id === 'dead-stock');
+
+    expect(flag?.first).toBe('15 lines have stopped selling');
+    expect(flag?.second).toBe('nothing sold on them in 60 days');
+    expect(flag?.figure).toBeNull();
+    expect(flag?.judgement).toBe('not yet valued');
+  });
+
+  it('carries the figure once the value can be derived', () => {
+    const flag = watch(
+      { ...quiet, deadLines: 9, deadValue: known(Money.money(3_100_000), 'at what you paid') },
+      NOW,
+    ).flags.find((f) => f.id === 'dead-stock');
+
+    expect(flag?.figure).toBe(Money.money(3_100_000));
+    expect(flag?.judgement).toBeNull();
+  });
+
+  it('names the readings it cannot make, rather than drawing fewer rows quietly', () => {
+    // The handoff captions this panel "five of five shown". Three of its
+    // rows need books this app does not read, and three rows under that
+    // caption would be a quieter lie than the hard-coded sentences were.
+    expect(watch(quiet, NOW).notYet).toHaveLength(3);
   });
 });

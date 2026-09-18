@@ -400,6 +400,17 @@
   color: var(--ow-color-ink-3);
 }
 
+/* The panel speaking for itself: a quiet morning, or a reading it owes and
+   cannot yet make. Prose, so it takes the prose measure and the secondary
+   ink rather than a row's chrome. */
+.watchEmpty {
+  margin: var(--ow-space-8) 0 0;
+  font-size: var(--ow-size-11-5);
+  line-height: 1.55;
+  color: var(--ow-color-ink-3);
+  text-wrap: pretty;
+}
+
 .watchRow {
   display: flex;
   align-items: center;
