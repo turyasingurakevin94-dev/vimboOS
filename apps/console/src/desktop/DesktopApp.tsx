@@ -15,8 +15,8 @@ import {
   type ReactElement,
 } from 'react';
 import { owingBadge, read } from '@ow/domain';
-import { DEMO_TODAY, demoCustomers } from '@ow/data';
 import { useNeedsYou } from '../app/useBoard.js';
+import { useRegister } from '../app/useRegister.js';
 import { useToday } from '../app/useToday.js';
 import s from './DesktopApp.module.css';
 import { Rail, SECTIONS, TODAY, asksForBonus, resolveTab } from './chrome/Rail.js';
@@ -149,6 +149,7 @@ export default function DesktopApp(): ReactElement {
    * screen's own `useToday()` reads this same cache rather than asking again.
    */
   const today = useToday();
+  const people = useRegister();
   const needsYou = useNeedsYou();
 
   /**
@@ -161,7 +162,12 @@ export default function DesktopApp(): ReactElement {
    */
   const badges = useMemo(
     () => ({
-      customers: owingBadge(read(demoCustomers(), DEMO_TODAY)),
+      // Off the SAME register the screen reads. It was the demo book, so
+      // the rail said 11 owing beside a screen reading 10 — a figure about
+      // somebody else's shop, on the row that opens this one.
+      ...(people.at === 'ready'
+        ? { customers: owingBadge(read(people.data.customers, people.today)) }
+        : {}),
       // The board's own queue, which is what a badge on this row means:
       // the decisions only the owner can make. Omitted until the board
       // lands, for the same reason Today's is.
@@ -171,7 +177,7 @@ export default function DesktopApp(): ReactElement {
       // this row must not say while it is still finding out.
       ...(today.at === 'ready' ? { today: today.data.wantsYou } : {}),
     }),
-    [today, needsYou],
+    [today, needsYou, people],
   );
 
   const onTrail = useCallback((next: string | null) => setTrail(next), []);

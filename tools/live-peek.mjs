@@ -14,7 +14,7 @@
  * and build with the target you mean to look at:
  *
  *     VITE_OW_TARGET=production VITE_OW_SUPABASE_KEY=… pnpm build
- *     OW_EMAIL=… OW_PASSWORD=… node tools/live-peek.mjs "Order tracking" out.png
+ *     OW_EMAIL=… OW_PASSWORD=… node tools/live-peek.mjs "Order tracking" out.png "Posting"
  *
  * **It reads.** Nothing here presses a control that writes, and the account
  * it signs in as should be one that cannot — the books it is looking at are
@@ -81,12 +81,26 @@ await page.click('button[type=submit]');
 await page.waitForTimeout(4000);
 
 const row = process.argv[2];
+/** A control to press once the screen is open — a lens, a tab, a group. */
+const then = process.argv[4];
 if (row !== undefined) {
   const tab = page.getByRole('button', { name: new RegExp(`^${row}`) });
   if ((await tab.count()) === 0) console.log(`--- no rail row "${row}" ---`);
   else {
     await tab.first().click();
     await page.waitForTimeout(3500);
+  }
+}
+
+if (then !== undefined) {
+  // A lens is a `tab`, a group is a `button`; this does not care which.
+  const control = page
+    .locator('button, [role="tab"]')
+    .filter({ hasText: new RegExp(`^\\s*${then}`) });
+  if ((await control.count()) === 0) console.log(`--- no control "${then}" on this screen ---`);
+  else {
+    await control.first().click();
+    await page.waitForTimeout(1200);
   }
 }
 

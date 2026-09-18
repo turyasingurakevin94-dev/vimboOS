@@ -68,6 +68,7 @@ import {
   promiseDayChips,
   ridingOnIt,
   type Signal,
+  signalRecordReads,
   signalShare,
   stepMonth,
   type Telling,
@@ -1147,11 +1148,11 @@ function PostingLens({
                   );
                 })}
             </div>
+            {/* Read off the same records as the bars above it. It was
+                prose — two claims about a record with nothing in it,
+                contradicting the `0` in their own first clause. */}
             <div className={s.panelSay}>
-              Of {desk.soldAfterPosts.posts} posts stamped in {desk.chaseRecord.overDays} days,
-              a price cut moved the line five times out of six. Idle stock almost never moves
-              on a post alone — those need the three past buyers told directly, which is what
-              the second pick does.
+              {signalRecordReads(desk.signalRecords, desk.chaseRecord.overDays)}
             </div>
           </div>
 

@@ -30,6 +30,7 @@
  */
 
 import {
+  NOT_DERIVED,
   Money,
   balance,
   daysPastDue,
@@ -52,6 +53,7 @@ import {
 import { current } from './client.js';
 import { readDate, readText } from './boundary.js';
 import { assembleRegister, lineDigits, type Register } from './customers.js';
+import { readPosting, type Posting } from './posting.js';
 
 /** How many days of thread the Inbox keeps. The domain filters on its own. */
 export const CHAT_DAYS = 30;
@@ -153,12 +155,23 @@ export async function readDesk(shopId: string, now: Date): Promise<Derived<DeskR
     now,
   });
 
+  /**
+   * What is worth posting, read separately because it reads different books
+   * — the shelf, the price book and the shop's own rules for what dead and
+   * what thin mean. A refusal there costs the Posting lens and nothing
+   * else, so it degrades like the threads and the follow-ups rather than
+   * sinking the desk.
+   */
+  const posting = await readPosting(shopId, now);
+
   const read = assembleDesk({
     register,
     conversations: convosRes.error === null ? convosRes.data : null,
     linked: numbersRes.error === null ? (numbersRes.data.length > 0) : null,
     followUps: followRes.error === null ? followRes.data : null,
     promises: promisesRes.error === null ? promisesRes.data : null,
+    posting: posting.status === 'unavailable' ? null : posting.value,
+    postingRefused: posting.status === 'unavailable' ? posting.reason : null,
     now,
   });
 
@@ -175,6 +188,9 @@ export function assembleDesk(rows: {
   readonly linked: boolean | null;
   readonly followUps: readonly unknown[] | null;
   readonly promises: readonly unknown[] | null;
+  /** What is worth posting, or `null` where it could not be worked out. */
+  readonly posting?: Posting | null;
+  readonly postingRefused?: string | null;
   readonly now: Date;
 }): DeskRead {
   const unreadable: string[] = [...rows.register.unreadable];
@@ -212,20 +228,35 @@ export function assembleDesk(rows: {
     unreadable.push('the follow-up list could not be read, so nobody is shown as waiting on a product');
   }
 
-  // Posting needs the shelf, the price book and a sales rate — the Catalogue
-  // group's tables. `wa_posts` records what was already posted, which is a
-  // different question, and answering it here would look like an answer to
-  // this one.
-  unreadable.push(
-    'what is worth posting is not derived yet: it needs stock, prices and a sales rate',
-  );
+  /**
+   * What is worth posting.
+   *
+   * This lens drew nothing and said it needed *stock, prices and a sales
+   * rate*. It has all three now — and the part that sentence missed is that
+   * the shop had already set what to look for: `deadStockDays`,
+   * `targetMarginPct` and the `clearance` map. Three of the five signals
+   * come off those.
+   *
+   * The other two are named rather than faked, which is the same rule the
+   * records below follow: `goes-together` needs which products leave
+   * together across every order, and `season-starting` a seasonal model
+   * these books do not hold.
+   */
+  const posts = rows.posting?.posts ?? [];
+  if (rows.postingRefused !== undefined && rows.postingRefused !== null) {
+    unreadable.push(`what is worth posting could not be read: ${rows.postingRefused}`);
+  } else {
+    for (const gap of NOT_DERIVED) {
+      unreadable.push(`nothing is nominated for being ${gap.signal}: it needs ${gap.needs}`);
+    }
+  }
 
   return {
     unreadable,
     desk: {
       owed,
       telling,
-      posts: [],
+      posts,
       chats,
       link: toLink(rows.linked, rows.now),
       // Every share over these returns `unavailable` while the denominator

@@ -10,6 +10,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  signalRecordReads,
   COVER_FLOOR_DAYS,
   DAILY_POST_CAP,
   EXPIRED_KEPT_DAYS,
@@ -453,5 +454,61 @@ describe('one reckoning, read by every lens', () => {
 
   it('takes the chase record share from the record and not from a typed figure', () => {
     expect(paidShare(desk.chaseRecord)).toMatchObject({ status: 'known', value: 31 });
+  });
+});
+
+describe('what the signal record says', () => {
+  /**
+   * It was prose: *"Of 0 posts stamped in 30 days, a price cut moved the
+   * line five times out of six. Idle stock almost never moves on a post
+   * alone."* Two claims about a record with nothing in it, contradicting the
+   * `0` in their own first clause — and sitting under bars that did read the
+   * record and were therefore all empty.
+   */
+  it('says nothing is known yet where nothing has been stamped', () => {
+    const said = signalRecordReads(
+      [
+        { signal: 'price-cut', moved: 0, of: 0 },
+        { signal: 'idle-stock', moved: 0, of: 0 },
+      ],
+      30,
+    );
+
+    expect(said).toContain('Nothing has been posted and stamped in 30 days');
+    expect(said).not.toContain('five times');
+    // And it says what would fill it in.
+    expect(said).toContain('Say whether a post went out');
+  });
+
+  it('names the best and the worst once there is a record', () => {
+    const said = signalRecordReads(
+      [
+        { signal: 'price-cut', moved: 5, of: 6 },
+        { signal: 'idle-stock', moved: 1, of: 8 },
+      ],
+      30,
+    );
+
+    expect(said).toBe(
+      'Of 14 posts stamped in 30 days, price cut moved the line 5 of 6 times and idle stock 1 of 8.',
+    );
+  });
+
+  it('does not put one record against itself', () => {
+    expect(signalRecordReads([{ signal: 'margin', moved: 2, of: 3 }], 30)).toBe(
+      'Of 3 posts stamped in 30 days, margin moved the line 2 of 3 times.',
+    );
+  });
+
+  /** A signal nothing has been posted under is not part of the record. */
+  it('counts only what was actually stamped', () => {
+    const said = signalRecordReads(
+      [
+        { signal: 'price-cut', moved: 5, of: 6 },
+        { signal: 'season-starting', moved: 0, of: 0 },
+      ],
+      30,
+    );
+    expect(said).toBe('Of 6 posts stamped in 30 days, price cut moved the line 5 of 6 times.');
   });
 });

@@ -210,9 +210,27 @@ describe('the inbox says what a thread is about', () => {
 });
 
 describe('the lenses this pass does not derive', () => {
-  it('says posting needs the shelf rather than drawing an empty nomination list', () => {
-    expect(desk().unreadable.some((u) => u.includes('worth posting'))).toBe(true);
+  /**
+   * The posting lens is read separately, off the shelf and the price book,
+   * so a desk assembled without it draws no nominations — and names the two
+   * signals nothing will ever nominate for rather than leaving the gap to be
+   * read as "there is nothing worth posting".
+   */
+  it('nominates nothing without the shelf, and names the two it never can', () => {
     expect(desk().desk.posts).toEqual([]);
+    expect(desk().unreadable.some((u) => u.includes('goes-together'))).toBe(true);
+    expect(desk().unreadable.some((u) => u.includes('season-starting'))).toBe(true);
+  });
+
+  it('says so when the shelf itself could not be read', () => {
+    const refused = desk({ posting: null, postingRefused: 'the shelf: denied' });
+
+    expect(refused.unreadable.some((u) => u.includes('could not be read: the shelf: denied'))).toBe(
+      true,
+    );
+    // And it does not ALSO list the two it can never derive: the reader got
+    // nowhere, so it has said nothing about any of them.
+    expect(refused.unreadable.some((u) => u.includes('goes-together'))).toBe(false);
   });
 
   it('leaves the chase record at nothing-yet, which reads as unavailable', () => {

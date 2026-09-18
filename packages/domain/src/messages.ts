@@ -580,6 +580,46 @@ export const signalShare = (r: SignalRecord): Derived<number> =>
     ? unavailable('nothing with this signal has been posted yet')
     : known(Math.round((r.moved / r.of) * 100), `${r.moved} of ${r.of} posted`);
 
+/**
+ * What the record actually says, in a sentence.
+ *
+ * It was prose under the bars: *"Of 0 posts stamped in 30 days, a price cut
+ * moved the line five times out of six. Idle stock almost never moves on a
+ * post alone."* Two claims about a record with nothing in it, contradicting
+ * the figure in their own first clause — and the bars above them, which do
+ * read `signalShare` and were therefore all empty.
+ *
+ * Derived here so the sentence and the bars cannot drift, and so the
+ * sentence a shop with no history reads is the one true thing there is to
+ * say: nothing has been stamped, so nothing is known yet.
+ */
+export function signalRecordReads(
+  records: readonly SignalRecord[],
+  overDays: number,
+): string {
+  const stamped = records.filter((r) => r.of > 0);
+
+  if (stamped.length === 0) {
+    return `Nothing has been posted and stamped in ${overDays} days, so nothing here knows which signal sells yet. Say whether a post went out and what came of it, and this fills in.`;
+  }
+
+  const ranked = [...stamped].sort((a, b) => b.moved / b.of - a.moved / a.of);
+  const best = ranked[0];
+  const worst = ranked[ranked.length - 1];
+  const posts = stamped.reduce((n, r) => n + r.of, 0);
+  const share = (r: SignalRecord): string => `${r.moved} of ${r.of}`;
+
+  if (best === undefined) return '';
+  if (worst === undefined || best === worst) {
+    return `Of ${posts} posts stamped in ${overDays} days, ${best.signal.replace('-', ' ')} moved the line ${share(best)} times.`;
+  }
+
+  return `Of ${posts} posts stamped in ${overDays} days, ${best.signal.replace(
+    '-',
+    ' ',
+  )} moved the line ${share(best)} times and ${worst.signal.replace('-', ' ')} ${share(worst)}.`;
+}
+
 export interface PostingDesk {
   /** Nominated, ranked by the signal, minus what the shelf cannot carry. */
   readonly queue: readonly Post[];
