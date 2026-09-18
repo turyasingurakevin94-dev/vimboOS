@@ -43,6 +43,7 @@ import {
   known,
   Money,
   readStrip,
+  soldByWeek,
   unavailable,
   wantsYou,
   type CashPosition,
@@ -50,7 +51,7 @@ import {
   type StockInput,
 } from '@ow/domain';
 import { demoCustomers } from './demo-customers.js';
-import { DEMO_TODAY, demoPurchaseInvoices } from './demo-invoices.js';
+import { DEMO_TODAY, demoPurchaseInvoices, demoSalesInvoices } from './demo-invoices.js';
 import type { TodayBooks } from './today.js';
 
 /** The handoff's own "8,420,000 · 2 accounts". Bank is empty, hence two. */
@@ -133,6 +134,11 @@ export function demoToday(): TodayBooks {
 
   return {
     strip,
+    // The bars and the sentence under them, over the example invoices — so
+    // the panel's prose is arithmetic about the rows beside it rather than a
+    // sentence written next to them. The handoff's own is wrong four ways
+    // over; see `soldByWeek`.
+    sold: soldByWeek(demoSalesInvoices(), DEMO_TODAY),
     openMoves: DEMO_OPEN_MOVES,
     wantsYou: wantsYou(strip, DEMO_OPEN_MOVES),
     asOf: DEMO_TODAY,

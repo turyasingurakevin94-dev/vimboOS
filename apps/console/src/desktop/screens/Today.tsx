@@ -31,7 +31,14 @@
  */
 
 import { useState, type ReactElement } from 'react';
-import { Money, type AgingBand, type Derived, type TodayStrip } from '@ow/domain';
+import {
+  Money,
+  type AgingBand,
+  type Derived,
+  SOLD_WEEKS,
+  type SoldByWeek,
+  type TodayStrip,
+} from '@ow/domain';
 import s from './Today.module.css';
 import { Icon, type IconName } from '../icons.js';
 import { useToday } from '../../app/useToday.js';
@@ -218,6 +225,39 @@ function metricsOf(strip: TodayStrip): readonly Metric[] {
   ];
 }
 
+/**
+ * The sentence under the week bars, as arithmetic about the bars.
+ *
+ * The handoff writes it by hand — *"the last four weeks are the best run of
+ * the twelve — 71, 68 and 82 against a 12-week median of 55"* — and every
+ * clause of it is wrong about the array printed beside it: the run of
+ * above-median weeks is five, it then names three figures, those figures are
+ * the bars' CSS heights rather than money, and the median is 56.5. Derived
+ * here so the sentence and the bars cannot come apart again.
+ */
+function weeksReading(sold: SoldByWeek): string {
+  const median = Money.format(sold.median);
+  const window = `${sold.tradedWeeks}-week median of ${median}`;
+  const latest = sold.weeks[sold.weeks.length - 1];
+
+  if (Money.isZero(sold.median) || latest === undefined) {
+    return `Nothing has been sold in the last ${SOLD_WEEKS} weeks.`;
+  }
+
+  // This week against the median, and nothing else. The handoff lists every
+  // week of the run, which reads well at three and turned into six full
+  // figures in one sentence the moment real rows went through it — and
+  // §7 forbids abbreviating money to get out of that.
+  const thisWeek = `this week ${Money.format(latest.sold)}`;
+
+  if (sold.runLength === 0) {
+    return `This week is at or below the ${window} — ${thisWeek}.`;
+  }
+
+  const weeks = sold.runLength === 1 ? 'week is' : `${sold.runLength} weeks are`;
+  return `The last ${weeks} above the ${window} — ${thisWeek}.`;
+}
+
 /** "Tuesday 15 September". UTC, as every other date in these books is. */
 const longDay = (d: Date): string =>
   d.toLocaleDateString('en-GB', {
@@ -365,7 +405,6 @@ const TONE = {
   neutral: { fill: v('neutral-chip'), ink: v('neutral-ink') },
 } as const;
 
-const WEEKS = [38, 44, 41, 52, 47, 58, 55, 63, 60, 71, 68, 82];
 
 export function Today(): ReactElement {
   const read = useToday();
@@ -662,20 +701,27 @@ function Morning({
             <div className={s.sectionHead}>
               <span className={s.panelTitle}>Sold by week</span>
               <span className={s.grow} />
-              <span
-                className={`${s.chip} ${s.chipSm}`}
-                style={{ background: v('good-chip'), color: v('good-ink-strong') }}
-              >
-                best of 12
-              </span>
+              {/* Only when it is true. A chip claiming the best week of
+                  twelve over a week that was not is the kind of flattery
+                  this screen exists to stop. */}
+              {books.sold.bestIsLatest ? (
+                <span
+                  className={`${s.chip} ${s.chipSm}`}
+                  style={{ background: v('good-chip'), color: v('good-ink-strong') }}
+                >
+                  best of 12
+                </span>
+              ) : null}
             </div>
             <div className={s.bars} aria-hidden="true">
-              {WEEKS.map((h, i) => (
+              {books.sold.weeks.map((w, i) => (
                 <div
-                  key={i}
+                  key={w.from.toISOString()}
                   className={s.bar}
                   style={{
-                    height: `${h}%`,
+                    // A share of the tallest week, so the bars are the
+                    // figures rather than a hand-picked set of heights.
+                    height: `${w.share}%`,
                     background: `var(--ow-green-${Math.min(6, Math.floor(i / 2) + 1)})`,
                   }}
                 />
@@ -685,10 +731,7 @@ function Morning({
               <span>12 wks ago</span>
               <span>this week</span>
             </div>
-            <p className={s.weeksReading}>
-              The last four weeks are the best run of the twelve — 71, 68 and 82 against a
-              12-week median of 55.
-            </p>
+            <p className={s.weeksReading}>{weeksReading(books.sold)}</p>
           </section>
 
           <section className={`${s.card} ${s.panel}`}>

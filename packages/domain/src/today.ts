@@ -35,7 +35,7 @@ import {
   type AgingBand,
   type Customer,
 } from './customers.js';
-import { stillToPay, type PurchaseInvoice } from './invoices.js';
+import { stillToPay, type PurchaseInvoice, type SalesInvoice } from './invoices.js';
 
 const DAY = 86_400_000;
 
@@ -401,4 +401,135 @@ export function wantsYou(strip: TodayStrip, openMoves: number): number {
   ].filter(Boolean).length;
 
   return openMoves + flags;
+}
+
+/* ------------------------------ sold by week ------------------------------ */
+
+/** How many weeks the panel draws. The handoff's own "best of 12". */
+export const SOLD_WEEKS = 12;
+
+/** One week of trading, oldest first. */
+export interface SalesWeek {
+  /** Midnight on the Monday the week opens, UTC like every date here. */
+  readonly from: Date;
+  readonly sold: Amount;
+  readonly invoices: number;
+  /** Share of the tallest week, 0–100 — what the bar's height is. */
+  readonly share: number;
+}
+
+export interface SoldByWeek {
+  readonly weeks: readonly SalesWeek[];
+  /**
+   * The middle week of the ones the shop actually TRADED — see
+   * {@link SoldByWeek.tradedWeeks}. An even count is the mean of the two
+   * middle values and lands on a half, which is exactly the arithmetic the
+   * handoff's prose got wrong about its own array.
+   */
+  readonly median: Amount;
+  /**
+   * How many weeks the shop has been trading, up to the window.
+   *
+   * The same fix `monthlyBurn` carries, for the same reason. A shop six
+   * weeks old has six weeks of history, and taking a twelve-week median
+   * across six weeks of zeros halves it — so a week barely above nothing
+   * reads as "above the median" and the sentence flatters the shop. Counted
+   * from the first week anything was sold, and named, so a panel over a
+   * young shop says "6-week median" rather than claiming twelve.
+   */
+  readonly tradedWeeks: number;
+  /** True when the newest week is the tallest of the twelve. */
+  readonly bestIsLatest: boolean;
+  /**
+   * How many weeks the run of above-median weeks at the END extends to.
+   *
+   * The handoff says "the last four weeks are the best run of the twelve"
+   * and then names three figures. Counted rather than asserted, so the
+   * sentence and the bars cannot disagree again.
+   */
+  readonly runLength: number;
+}
+
+const WEEK = 7 * DAY;
+
+/** Midnight UTC on the Monday of the week containing `d`. */
+export function weekStart(d: Date): Date {
+  const midnight = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  // getUTCDay is 0 on Sunday, and a shop's week opens on Monday.
+  const weekday = new Date(midnight).getUTCDay();
+  const backToMonday = weekday === 0 ? 6 : weekday - 1;
+  return new Date(midnight - backToMonday * DAY);
+}
+
+/**
+ * What was sold in each of the last twelve weeks.
+ *
+ * A voided invoice is not a sale. Counting one would let a week that was
+ * raised and cancelled stand as the shop's best — and `voided` exists on
+ * `SalesInvoice` precisely because the old app once totalled them.
+ *
+ * Weeks with no trading are present at zero, because a zero week IS a fact
+ * the books produced: nothing was sold. That is different from the shop not
+ * having existed, which a missing bar would imply and which the range says.
+ */
+export function soldByWeek(
+  sales: readonly Pick<SalesInvoice, 'issued' | 'total' | 'voided'>[],
+  now: Date,
+  weeks: number = SOLD_WEEKS,
+): SoldByWeek {
+  const thisWeek = weekStart(now);
+  const opens = Array.from(
+    { length: weeks },
+    (_, i) => new Date(thisWeek.getTime() - (weeks - 1 - i) * WEEK),
+  );
+
+  const live = sales.filter((s) => s.voided === undefined);
+  const totals = opens.map((from) => {
+    const to = from.getTime() + WEEK;
+    const inWeek = live.filter(
+      (s) => s.issued.getTime() >= from.getTime() && s.issued.getTime() < to,
+    );
+    return { from, sold: Money.add(...inWeek.map((s) => s.total)), invoices: inWeek.length };
+  });
+
+  const tallest = Math.max(...totals.map((w) => w.sold), 0);
+
+  // From the first week anything was sold. A leading run of zeros is a shop
+  // that did not exist yet, not a shop that sold nothing — and averaging
+  // over it is the understatement `monthlyBurn` already had to fix once.
+  const opened = totals.findIndex((w) => !Money.isZero(w.sold));
+  const traded = opened === -1 ? [] : totals.slice(opened);
+
+  const sorted = [...traded.map((w) => w.sold)].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const lower = sorted[mid - 1] ?? Money.ZERO;
+  const upper = sorted[mid] ?? Money.ZERO;
+  // Rounds half up, the one place a shilling can appear from nowhere — and
+  // it is a median of money, not money itself, so it is allowed to.
+  const median =
+    sorted.length === 0
+      ? Money.ZERO
+      : sorted.length % 2 === 0
+        ? Money.money(Math.round((lower + upper) / 2))
+        : upper;
+
+  let runLength = 0;
+  for (let i = totals.length - 1; i >= 0; i -= 1) {
+    const week = totals[i];
+    if (week === undefined || Money.compare(week.sold, median) <= 0) break;
+    runLength += 1;
+  }
+
+  const newest = totals[totals.length - 1];
+
+  return {
+    weeks: totals.map((w) => ({
+      ...w,
+      share: tallest === 0 ? 0 : Math.round((w.sold / tallest) * 100),
+    })),
+    median,
+    tradedWeeks: traded.length,
+    bestIsLatest: newest !== undefined && tallest > 0 && newest.sold === tallest,
+    runLength,
+  };
 }

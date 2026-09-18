@@ -159,7 +159,7 @@ describe('assembling the screen', () => {
     cashTxns: [],
     cashDays: [],
     purchases: [],
-    marginSales: [],
+    sales: [],
     stock: [{ key: 'p1', qty: 4 }],
     lots: [{ key: 'p1', qty: 4, cost: 1_000, consign: null }],
     saleLog: [] as readonly unknown[] | null,

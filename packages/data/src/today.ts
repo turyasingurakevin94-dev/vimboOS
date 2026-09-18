@@ -39,6 +39,8 @@ import {
   DEAD_STOCK_DAYS,
   known,
   MARGIN_DAYS,
+  SOLD_WEEKS,
+  soldByWeek,
   Money,
   monthlyBurn,
   readStrip,
@@ -52,13 +54,19 @@ import {
   type MarginInput,
   type PurchaseInvoice,
   type ShelfLine,
+  type SoldByWeek,
   type StockLot,
   type TodayStrip,
 } from '@ow/domain';
 import { readMoney, readText } from './boundary.js';
 import { current } from './client.js';
 import { readRegister } from './customers.js';
-import { toPurchaseInvoice, type PurchaseInvoiceRow } from './savedQuotes.js';
+import {
+  toPurchaseInvoice,
+  toSalesInvoice,
+  type PurchaseInvoiceRow,
+  type SavedQuoteRow,
+} from './savedQuotes.js';
 
 const DAY = 86_400_000;
 
@@ -79,6 +87,8 @@ const num = (v: unknown): number | null => {
 
 export interface TodayBooks {
   readonly strip: TodayStrip;
+  /** The twelve week bars and the sentence under them, as one reckoning. */
+  readonly sold: SoldByWeek;
   /** Manager moves still open. The mockup draws three; the shop has 39. */
   readonly openMoves: number;
   /** The page's sub-line and the rail badge, as one number. */
@@ -301,7 +311,15 @@ export function assembleToday(rows: {
   readonly cashTxns: readonly unknown[];
   readonly cashDays: readonly unknown[];
   readonly purchases: readonly unknown[];
-  readonly marginSales: readonly unknown[];
+  /**
+   * Invoiced sales over the twelve weeks the panel draws.
+   *
+   * One read, two readings. The margin cell wants the last seven days and
+   * the bars want twelve weeks, and `saved_quotes` is a big table on a slow
+   * link — so the wider window is fetched once and the margin narrows it
+   * here rather than asking the database the same question twice.
+   */
+  readonly sales: readonly unknown[];
   readonly stock: readonly unknown[];
   readonly lots: readonly unknown[];
   /** `null` when `stock_log` could not be read at all. */
@@ -324,6 +342,16 @@ export function assembleToday(rows: {
     const { purchase, unreadable: bad } = toPurchaseInvoice(raw as PurchaseInvoiceRow);
     purchases.push(purchase);
     unreadable.push(...bad.map((b) => `${purchase.doc}: ${b}`));
+  }
+
+  const marginFrom = isoDay(new Date(rows.now.getTime() - MARGIN_DAYS * DAY));
+  const marginRows = rows.sales.filter((raw) => (readText(obj(raw)?.date) ?? '') >= marginFrom);
+
+  const sales = [];
+  for (const raw of rows.sales) {
+    const { invoice, unreadable: bad } = toSalesInvoice(raw as SavedQuoteRow, { termsDays: null });
+    sales.push(invoice);
+    unreadable.push(...bad.map((b) => `${invoice.doc}: ${b}`));
   }
 
   const lines = readShelfLines(rows.stock, rows.lots);
@@ -356,7 +384,7 @@ export function assembleToday(rows: {
       burn: monthlyBurn(rows.now, txns),
       customers: rows.customers,
       purchases,
-      margin: readMarginLines(rows.marginSales),
+      margin: readMarginLines(marginRows),
       stock: {
         shelf,
         // Named, not guessed. See the header.
@@ -371,6 +399,7 @@ export function assembleToday(rows: {
 
   return {
     strip,
+    sold: soldByWeek(sales, rows.now),
     openMoves: openMoves ?? 0,
     wantsYou: wantsYou(strip, openMoves ?? 0),
     asOf: rows.now,
@@ -390,9 +419,10 @@ export function assembleToday(rows: {
  */
 export async function readToday(shopId: string, now: Date): Promise<Derived<TodayBooks>> {
   const { sb } = current();
-  const marginFrom = isoDay(new Date(now.getTime() - MARGIN_DAYS * DAY));
+  // Twelve weeks, which is the wider of the two windows the sales feed.
+  const salesFrom = isoDay(new Date(now.getTime() - SOLD_WEEKS * 7 * DAY));
 
-  const [register, cashTxnsRes, cashDaysRes, purchasesRes, marginRes, stockRes, lotsRes, logRes, movesRes, settingsRes] =
+  const [register, cashTxnsRes, cashDaysRes, purchasesRes, salesRes, stockRes, lotsRes, logRes, movesRes, settingsRes] =
     await Promise.all([
       readRegister(shopId, now),
       sb.from('cash_txns').select('id, date, account, type, category, amount').eq('shop_id', shopId),
@@ -401,10 +431,12 @@ export async function readToday(shopId: string, now: Date): Promise<Derived<Toda
       sb.from('purchase_invoices').select('id, quote_id, date, payload').eq('shop_id', shopId),
       sb
         .from('saved_quotes')
-        .select('id, date, voided, payload')
+        .select(
+          'id, client_name, client_phone, date, status, invoiced, invoiced_at, amount_paid, voided, payload',
+        )
         .eq('shop_id', shopId)
         .eq('invoiced', true)
-        .gte('date', marginFrom),
+        .gte('date', salesFrom),
       sb.from('stock').select('key, qty').eq('shop_id', shopId),
       sb.from('stock_lots').select('key, qty, cost, consign').eq('shop_id', shopId),
       // Only sales end a quiet run, so only sales are fetched.
@@ -426,7 +458,7 @@ export async function readToday(shopId: string, now: Date): Promise<Derived<Toda
     cashTxnsRes.error === null ? null : `cash movements: ${cashTxnsRes.error.message}`,
     cashDaysRes.error === null ? null : `the cash days: ${cashDaysRes.error.message}`,
     purchasesRes.error === null ? null : `purchase invoices: ${purchasesRes.error.message}`,
-    marginRes.error === null ? null : `this week’s sales: ${marginRes.error.message}`,
+    salesRes.error === null ? null : `the last twelve weeks of sales: ${salesRes.error.message}`,
     stockRes.error === null ? null : `the shelf: ${stockRes.error.message}`,
     lotsRes.error === null ? null : `what the shelf cost: ${lotsRes.error.message}`,
   ].filter((x): x is string => x !== null);
@@ -444,7 +476,7 @@ export async function readToday(shopId: string, now: Date): Promise<Derived<Toda
     cashTxns: cashTxnsRes.data ?? [],
     cashDays: cashDaysRes.data ?? [],
     purchases: purchasesRes.data ?? [],
-    marginSales: marginRes.data ?? [],
+    sales: salesRes.data ?? [],
     stock: stockRes.data ?? [],
     lots: lotsRes.data ?? [],
     saleLog: logRes.error === null ? logRes.data : null,

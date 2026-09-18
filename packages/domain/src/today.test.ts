@@ -20,7 +20,9 @@ import {
   type StockInput,
   type ShelfLine,
   type StockLot,
+  soldByWeek,
   type StripInputs,
+  weekStart,
 } from './today.js';
 
 const NOW = new Date('2026-09-15T07:42:00Z');
@@ -339,5 +341,110 @@ describe('how many things want you', () => {
     };
 
     expect(wantsYou(readStrip(inputs({ margin }), NOW), 0)).toBe(1);
+  });
+});
+
+/**
+ * Sold by week — and the handoff's own sentence, checked.
+ *
+ * The panel's prose reads "the last four weeks are the best run of the
+ * twelve — 71, 68 and 82 against a 12-week median of 55". Three things are
+ * wrong with that at once: it says four and names three, the numbers it
+ * names are the bars' CSS heights rather than figures, and the median of
+ * the array it is describing is not 55. All three are pinned below.
+ */
+describe('sold by week', () => {
+  const MONDAY = new Date('2026-09-14T00:00:00Z');
+  const WEEK = 7 * 86_400_000;
+
+  /** One invoice in the week that opened `back` weeks before this one. */
+  const sale = (back: number, total: number, voided = false): Parameters<typeof soldByWeek>[0][number] => ({
+    issued: new Date(MONDAY.getTime() - back * WEEK + 2 * 86_400_000),
+    total: Money.money(total),
+    ...(voided ? { voided: { on: NOW, replacedBy: null } } : {}),
+  });
+
+  /** The handoff's own twelve numbers, oldest first, scaled to shillings. */
+  const HANDOFF = [38, 44, 41, 52, 47, 58, 55, 63, 60, 71, 68, 82];
+  const handoffWeeks = (): Parameters<typeof soldByWeek>[0] =>
+    HANDOFF.map((n, i) => sale(HANDOFF.length - 1 - i, n * 1_000));
+
+  it('opens each week on a Monday', () => {
+    // Wednesday 16 September 2026 belongs to the week of Monday the 14th.
+    expect(weekStart(new Date('2026-09-16T23:00:00Z'))).toEqual(MONDAY);
+    // And a Sunday belongs to the week that opened six days earlier, not
+    // to the one starting tomorrow.
+    expect(weekStart(new Date('2026-09-20T12:00:00Z'))).toEqual(MONDAY);
+  });
+
+  it('puts the median of the handoff’s own array at 56,500, not 55,000', () => {
+    const sold = soldByWeek(handoffWeeks(), NOW);
+
+    // Twelve values, all non-zero, so the median is the mean of the 6th and
+    // 7th of the sorted run: (55 + 58) / 2 = 56.5.
+    expect(sold.median).toBe(Money.money(56_500));
+    expect(sold.median).not.toBe(Money.money(55_000));
+    expect(sold.tradedWeeks).toBe(12);
+  });
+
+  // The same fix `monthlyBurn` carries. A young shop's leading zeros are
+  // weeks it did not exist, and averaging over them halves the median, so a
+  // week barely above nothing reads as "above the median".
+  it('takes the median over the weeks traded, not the weeks drawn', () => {
+    const sold = soldByWeek([sale(2, 3_000_000), sale(1, 1_000_000), sale(0, 2_000_000)], NOW);
+
+    expect(sold.tradedWeeks).toBe(3);
+    // The median of 3m, 1m, 2m — not of those plus nine zeros, which would
+    // have put it at zero and called every trading week a good one.
+    expect(sold.median).toBe(Money.money(2_000_000));
+    expect(sold.weeks).toHaveLength(12);
+  });
+
+  it('counts the run of above-median weeks rather than asserting four', () => {
+    const sold = soldByWeek(handoffWeeks(), NOW);
+
+    // The run that actually ends the twelve is FIVE weeks — 63, 60, 71, 68
+    // and 82 all clear the 56.5 median, and the sixth back is 55, which
+    // does not. So the handoff's sentence is wrong three ways over: it
+    // claims four, the run is five, and it names three figures.
+    expect(sold.runLength).toBe(5);
+    expect(sold.bestIsLatest).toBe(true);
+  });
+
+  it('gives the tallest week a full bar and scales the rest to it', () => {
+    const sold = soldByWeek(handoffWeeks(), NOW);
+    const last = sold.weeks[sold.weeks.length - 1];
+
+    expect(last?.share).toBe(100);
+    // 38 against 82 is 46%, not the 38% the handoff's array uses as a
+    // height — the array was never a share of anything.
+    expect(sold.weeks[0]?.share).toBe(46);
+  });
+
+  it('does not let a cancelled invoice stand as a week’s trading', () => {
+    const sold = soldByWeek([sale(0, 9_000_000, true), sale(0, 1_000_000)], NOW);
+    const last = sold.weeks[sold.weeks.length - 1];
+
+    expect(last?.sold).toBe(Money.money(1_000_000));
+    expect(last?.invoices).toBe(1);
+  });
+
+  it('draws a week with no trading at zero rather than leaving it out', () => {
+    const sold = soldByWeek([sale(0, 1_000_000)], NOW);
+
+    // A zero week is a fact: nothing was sold. A missing bar would say the
+    // shop did not exist.
+    expect(sold.weeks).toHaveLength(12);
+    expect(sold.weeks[0]?.sold).toBe(Money.ZERO);
+    expect(sold.weeks[0]?.share).toBe(0);
+  });
+
+  it('has nothing to say about a shop that has sold nothing at all', () => {
+    const sold = soldByWeek([], NOW);
+
+    expect(sold.median).toBe(Money.ZERO);
+    expect(sold.tradedWeeks).toBe(0);
+    expect(sold.runLength).toBe(0);
+    expect(sold.bestIsLatest).toBe(false);
   });
 });
