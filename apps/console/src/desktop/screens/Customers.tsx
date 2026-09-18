@@ -28,14 +28,16 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import {
-  Money,
-  ORDER_READS,
   agingBands,
+  type AskOrder,
   askTheseFirst,
   balance,
   best,
   boughtOver,
+  type Customer,
+  type CustomerInvoice,
   dayAndMonth,
+  HARD_PAST_DUE_DAYS,
   hasPayHistory,
   howTheyPay,
   initials,
@@ -44,27 +46,27 @@ import {
   marginPercent,
   marginReading,
   match,
+  Money,
   oldestDebtDays,
   openInvoices,
+  ORDER_READS,
   overLimit,
   overLimitBy,
   owedOn,
   payBands,
   paysWithoutChasing,
+  promiseReading,
+  promisesOf,
   qualifier,
+  QUIET_DAYS,
   quietReading,
   read,
   rowNote,
   sinceReads,
   sortBy,
   standing,
-  totalOwed,
-  HARD_PAST_DUE_DAYS,
-  QUIET_DAYS,
-  type AskOrder,
-  type Customer,
-  type CustomerInvoice,
   type Standing,
+  totalOwed,
 } from '@ow/domain';
 import { DEMO_SHOP_MARGIN } from '@ow/data';
 import { useRegister } from '../../app/useRegister.js';
@@ -610,6 +612,13 @@ function Panel({ customer, now }: { readonly customer: Customer; readonly now: D
   const reading = marginReading(customer, DEMO_SHOP_MARGIN);
   const quiet = quietReading(customer, now);
   const rows = panelInvoices(customer);
+  // Newest first, each with its verdict read off the debt ledger rather than
+  // stored — a stamped verdict and a ledger that disagreed is the drift this
+  // shop has already had to write a repair banner for once.
+  const said = promisesOf(customer).map((promise) => ({
+    promise,
+    reading: promiseReading(promise, customer, now),
+  }));
   const busiest = customer.monthly.reduce(
     (most, m) => Math.max(most, Number(m.spent)),
     0,
@@ -682,6 +691,58 @@ function Panel({ customer, now }: { readonly customer: Customer; readonly now: D
             ),
           })}
         </div>
+
+        {/* What they have said — frame 6c.
+            Folded into this panel rather than given a card of its own: 6c
+            draws its own avatar, name and balance, and all three are already
+            in the header above. THE-BRIEF's rule — cut duplication, don't
+            just restyle. What is lost is a standalone header; what absorbs
+            it is this panel, which was already the one place a customer is
+            looked at whole. */}
+        {said.length > 0 && (
+          <div className={s.debt}>
+            <div className={s.debtHead}>
+              <span className={s.cardLabel}>What they have said</span>
+              <span className={s.debtCount}>newest first · nothing is overwritten</span>
+            </div>
+            <div className={s.debtRows}>
+              {said.map(({ promise, reading }) => (
+                <div key={promise.id} className={s.saidRow}>
+                  <span className={s.saidDot} style={SAID_DOT[reading.state]} />
+                  <div className={s.saidCell}>
+                    <div className={s.saidWhat}>
+                      {/* No figure named means the balance, which is what
+                          the books store and what they actually said. */}
+                      {promise.amount === null ? (
+                        'the balance'
+                      ) : (
+                        <span className={s.saidFig}>{Money.format(promise.amount)}</span>
+                      )}{' '}
+                      on <span className={s.saidFig}>{dayAndMonth(promise.promisedOn)}</span>
+                    </div>
+                    <div className={s.saidWhen}>
+                      said {dayAndMonth(promise.madeOn)}
+                      {/* Their words beat the app's. The derived detail only
+                          shows when they left none. */}
+                      {promise.note !== null
+                        ? ` · “${promise.note}”`
+                        : reading.detail === null
+                          ? ''
+                          : ` · ${reading.detail}`}
+                    </div>
+                  </div>
+                  <span className={s.pill} style={SAID_TONE[reading.state]}>
+                    {reading.chip}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className={s.saidNote}>
+              A row is only ever added. A wrong one is deleted, never edited — which is why the
+              list can be trusted as what was actually said.
+            </p>
+          </div>
+        )}
 
         <div className={s.debt}>
           <div className={s.debtHead}>
@@ -912,6 +973,26 @@ const LENS_TONE = {
   bad: { background: v('bad-chip'), color: v('bad-ink') },
   warn: { background: v('warn-fill'), color: v('warn-ink') },
   neutral: { background: v('neutral-chip'), color: v('ink-2') },
+} as const;
+
+/**
+ * A promise's three states, as chip and as dot.
+ *
+ * §2's meaning families, used for what they mean: green is a promise kept,
+ * amber is one still waiting, coral-red is one broken. The dot repeats the
+ * chip's colour on purpose — it is the thing that makes the list scannable
+ * down its left edge without reading a word of it.
+ */
+const SAID_TONE = {
+  kept: { background: v('good-chip-light'), color: v('good-ink') },
+  waiting: { background: v('warn-fill'), color: v('warn-ink') },
+  broken: { background: v('bad-chip'), color: v('bad-ink') },
+} as const;
+
+const SAID_DOT = {
+  kept: { background: v('good-ink') },
+  waiting: { background: v('warn-ink') },
+  broken: { background: v('bad-ink') },
 } as const;
 
 /** The rank-one chip and the panel's avatar: the accent as a mark. */

@@ -39,6 +39,7 @@ import {
   paysWithoutChasing,
   PROMISE_NOTE_MAX,
   promiseDayChips,
+  promiseReading,
   promisesBroken,
   promiseState,
   quietReading,
@@ -867,5 +868,77 @@ describe('hearing a promise in a message', () => {
 
   it('hears nothing in a message that says nothing', () => {
     expect(hearPromise('ok thanks', THURSDAY)).toEqual({ on: null, amount: null });
+  });
+});
+
+describe('reading one promise back', () => {
+  const owing = (over: Partial<Customer> = {}): Customer =>
+    customer({
+      invoices: [invoice({ doc: 'INV-1', total: m(400_000), received: Money.ZERO, dueOn: null })],
+      ...over,
+    });
+
+  const said = (over: Partial<Promised> = {}): Promised => ({
+    id: 'p',
+    promisedOn: day(2),
+    madeOn: day(-1),
+    amount: null,
+    note: null,
+    ...over,
+  });
+
+  it('counts the days a broken promise has been broken', () => {
+    const p = said({ promisedOn: day(-12), madeOn: day(-20) });
+
+    expect(promiseReading(p, owing({ promises: [p] }), NOW)).toMatchObject({
+      state: 'broken',
+      chip: 'broken, 12 days',
+      detail: null,
+    });
+  });
+
+  it('counts the days a waiting one has left, and says today on the day', () => {
+    const near = said({ promisedOn: day(2) });
+    expect(promiseReading(near, owing({ promises: [near] }), NOW).detail).toBe('in 2 days');
+
+    const now_ = said({ promisedOn: day(0) });
+    // Nobody is called a liar at nine in the morning on the day they named.
+    expect(promiseReading(now_, owing({ promises: [now_] }), NOW)).toMatchObject({
+      state: 'waiting',
+      detail: 'today',
+    });
+  });
+
+  // The one word worth refusing to invent.
+  it('says "paid that day" only when a payment really landed on the day', () => {
+    const p = said({ promisedOn: day(-3), madeOn: day(-10), amount: m(700_000) });
+    const c = customer({
+      invoices: [invoice({ doc: 'INV-1', total: m(700_000), received: m(700_000) })],
+      promises: [p],
+      payments: [{ on: day(-3), amount: m(700_000) }],
+    });
+
+    expect(promiseReading(p, c, NOW)).toMatchObject({ state: 'kept', detail: 'paid that day' });
+  });
+
+  it('names the day when the money came earlier than promised', () => {
+    const p = said({ promisedOn: day(-3), madeOn: day(-10), amount: m(700_000) });
+    const c = customer({
+      invoices: [invoice({ doc: 'INV-1', total: m(700_000), received: m(700_000) })],
+      promises: [p],
+      payments: [{ on: day(-6), amount: m(700_000) }],
+    });
+
+    expect(promiseReading(p, c, NOW).detail).toMatch(/^paid /);
+  });
+
+  it('says nothing about how, when nothing paid it', () => {
+    // A promise counts as kept when the account owes nothing at all — and
+    // there may be no payment behind that. "Paid that day" would be putting
+    // a fact in somebody's mouth.
+    const p = said({ promisedOn: day(-3), madeOn: day(-10) });
+    const clear = customer({ invoices: [], promises: [p], payments: [] });
+
+    expect(promiseReading(p, clear, NOW)).toMatchObject({ state: 'kept', detail: null });
   });
 });

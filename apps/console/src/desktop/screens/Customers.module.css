@@ -943,3 +943,61 @@
     grid-row: span 2;
   }
 }
+
+/* What they have said — frame 6c, inside the panel rather than beside it.
+   The dot down the left edge is what makes the list scannable without
+   reading it. */
+
+.saidRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-9) 0;
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.saidRow:last-child {
+  border-bottom: 0;
+}
+
+.saidDot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+}
+
+.saidCell {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Prose, with the numbers inside it wearing the figure face — "the balance
+   on 3 Sep" is a sentence, and §2 keeps that face for figures. */
+.saidWhat {
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+}
+
+.saidFig {
+  composes: fig from './Customers.fig.css';
+  font-size: var(--ow-size-12-5);
+}
+
+.saidWhen {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+/* The append-only rule, said where somebody meets it rather than only in a
+   migration comment. */
+.saidNote {
+  margin: var(--ow-space-10) 0 0;
+  padding-top: var(--ow-space-10);
+  border-top: 1px solid var(--ow-color-rule);
+  font-size: var(--ow-size-12);
+  line-height: 1.5;
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}

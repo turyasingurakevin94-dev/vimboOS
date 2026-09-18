@@ -34,7 +34,13 @@
  *    makes the tile and the rows the same reckoning.
  */
 
-import { Money, type Customer, type CustomerInvoice } from '@ow/domain';
+import {
+  Money,
+  type Customer,
+  type CustomerInvoice,
+  type DebtPayment,
+  type Promised,
+} from '@ow/domain';
 import { DEMO_TODAY } from './demo-invoices.js';
 
 const m = Money.money;
@@ -137,6 +143,8 @@ interface Written {
   readonly soldTwelveMonths?: number;
   readonly buys?: Customer['buys'];
   readonly monthly?: readonly { readonly month: string; readonly spent: number }[];
+  readonly promises?: readonly Promised[];
+  readonly payments?: readonly DebtPayment[];
 }
 
 function build(w: Written): Customer {
@@ -148,11 +156,13 @@ function build(w: Written): Customer {
     phone: w.phone,
     area: w.area,
     creditLimit: w.creditLimit === null ? null : m(w.creditLimit),
-    // The frames draw no promise on any account, and inventing one would
-    // put a demo customer on the past-due list for a reason the mockup
-    // never showed. The live register reads the real table.
-    promises: [],
-    payments: [],
+    // This used to be empty on every account, with a note saying the frames
+    // drew no promise and inventing one would put a demo customer on the
+    // past-due list for a reason the mockup never showed. Frame 6c now draws
+    // three of them — waiting, broken and kept — so the reason is gone and
+    // the account it draws carries exactly those.
+    promises: w.promises ?? [],
+    payments: w.payments ?? [],
     invoices: w.invoices,
     chasesSent: w.chasesSent ?? 0,
     chasesAnswered: w.chasesAnswered ?? 0,
@@ -255,6 +265,35 @@ const nakawa = build({
     ...run('INV-N-LT', 1, 960_000, 640, 1, 30, 44),
     ...run('INV-N-VL', 1, 960_000, 700, 1, 30, 78),
   ],
+  /**
+   * The three promises frame 6c draws, in its own order: one still waiting,
+   * one broken, one kept. Placed against `DEMO_TODAY` rather than the date
+   * the frame was drawn on, so the words derive to the same thing — "in 2
+   * days", "broken, 12 days", "paid that day".
+   *
+   * The broken one is why this account reads past-due, and that is correct
+   * rather than incidental: with no `terms_days` on any account in these
+   * books, a broken promise is the only evidence of lateness there is.
+   */
+  promises: [
+    { id: 'p-nakawa-3', promisedOn: day(2), madeOn: day(0), amount: m(1_000_000), note: null },
+    {
+      id: 'p-nakawa-2',
+      promisedOn: day(-12),
+      madeOn: day(-18),
+      amount: null,
+      note: 'after the Nateete job pays us',
+    },
+    {
+      id: 'p-nakawa-1',
+      promisedOn: day(-22),
+      madeOn: day(-26),
+      amount: m(700_000),
+      note: null,
+    },
+  ],
+  // The payment that kept the oldest one, on the day they named.
+  payments: [{ on: day(-22), amount: m(700_000) }],
   chasesSent: 5,
   chasesAnswered: 0,
   keptTwelveMonths: 1_640_000,

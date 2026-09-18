@@ -275,6 +275,67 @@ export function promiseState(p: Promised, c: Customer, now: Date): PromiseState 
   return daysBetween(p.promisedOn, now) > 0 ? 'broken' : 'waiting';
 }
 
+/**
+ * One promise as the panel reads it: the verdict, its chip, and what else
+ * the books can say about it.
+ */
+export interface PromiseReading {
+  readonly state: PromiseState;
+  /** "kept" · "waiting" · "broken, 12 days". */
+  readonly chip: string;
+  /**
+   * The line under the figure, after "said 30 Aug".
+   *
+   * `null` when the books have nothing to add. The note they gave takes
+   * this place when there is one — their words beat the app's.
+   */
+  readonly detail: string | null;
+}
+
+/**
+ * What to say about one promise.
+ *
+ * The verdict is `promiseState`'s, derived every time. This only decides the
+ * words, and it refuses to invent the one that would be easiest to invent:
+ * **"paid that day" is said only when a payment really landed on the day
+ * they named.** A promise also counts as kept when the account owes nothing
+ * at all now, and there may be no payment behind that at all — saying
+ * somebody paid on the day would be putting a fact in their mouth.
+ */
+export function promiseReading(p: Promised, c: Customer, now: Date): PromiseReading {
+  const state = promiseState(p, c, now);
+
+  if (state === 'broken') {
+    const days = daysBetween(p.promisedOn, now);
+    return { state, chip: `broken, ${days} ${days === 1 ? 'day' : 'days'}`, detail: null };
+  }
+
+  if (state === 'waiting') {
+    const days = daysBetween(now, p.promisedOn);
+    return {
+      state,
+      chip: 'waiting',
+      detail: days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`,
+    };
+  }
+
+  // Kept. Only a payment inside the promise's own window can say how.
+  const paid = c.payments
+    .filter((x) => onOrBefore(p.madeOn, x.on) && onOrBefore(x.on, p.promisedOn))
+    .sort((a, b) => b.on.getTime() - a.on.getTime())[0];
+
+  return {
+    state,
+    chip: 'kept',
+    detail:
+      paid === undefined
+        ? null
+        : daysBetween(paid.on, p.promisedOn) === 0
+          ? 'paid that day'
+          : `paid ${dayAndMonth(paid.on)}`,
+  };
+}
+
 /** Their promises, newest first — the order every reading of them wants. */
 export const promisesOf = (c: Customer): readonly Promised[] =>
   [...c.promises].sort((a, b) => b.madeOn.getTime() - a.madeOn.getTime());
