@@ -151,8 +151,20 @@ export const promiseRow = (
  * unverifiable by construction. If it were ever behind — a row inserted by
  * hand in the SQL editor, a counter reset, a half-applied 0089 — an
  * unfloored call would issue an id that already exists and the insert would
- * die on the primary key. This shop holds promise id 1 today, so that is not
- * a hypothetical shape.
+ * die on the primary key.
+ *
+ * **On this shop it turned out to be miles ahead, not behind.** The first
+ * real write took id 3331 against a table holding one row, id 1. The old app
+ * reserves a block of ten for every block kind on every load — including
+ * this one, used or not — so roughly 333 loads have advanced the counter
+ * with nothing claiming the ids. That is the documented cost of block
+ * allocation ("the cost is gaps, which for an internal surrogate key is
+ * free"), and it means the floor changed nothing here: `greatest(3330, 1) +
+ * 1` is 3331 either way.
+ *
+ * It stays, because it is one cheap select that can only ever push the
+ * sequence forward, and because "the counter happens to be ahead on the one
+ * shop we looked at" is not a guarantee about the next one.
  *
  * A read that fails floors at 0, which is the RPC's own default: the counter
  * is still the authority and is almost certainly correct. The floor is the
