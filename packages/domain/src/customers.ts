@@ -426,6 +426,67 @@ export function promiseDayChips(now: Date): readonly DayChip[] {
   return out.sort((a, b) => a.on.getTime() - b.on.getTime());
 }
 
+/** What a message appears to say: a day, a figure, or neither. */
+export interface Heard {
+  readonly on: Date | null;
+  readonly amount: Amount | null;
+}
+
+/**
+ * Reading a promise out of what somebody actually typed.
+ *
+ * *"We shall pay 1,000,000 on Friday"* carries both halves. The clerk is
+ * then **confirming a reading, not trusting a guess** — which is why the
+ * dialog quotes the message above the fields it filled.
+ *
+ * ## Wrong is worse than absent, so this is deliberately timid
+ *
+ * An empty amount already means something useful and safe: THE WHOLE
+ * BALANCE. A wrong one is a figure nobody said, sitting in the books under
+ * the customer's name. So a number only counts as money when it is written
+ * like money — a thousands separator, four digits or more, or a `k`/`m`
+ * suffix. "I will pay on the 20th" names a day and no figure, and that is
+ * the right reading of it: `20` is not two shillings.
+ *
+ * Both halves are independent. A day with no figure is common and fine; a
+ * figure with no day cannot be committed, because the day is the only
+ * required field, and the dialog will say so.
+ */
+export function hearPromise(text: string, now: Date): Heard {
+  const said = text.toLowerCase();
+
+  return { on: hearDay(said, now), amount: hearAmount(said) };
+}
+
+function hearDay(said: string, now: Date): Date | null {
+  if (/\bend of (the )?month\b/.test(said)) return endOfMonth(now);
+  if (/\btomorrow\b/.test(said)) return plusDays(now, 1);
+  if (/\btoday\b/.test(said)) return dayOf(now);
+
+  // The first weekday named. "Friday" means the next one, never the one
+  // just gone — nobody promises to have paid in the past.
+  const found = WEEKDAYS.map((w, i) => ({ at: said.indexOf(w.toLowerCase()), weekday: i }))
+    .filter((x) => x.at !== -1)
+    .sort((a, b) => a.at - b.at)[0];
+
+  return found === undefined ? null : nextWeekday(now, found.weekday);
+}
+
+function hearAmount(said: string): Amount | null {
+  // Grouped, or long, or suffixed. Anything shorter is a quantity, a date
+  // or a door number — see the note above about timidity.
+  const match = /(\d{1,3}(?:,\d{3})+|\d{4,}|\d+(?:\.\d+)?\s*[km])\b/.exec(said);
+  if (match === null) return null;
+
+  const raw = match[1] ?? '';
+  const suffix = /([km])\s*$/.exec(raw)?.[1];
+  const digits = Number(raw.replace(/[, ]/g, '').replace(/[km]$/, ''));
+  if (!Number.isFinite(digits) || digits <= 0) return null;
+
+  const scaled = suffix === 'k' ? digits * 1_000 : suffix === 'm' ? digits * 1_000_000 : digits;
+  return Money.money(Math.round(scaled));
+}
+
 /** A month as a grid: the blanks before the 1st, then every day in it. */
 export interface MonthGrid {
   /** "September 2026". */

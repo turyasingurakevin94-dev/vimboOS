@@ -21,6 +21,7 @@ import {
   describeDay,
   draftPromise,
   hasBrokenPromise,
+  hearPromise,
   howTheyPay,
   howTheyPayShort,
   initials,
@@ -806,5 +807,65 @@ describe('the month grid', () => {
     expect(monthGrid(stepMonth(new Date('2026-01-15T00:00:00Z'), -1), THURSDAY).label).toBe(
       'December 2025',
     );
+  });
+});
+
+/**
+ * Reading a promise out of what somebody typed.
+ *
+ * Timid on purpose. An empty amount already means something safe — the
+ * whole balance — where a wrong one is a figure nobody said, sitting in the
+ * books under a customer's name.
+ */
+describe('hearing a promise in a message', () => {
+  const THURSDAY = new Date('2026-09-17T09:00:00Z');
+  const day = (d: string): Date => new Date(`${d}T00:00:00Z`);
+
+  it('reads the day and the figure out of the handoff’s own example', () => {
+    const heard = hearPromise('We shall pay 1,000,000 on Friday', THURSDAY);
+
+    expect(heard.amount).toBe(m(1_000_000));
+    expect(heard.on).toEqual(day('2026-09-18'));
+  });
+
+  it('takes the next Friday, never the one just gone', () => {
+    // Nobody promises to have paid in the past.
+    expect(hearPromise('friday', THURSDAY).on).toEqual(day('2026-09-18'));
+    // Said ON a Friday, "Friday" is the week after.
+    expect(hearPromise('friday', new Date('2026-09-18T09:00:00Z')).on).toEqual(day('2026-09-25'));
+  });
+
+  it('understands the words people actually use for a day', () => {
+    expect(hearPromise('I will bring it tomorrow', THURSDAY).on).toEqual(day('2026-09-18'));
+    expect(hearPromise('paying today boss', THURSDAY).on).toEqual(day('2026-09-17'));
+    expect(hearPromise('at the end of the month', THURSDAY).on).toEqual(day('2026-09-30'));
+    expect(hearPromise('end of month', THURSDAY).on).toEqual(day('2026-09-30'));
+  });
+
+  it('reads k and m, because that is how a figure gets typed on a phone', () => {
+    expect(hearPromise('sending 500k tomorrow', THURSDAY).amount).toBe(m(500_000));
+    expect(hearPromise('1.5m on monday', THURSDAY).amount).toBe(m(1_500_000));
+  });
+
+  // The timidity, pinned. Each of these would be a figure nobody said.
+  it.each([
+    ['I will pay on the 20th', 'a date is not a figure'],
+    ['send 2 bags', 'a quantity is not a figure'],
+    ['pay you next week', 'no figure at all'],
+  ])('%s — %s', (text) => {
+    expect(hearPromise(text, THURSDAY).amount).toBeNull();
+  });
+
+  it('takes a day with no figure, which is the commonest promise there is', () => {
+    const heard = hearPromise('I will pay on Monday', THURSDAY);
+
+    // Empty means the whole balance, which is the right reading and a safe
+    // one. Guessing a figure here would be the opposite.
+    expect(heard.on).toEqual(day('2026-09-21'));
+    expect(heard.amount).toBeNull();
+  });
+
+  it('hears nothing in a message that says nothing', () => {
+    expect(hearPromise('ok thanks', THURSDAY)).toEqual({ on: null, amount: null });
   });
 });
