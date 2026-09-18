@@ -35,7 +35,7 @@
  * comes back `unavailable`, and the panel says so.
  */
 
-import { known, unavailable, type Derived } from './derived.js';
+import { known, match, unavailable, type Derived } from './derived.js';
 import * as Money from './money.js';
 import type { Money as Amount } from './money.js';
 
@@ -306,6 +306,42 @@ export const promisesBroken = (c: Customer, now: Date): number =>
  */
 export const hasBrokenPromise = (c: Customer, now: Date): boolean =>
   promisesBroken(c, now) > 0;
+
+/**
+ * Why an account is on the list to ask.
+ *
+ * The screen's question is "who do I ask first", and on these books the old
+ * answer could not reach anybody: ranking only the past-due accounts ranked
+ * nobody, because nobody has terms and nobody has yet broken a promise. So
+ * everyone who owes is ranked, and the reason each is there is what tells
+ * them apart — which is more use than a group they all sit in anyway.
+ */
+export type AskReason = 'broke-word' | 'named-a-day' | 'never-asked';
+
+export function askReason(c: Customer, now: Date): AskReason {
+  if (hasBrokenPromise(c, now)) return 'broke-word';
+  return latestPromise(c, now) === null ? 'never-asked' : 'named-a-day';
+}
+
+/** The fact beside the reason, in the shop's own words. */
+export function askReads(c: Customer, now: Date): string {
+  const latest = latestPromise(c, now);
+
+  if (hasBrokenPromise(c, now)) {
+    const n = promisesBroken(c, now);
+    return n === 1 ? 'broke their word once' : `broke their word ${n} times`;
+  }
+
+  if (latest !== null) return `said ${dayAndMonth(latest.promise.promisedOn)}`;
+
+  // Not "in time" — there is no time they agreed to. Nobody has asked them
+  // for a day, which is a thing the owner can fix in one tap.
+  return match(oldestDebtDays(c, now), {
+    known: (d) => `owing ${d} days · no day named`,
+    partial: (d) => `owing ${d} days · no day named`,
+    unavailable: () => 'no day named',
+  });
+}
 
 export function standing(c: Customer, now: Date): Standing {
   const last = lastBought(c);
@@ -610,13 +646,28 @@ export interface Book {
   readonly pastDue: readonly Customer[];
   readonly inTime: readonly Customer[];
   readonly quiet: readonly Customer[];
+  /** Owing accounts by WHY they are on the list to ask — three partitions
+   *  of `owing`, so the groups and the ranking read one reckoning. */
+  readonly brokeWord: readonly Customer[];
+  readonly namedADay: readonly Customer[];
+  readonly neverAsked: readonly Customer[];
 }
 
 export function read(all: readonly Customer[], now: Date): Book {
   const pastDue = all.filter((c) => standing(c, now) === 'past-due');
   const inTime = all.filter((c) => standing(c, now) === 'in-time');
   const quiet = all.filter((c) => standing(c, now) === 'quiet');
-  return { all, owing: [...pastDue, ...inTime], pastDue, inTime, quiet };
+  const owing = [...pastDue, ...inTime];
+  return {
+    all,
+    owing,
+    pastDue,
+    inTime,
+    quiet,
+    brokeWord: owing.filter((c) => askReason(c, now) === 'broke-word'),
+    namedADay: owing.filter((c) => askReason(c, now) === 'named-a-day'),
+    neverAsked: owing.filter((c) => askReason(c, now) === 'never-asked'),
+  };
 }
 
 export const totalOwed = (customers: readonly Customer[]): Amount =>
@@ -694,7 +745,10 @@ export interface ConcentrationRead {
  * figure and the `1st` chip can never name different people.
  */
 export function askTheseFirst(book: Book, now: Date, howMany = 3): ConcentrationRead {
-  const top = [...book.pastDue].sort(byAsk(now)).slice(0, howMany);
+  // `owing`, not `pastDue`. Reading the smaller list reported "Nothing is
+  // owed by any of the 120" on a shop where thirteen accounts owed
+  // 8,210,000, because none of them had terms on file to be past.
+  const top = [...book.owing].sort(byAsk(now)).slice(0, howMany);
   const amount = totalOwed(top);
   const whole = totalOwed(book.owing);
   return {

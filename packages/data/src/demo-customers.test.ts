@@ -119,14 +119,28 @@ describe('the position strip', () => {
     ]);
   });
 
-  it('finds 35% of the debt with three of the 142', () => {
+  it('finds 42% of the debt with three of the 142', () => {
+    // The frame draws 35% across Mulongo, Nakawa and Kato, and this read
+    // 8,380,000 until the ask order stopped being limited to the past-due.
+    //
+    // It had to stop: on the shop's real books nobody is past due — no
+    // account has terms recorded — so that reading ranked nobody at all and
+    // the card read "Nothing is owed by any of the 120" over a real
+    // 8,210,000. Ranking everyone who owes is what makes the card work on
+    // any books.
+    //
+    // Kireka Builders is what changes here, and it is the right answer:
+    // it owes more than Kato and has broken nothing, which is exactly the
+    // account the old reading could not see. 42% of the debt with three of
+    // the 142 is a sharper concentration than the frame drew, not a looser
+    // one.
     const three = askTheseFirst(book, now);
-    expect(Money.format(three.amount)).toBe('8,380,000');
-    expect(three.share).toBe(35);
+    expect(Money.format(three.amount)).toBe('9,940,000');
+    expect(three.share).toBe(42);
     expect(three.customers.map((c) => c.name)).toEqual([
       'Mulongo Hardware',
+      'Kireka Builders',
       'Nakawa Traders',
-      'Kato Construction Ltd',
     ]);
   });
 

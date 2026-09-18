@@ -332,13 +332,28 @@ describe('the ask order', () => {
     expect([oldSmall, newBig].sort(byAsk(NOW)).map((c) => c.id)).toEqual(['new-big', 'old-small']);
   });
 
-  it('asks only accounts that are actually past due', () => {
+  it('asks everyone who owes, worst first — not only the past due', () => {
+    // This assertion used to read "asks only accounts that are actually past
+    // due", and returned ['due'] alone. It stopped being true on purpose.
+    //
+    // Past due needs a date to be past, and on the shop's real books there
+    // is none: no account has `terms_days`, and only one has ever named a
+    // day. Ranking the past-due alone therefore ranked NOBODY, and the
+    // screen answered "who do I ask first" with an empty list while thirteen
+    // accounts owed 8,210,000 — and told the owner "Nothing is owed by any
+    // of the 120" while it did so.
+    //
+    // So the ask order covers everyone who owes, and `askReason` carries
+    // what used to be expressed by membership: broke their word, named a
+    // day, or was never asked for one.
     const notDue = customer({ id: 'in-time', invoices: [invoice({ total: m(9_000_000) })] });
     const due = late('due', 1_000_000, 40, null);
     const three = askTheseFirst(read([notDue, due], NOW), NOW);
-    expect(three.customers.map((c) => c.id)).toEqual(['due']);
-    // The share is of everything owed, including the money not yet due.
-    expect(three.share).toBe(10);
+
+    // The bigger, younger debt outranks the smaller older one on
+    // shilling-days, and both are asked.
+    expect(three.customers.map((c) => c.id)).toEqual(['in-time', 'due']);
+    expect(three.share).toBe(100);
   });
 });
 
