@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { Money, balanceDue, lineAmount, linesTotal, receivedSoFar, state } from '@ow/domain';
 import {
   PAYLOAD_KEYS,
+  QUOTE_ID_KIND,
+  WRITE_IS_INSERT_ONLY,
+  lineIds,
+  newQuotePayload,
   invoiceDoc,
   readLines,
   readPayments,
@@ -231,5 +235,77 @@ describe('a purchase row, and the link the facing ledgers rest on', () => {
     });
     expect(purchase.forSale).toBeNull();
     expect(purchase.dueOn).toBeNull();
+  });
+});
+
+describe('what a new order is written as', () => {
+  const NOW = new Date('2026-09-18T09:30:00.000Z');
+
+  const payload = (over: Partial<Parameters<typeof newQuotePayload>[0]> = {}) =>
+    newQuotePayload({
+      client: { name: 'Adinan', phone: '0702301512' },
+      items: [],
+      charges: [],
+      customerId: null,
+      now: NOW,
+      ...over,
+    });
+
+  /**
+   * The whole preservation contract, from the other side. The old app
+   * spreads a payload back whole, so a key this app leaves out is not left
+   * alone — it is gone.
+   */
+  it('names every key the old app names, and nothing it does not', () => {
+    const written = payload();
+    const named = PAYLOAD_KEYS.filter((k) => k in written);
+    const agentOrPortal = [
+      'originAgentId',
+      'agentClientId',
+      'deliveryMode',
+      'deliveryAddress',
+      'agentPaymentStatus',
+      'originPortal',
+      'originWa',
+      'originWamid',
+    ];
+
+    // Twenty-two of the thirty. The other eight belong to an order that
+    // came from an agent, the customer portal or WhatsApp — and the old
+    // app leaves them absent on a normal one rather than null, because
+    // null would assert this order came from nowhere.
+    expect(named).toHaveLength(PAYLOAD_KEYS.length - agentOrPortal.length);
+    for (const key of agentOrPortal) expect(key in written).toBe(false);
+    for (const key of Object.keys(written)) expect(PAYLOAD_KEYS).toContain(key);
+  });
+
+  it('enters Draft the moment it is raised, and has been worked by nobody', () => {
+    const written = payload();
+
+    expect(written.stageEnteredAt).toBe(NOW.getTime());
+    expect(written.savedAt).toBe('2026-09-18T09:30:00.000Z');
+    expect(written.pickingStatus).toBeNull();
+    expect(written.assignedWorkerId).toBeNull();
+    expect(written.supplierConfirms).toBeNull();
+    expect(written.payments).toEqual([]);
+    expect(written.debtCharged).toBe(0);
+  });
+
+  /**
+   * Checked against all 290 lines on this shop: they run 1 to 9, and the
+   * same id sits on 138 different orders. A line id is per-order.
+   */
+  it('numbers an order’s own lines from one', () => {
+    expect(lineIds(3)).toEqual([1, 2, 3]);
+    expect(lineIds(0)).toEqual([]);
+  });
+
+  /**
+   * A `saved_quotes.id` is the `INV-` number on the shop's paperwork, so
+   * its counter is the one kind the old app refuses to reserve blocks of.
+   */
+  it('takes its id from the dense counter, by the old app’s own name for it', () => {
+    expect(QUOTE_ID_KIND).toBe('row:saved_quote');
+    expect(WRITE_IS_INSERT_ONLY).toBe(true);
   });
 });

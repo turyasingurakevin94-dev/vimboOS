@@ -50,6 +50,11 @@ import { readDate, readMoney, readText } from './boundary.js';
  * deletes whatever it omits — including fields no screen here will ever
  * show, like `originWa` or `pickShortfallAckAt`. A test holds the list
  * against this comment so it cannot rot quietly.
+ *
+ * **Checked against the old app's source, 18 September 2026**, at
+ * `turyasingurakevin94-dev/omni-ware@447c45f`: thirty keys, the same
+ * thirty, in the same order. It was written from that mapping and it has
+ * not drifted from it.
  */
 export const PAYLOAD_KEYS = [
   'client',
@@ -391,3 +396,123 @@ export const RECEIVING_ALSO_WRITES = [
 /** A derivation that could not be made, in the shape screens already read. */
 export const asDerived = <T>(value: T, unread: readonly string[], basis: string): Derived<T> =>
   unread.length === 0 ? known(value, basis) : unavailable(unread.join('; '));
+
+/* -------------------------------------------------------------------------- *
+ * Writing one: the contract, read off the old app rather than guessed
+ * -------------------------------------------------------------------------- */
+
+/**
+ * The counter a new order's id comes from, and it is a **dense** one.
+ *
+ * `ROW_ID_KINDS.savedQuote` in the old app carries `dense: true`, and its
+ * comment says why: a `saved_quotes.id` IS the `INV-` number the shop
+ * quotes to a customer, so an id reserved in a block of ten and then not
+ * used shows up on paper as a skipped invoice number. One id, fetched at
+ * the moment of creation, `p_count: 1` — never a block. The old app throws
+ * rather than let a dense kind reach its block allocator at all.
+ *
+ * `next_row_id_blocks` sets `last_issued = greatest(last_issued, floor) + n`
+ * and hands back `last_issued - n + 1`, so passing a floor of the highest
+ * id we can see keeps the counter ahead of the table even where the two
+ * have drifted apart.
+ */
+export const QUOTE_ID_KIND = 'row:saved_quote';
+
+/**
+ * Why a new order may be written from here and an existing one may not.
+ *
+ * An INSERT has no prior payload, so there is nothing to preserve and the
+ * preservation contract above cannot be broken by one. An UPDATE is a
+ * different act entirely: the old app rebuilds the whole payload from the
+ * thirty named keys, and a partial write from this side would strip
+ * whatever it did not know to put back — which is `order 151's lesson, a
+ * third time`, in that file's own words.
+ *
+ * So: this app may raise an order. It may not edit one, and it may not
+ * move one, until a merge that reads the row first is argued for on its
+ * own terms.
+ */
+export const WRITE_IS_INSERT_ONLY = true;
+
+/** A quote line, in the exact shape the old app's own item picker pushes. */
+export interface QuoteLineWrite {
+  readonly lineId: number;
+  readonly productId: string | null;
+  readonly variantIdx: number | null;
+  readonly productName: string;
+  readonly unit: string;
+  readonly packUnit: string;
+  readonly packQty: number | string;
+  /** How it was counted when it was chosen: `unit` or `pack`. */
+  readonly qtyIn: 'unit' | 'pack';
+  readonly qty: number;
+  /** `__stock__` is the old app's own sentinel for "off the shelf". */
+  readonly supplierId: string;
+  readonly supplierName: string;
+  /** The BUY price. Never what the customer pays. */
+  readonly price: number;
+  readonly sellPrice: number;
+}
+
+/**
+ * `lineId` is per-order, and starts at 1.
+ *
+ * The old app increments a `data.nextQuoteLineId` that looks global, and
+ * `loadSavedQuote` renumbers every line from it on the way in — but the id
+ * only identifies a row while it is being edited, and nothing outside that
+ * screen looks a line up by it. Checked against all 290 lines on this
+ * shop: they run 1 to 9, and the same id is on 138 different orders. A new
+ * order numbers its own lines.
+ */
+export const lineIds = (count: number): readonly number[] =>
+  Array.from({ length: count }, (_, i) => i + 1);
+
+/**
+ * The payload of an order nobody has worked yet.
+ *
+ * Every one of the thirty keys, at the value `buildQuoteRecord` gives a
+ * brand-new record — which is what makes this safe to hand the old app. A
+ * key left out here is not "left alone"; it is absent, and the old app's
+ * reader spreads the payload back whole and would find nothing there.
+ *
+ * The five `origin*`/agent fields are `undefined` rather than null on a
+ * normal order, exactly as the old app leaves them: it writes
+ * `originAgentId: q.originAgentId` off a record that never had one, and
+ * `JSON.stringify` drops the key. Writing an explicit null instead would
+ * be this app asserting "this order came from nowhere", where absent says
+ * "this order is not one of those".
+ */
+export function newQuotePayload(input: {
+  readonly client: { readonly name: string; readonly phone: string };
+  readonly items: readonly QuoteLineWrite[];
+  readonly charges: readonly { readonly name: string; readonly amount: number }[];
+  readonly customerId: string | null;
+  readonly now: Date;
+}): Record<string, unknown> {
+  return {
+    client: { name: input.client.name, phone: input.client.phone },
+    items: input.items,
+    charges: input.charges,
+    credit: null,
+    savedAt: input.now.toISOString(),
+    payments: [],
+    customerId: input.customerId,
+    debtCharged: 0,
+    // When the order entered its lane. Only a stage move ever advances it,
+    // and a new order enters Draft the moment it is raised.
+    stageEnteredAt: input.now.getTime(),
+    assignedWorkerId: null,
+    assignedDeliveryId: null,
+    pickingStatus: null,
+    pickCursor: 0,
+    pickingAssignedAt: null,
+    workerAcceptedAt: null,
+    pickShortfallAckAt: null,
+    supplierConfirms: null,
+    stageLog: null,
+    announcedAt: null,
+    cancelledAt: null,
+    carrier: null,
+    pickingDoneAt: null,
+  };
+}
