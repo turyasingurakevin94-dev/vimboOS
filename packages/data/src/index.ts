@@ -3,6 +3,7 @@ export * from './savedQuotes.js';
 export * from './invoices.js';
 export * from './catalogue.js';
 export * from './customers.js';
+export * from './posting.js';
 export * from './promises.js';
 export * from './quotes.js';
 export * from './writer.js';

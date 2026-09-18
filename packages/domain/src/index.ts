@@ -7,6 +7,7 @@ export * from './catalogue.js';
 export * from './today.js';
 export * from './orders.js';
 export * from './tracking.js';
+export * from './posting.js';
 export * from './quote.js';
 export * from './invoices.js';
 export * from './messages.js';
