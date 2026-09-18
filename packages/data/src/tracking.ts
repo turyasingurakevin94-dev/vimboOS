@@ -40,6 +40,7 @@ import {
   type Stage,
   type SupplierAsk,
   type TrackedOrder,
+  type Trip,
 } from '@ow/domain';
 import { readText } from './boundary.js';
 import { invoiceDoc } from './savedQuotes.js';
@@ -47,6 +48,8 @@ import { current } from './client.js';
 
 export interface Board {
   readonly orders: readonly TrackedOrder[];
+  /** The buying run behind the lanes: where to go and what to carry. */
+  readonly trip: Trip;
   /** Rows that were read and could not be understood, in words. */
   readonly unreadable: readonly string[];
 }
@@ -190,6 +193,61 @@ export function toTrackedOrder(
   };
 }
 
+/**
+ * The buying run the board's dock describes.
+ *
+ * Only lines that are **bought in and not yet received** count: a line
+ * already on the shelf needs no stop and costs nothing more. `carry` is what
+ * those lines cost at the price the order recorded — `price`, the buying
+ * price, never `sellPrice`, which is what the client pays and would send the
+ * buyer out with the shop's margin in his pocket.
+ *
+ * A line whose buying price was never recorded makes the figure `partial`
+ * naming how many. The buyer would be short by exactly that much, and
+ * rounding it to zero is how somebody gets to a supplier and cannot pay.
+ */
+export function tripFrom(rows: readonly unknown[]): Trip {
+  const stops = new Map<string, number>();
+  let carry = 0;
+  let blind = 0;
+
+  for (const raw of rows) {
+    const row = obj(raw);
+    if (row === null || row.voided === true || row.invoiced === true) continue;
+
+    for (const item of arr(obj(row.payload)?.items).map(obj)) {
+      const supplier = item === null ? null : readText(item.supplierName);
+      if (item === null || supplier === null) continue;
+      // Already in. Nothing to fetch and nothing to pay.
+      if ((num(item.receivedQty) ?? 0) > 0) continue;
+
+      const qty = num(item.qty) ?? 0;
+      const price = num(item.price);
+      stops.set(supplier, (stops.get(supplier) ?? 0) + 1);
+
+      if (price === null) blind += 1;
+      else carry += qty * price;
+    }
+  }
+
+  const names = [...stops.keys()];
+  const money = Money.money(Math.round(carry));
+  const basis = `${names.length} ${names.length === 1 ? 'stop' : 'stops'}`;
+
+  return {
+    route: names.length === 0 ? 'Nothing to fetch' : names.slice(0, 2).join(', then '),
+    stops: names.length,
+    carry:
+      names.length === 0
+        ? known(Money.ZERO, 'nothing is waiting on a supplier')
+        : blind === 0
+          ? known(money, basis)
+          : partial(money, basis, `${blind} lines have no buying price`),
+    runs: 0,
+    overdue: 0,
+  };
+}
+
 /** Rows in, board out — with no client anywhere near it. */
 export function assembleBoard(rows: readonly unknown[]): Board {
   const orders: TrackedOrder[] = [];
@@ -209,7 +267,7 @@ export function assembleBoard(rows: readonly unknown[]): Board {
     orders.push(order);
   }
 
-  return { orders, unreadable };
+  return { orders, trip: tripFrom(rows), unreadable };
 }
 
 /** How far back the board looks for orders already finished. */

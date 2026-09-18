@@ -66,7 +66,8 @@ import {
   type LaneReading,
   type TrackedOrder,
 } from '@ow/domain';
-import { DEMO_BOARD_NOW, demoAsks, demoTrackedOrders, demoTrip } from '@ow/data';
+import { demoAsks } from '@ow/data';
+import { useBoard } from '../../app/useBoard.js';
 import s from './OrderTracking.module.css';
 import { MoveOrder, type Ask as MoveAsk } from './MoveOrder.js';
 import { Icon, type IconName } from '../icons.js';
@@ -143,11 +144,65 @@ export interface OrderTrackingProps {
 }
 
 export function OrderTracking({ onGo }: OrderTrackingProps): ReactElement {
-  const now = DEMO_BOARD_NOW;
-  const trip = useMemo(demoTrip, []);
-  const asks = useMemo(demoAsks, []);
+  const read = useBoard();
+  if (read.at === 'loading') return <Waiting />;
+  if (read.at === 'failed') return <Refused why={read.why} />;
+  return <Board read={read} onGo={onGo} />;
+}
 
-  const [orders, setOrders] = useState<readonly TrackedOrder[]>(demoTrackedOrders);
+/**
+ * Reading, not an empty yard.
+ *
+ * An empty board and a refused one look identical from PostgREST, and only
+ * one of them means there is no work — which on this screen is the whole
+ * message.
+ */
+function Waiting(): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <h1 className={s.title}>Order tracking</h1>
+        <p className={s.position}>Reading the board…</p>
+      </header>
+    </div>
+  );
+}
+
+function Refused({ why }: { readonly why: string }): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <h1 className={s.title}>Order tracking</h1>
+        <p className={s.position}>The board could not be read. {why}</p>
+      </header>
+    </div>
+  );
+}
+
+function Board({
+  read,
+  onGo,
+}: {
+  readonly read: Extract<ReturnType<typeof useBoard>, { at: 'ready' }>;
+  readonly onGo: (destination: string) => void;
+}): ReactElement {
+  const now = read.today;
+  const trip = read.data.trip;
+  const asks = useMemo(demoAsks, []);
+  /**
+   * The board's controls move a card in memory and nothing else.
+   *
+   * On the example books that is the point — they demonstrate the moves and
+   * lose nothing. On the shop's own books a move that looks like it worked
+   * and is gone on the next read is worse than no move at all, so the
+   * controls are refused until the write is argued for. `saved_quotes` is
+   * not `payment_promises`: a stage move rewrites `payload`, which the old
+   * app rebuilds from named keys, and a partial write there drops whatever
+   * this app did not know to put back.
+   */
+  const canMove = !read.live;
+
+  const [orders, setOrders] = useState<readonly TrackedOrder[]>(read.data.orders);
   /**
    * The card whose step-back panel is open. One at a time — opening a second
    * closes the first, which is not a limitation but the thing that stops a
@@ -157,9 +212,7 @@ export function OrderTracking({ onGo }: OrderTrackingProps): ReactElement {
    * frame `1a` draws it open — stepped back into Buying, with what the step
    * would cost said before it happens.
    */
-  const [acting, setActing] = useState<string | null>(() =>
-    openAtRest(demoTrackedOrders(), DEMO_BOARD_NOW),
-  );
+  const [acting, setActing] = useState<string | null>(() => openAtRest(read.data.orders, now));
   const [ask, setAsk] = useState<MoveAsk | null>(null);
   const [served, setServed] = useState(0);
   /** Lanes opened past the window they draw at rest. */
@@ -170,11 +223,17 @@ export function OrderTracking({ onGo }: OrderTrackingProps): ReactElement {
   const current = asks[served % asks.length];
   const peek = [asks[(served + 1) % asks.length], asks[(served + 2) % asks.length]];
 
-  const change = (reference: string, how: (o: TrackedOrder) => TrackedOrder): void =>
+  const change = (reference: string, how: (o: TrackedOrder) => TrackedOrder): void => {
+    if (!canMove) return;
     setOrders((prior) => prior.map((o) => (o.reference === reference ? how(o) : o)));
+  };
 
   /** The one control. What it does depends on what it is. */
   const press = (order: TrackedOrder): void => {
+    // On the shop's own books nothing here writes, so nothing here opens
+    // either: a dialog that asks somebody to confirm a move it will not
+    // make is worse than a control that does not respond.
+    if (!canMove) return;
     const control = moveFor(order).control;
     if (control === 'chevron') change(order.reference, (o) => moveOn(o, now));
     else if (control === 'van') setAsk({ at: 'load', reference: order.reference });
@@ -255,6 +314,10 @@ export function OrderTracking({ onGo }: OrderTrackingProps): ReactElement {
         </button>
         <p className={s.position}>
           {board.totals.live} live · {asks.length} need you, one at a time
+          {/* Said once, where the board describes itself, rather than on
+              every control. A card still opens and still reads; what it
+              cannot do yet is move. */}
+          {!canMove && ' · reading only — a move is not written back yet'}
         </p>
 
         <div className={s.legend} aria-label="What a card's control means">
