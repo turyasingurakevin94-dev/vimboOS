@@ -57,6 +57,8 @@ const one = (rows: Partial<Parameters<typeof assembleRegister>[0]> = {}) =>
     customers: [ken],
     sales: [invoice()],
     conversations: [],
+    promises: [],
+    payments: [],
     now: NOW,
     ...rows,
   });

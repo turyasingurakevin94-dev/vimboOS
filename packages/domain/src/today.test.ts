@@ -48,6 +48,8 @@ const customer = (
     settledOn: o.received >= o.total ? daysAgo(o.age - 1) : null,
     instalments: o.received > 0 ? 1 : 0,
   })),
+  promises: [],
+  payments: [],
   chasesSent: 0,
   chasesAnswered: 0,
   ledgerBalance: Money.money(owes.reduce((s, o) => s + (o.total - o.received), 0)),

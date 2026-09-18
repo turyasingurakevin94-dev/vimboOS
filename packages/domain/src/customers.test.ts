@@ -31,12 +31,17 @@ import {
   payBands,
   paysWithoutChasing,
   quietReading,
+  hasBrokenPromise,
+  latestPromise,
+  promiseState,
+  promisesBroken,
   read,
   rowNote,
   standing,
   totalOwed,
   type Customer,
   type CustomerInvoice,
+  type Promised,
 } from './customers.js';
 
 const m = Money.money;
@@ -58,6 +63,8 @@ const invoice = (over: Partial<CustomerInvoice> = {}): CustomerInvoice => ({
 
 const customer = (over: Partial<Customer> = {}): Customer => ({
   id: 'c-1',
+  promises: [],
+  payments: [],
   name: 'Test Trader',
   since: day(-400),
   heldBy: null,
@@ -425,5 +432,148 @@ describe('the margin reading', () => {
         24,
       ).status,
     ).toBe('unavailable');
+  });
+});
+
+/**
+ * What "past due" means on this shop's real books.
+ *
+ * Not one of its 120 accounts has `terms_days` recorded, so every invoice's
+ * `dueOn` is null, `isPastDue` is false everywhere, and a lateness test
+ * built on terms alone reports thirteen accounts owing 8,210,000 as all "in
+ * time". The shop's own answer is `payment_promises`: a day the CUSTOMER
+ * named, which is better evidence than a term nobody agreed with them.
+ */
+describe('a promise, kept or broken', () => {
+  const promise = (over: Partial<Promised> = {}): Promised => ({
+    id: 'p-1',
+    promisedOn: day(-3),
+    madeOn: day(-10),
+    amount: null,
+    note: null,
+    ...over,
+  });
+
+  const owing = (over: Partial<Customer> = {}): Customer =>
+    customer({
+      invoices: [invoice({ doc: 'INV-1', total: m(400_000), received: Money.ZERO })],
+      ...over,
+    });
+
+  it('is broken once the day they named has passed and the debt stands', () => {
+    const p = promise({ promisedOn: day(-3) });
+    const c = owing({ promises: [p] });
+
+    expect(promiseState(p, c, NOW)).toBe('broken');
+    expect(hasBrokenPromise(c, NOW)).toBe(true);
+  });
+
+  it('is still waiting on the day itself — nobody is a liar at nine in the morning', () => {
+    const p = promise({ promisedOn: day(0) });
+    const c = owing({ promises: [p] });
+
+    expect(promiseState(p, c, NOW)).toBe('waiting');
+    expect(hasBrokenPromise(c, NOW)).toBe(false);
+  });
+
+  it('is waiting while the day is still ahead', () => {
+    const p = promise({ promisedOn: day(4) });
+    const c = owing({ promises: [p] });
+
+    expect(promiseState(p, c, NOW)).toBe('waiting');
+  });
+
+  it('is kept by owing nothing, whatever the figures say', () => {
+    const p = promise({ promisedOn: day(-30) });
+    const c = customer({
+      invoices: [invoice({ doc: 'INV-1', total: m(400_000), received: m(400_000) })],
+      promises: [p],
+    });
+
+    expect(promiseState(p, c, NOW)).toBe('kept');
+  });
+
+  it('is kept when a named figure arrived inside its own window', () => {
+    const p = promise({ promisedOn: day(-3), madeOn: day(-10), amount: m(100_000) });
+    const c = owing({ promises: [p], payments: [{ on: day(-5), amount: m(100_000) }] });
+
+    expect(promiseState(p, c, NOW)).toBe('kept');
+  });
+
+  it('is not kept by money that arrived before they promised', () => {
+    // A payment on the 1st is not the answer to a promise made on the 5th.
+    const p = promise({ promisedOn: day(-3), madeOn: day(-10), amount: m(100_000) });
+    const c = owing({ promises: [p], payments: [{ on: day(-20), amount: m(100_000) }] });
+
+    expect(promiseState(p, c, NOW)).toBe('broken');
+  });
+
+  it('naming no figure means the balance, so a part payment does not keep it', () => {
+    const p = promise({ promisedOn: day(-3), amount: null });
+    const c = owing({ promises: [p], payments: [{ on: day(-5), amount: m(50_000) }] });
+
+    expect(promiseState(p, c, NOW)).toBe('broken');
+  });
+
+  it('counts them — one is a bad week, the third is the customer', () => {
+    const c = owing({
+      promises: [
+        promise({ id: 'p-1', promisedOn: day(-20), madeOn: day(-25) }),
+        promise({ id: 'p-2', promisedOn: day(-10), madeOn: day(-15) }),
+        promise({ id: 'p-3', promisedOn: day(4), madeOn: day(-1) }),
+      ],
+    });
+
+    expect(promisesBroken(c, NOW)).toBe(2);
+  });
+
+  it('reads the newest word they gave, not the first', () => {
+    const c = owing({
+      promises: [
+        promise({ id: 'old', promisedOn: day(-20), madeOn: day(-25) }),
+        promise({ id: 'new', promisedOn: day(4), madeOn: day(-1) }),
+      ],
+    });
+
+    expect(latestPromise(c, NOW)?.promise.id).toBe('new');
+    expect(latestPromise(c, NOW)?.state).toBe('waiting');
+  });
+
+  it('has nothing to say about an account that has never promised', () => {
+    expect(latestPromise(owing(), NOW)).toBeNull();
+    expect(hasBrokenPromise(owing(), NOW)).toBe(false);
+  });
+});
+
+describe('standing, on books with no terms recorded', () => {
+  const noTerms = (over: Partial<Customer> = {}): Customer =>
+    customer({
+      invoices: [
+        invoice({ doc: 'INV-1', total: m(400_000), received: Money.ZERO, dueOn: null }),
+      ],
+      ...over,
+    });
+
+  it('puts an account that broke its word on the past-due list', () => {
+    const c = noTerms({
+      promises: [{ id: 'p', promisedOn: day(-3), madeOn: day(-10), amount: null, note: null }],
+    });
+
+    expect(standing(c, NOW)).toBe('past-due');
+    expect(read([c], NOW).pastDue).toHaveLength(1);
+  });
+
+  it('leaves an account still inside its word in time', () => {
+    const c = noTerms({
+      promises: [{ id: 'p', promisedOn: day(4), madeOn: day(-1), amount: null, note: null }],
+    });
+
+    expect(standing(c, NOW)).toBe('in-time');
+  });
+
+  it('still reads as in time when nobody has asked them for a day', () => {
+    // Which is the honest answer: the shop has not agreed terms and they
+    // have not named a day, so there is nothing they are late against.
+    expect(standing(noTerms(), NOW)).toBe('in-time');
   });
 });

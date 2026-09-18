@@ -96,7 +96,8 @@ export async function readDesk(shopId: string, now: Date): Promise<Derived<DeskR
   since.setMonth(since.getMonth() - 12);
   const sinceDay = since.toISOString().slice(0, 10);
 
-  const [customersRes, salesRes, convosRes, numbersRes, followRes, promisesRes] = await Promise.all([
+  const [customersRes, salesRes, convosRes, numbersRes, followRes, promisesRes, debtLogRes] =
+    await Promise.all([
     sb
       .from('customers')
       .select('id, name, phone, location, notes, debt, terms_days, credit_limit')
@@ -120,7 +121,17 @@ export async function readDesk(shopId: string, now: Date): Promise<Derived<DeskR
       .select('id, customer_id, product_id, qty, note, created_at, closed_at, payload')
       .eq('shop_id', shopId)
       .is('closed_at', null),
-    sb.from('payment_promises').select('customer_id, promised_on, made_on, amount').eq('shop_id', shopId),
+    sb
+      .from('payment_promises')
+      .select('id, customer_id, promised_on, made_on, amount, note')
+      .eq('shop_id', shopId),
+    // The window a named promise is kept inside. The desk already read the
+    // promises; without the payments it could not say which were kept.
+    sb
+      .from('customer_debt_log')
+      .select('customer_id, date, type, amount')
+      .eq('shop_id', shopId)
+      .eq('type', 'payment'),
   ]);
 
   // Without customers or their invoices there is no Money lens, which is the
@@ -132,6 +143,13 @@ export async function readDesk(shopId: string, now: Date): Promise<Derived<DeskR
     customers: customersRes.data,
     sales: salesRes.data,
     conversations: convosRes.error === null ? convosRes.data : null,
+    // The Money lens IS the chase queue, and on this shop's books a broken
+    // promise is the only thing that ever makes an account late — no
+    // account has terms on file. The desk read these already; now the
+    // register standing behind it reads them too, so the lens and the
+    // Customers screen cannot disagree about who is overdue.
+    promises: promisesRes.error === null ? promisesRes.data : null,
+    payments: debtLogRes.error === null ? debtLogRes.data : null,
     now,
   });
 

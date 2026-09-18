@@ -49,6 +49,8 @@ const desk = (over: Partial<DeskRows> = {}) =>
       customers: [ken],
       sales: [invoice],
       conversations: over.conversations === undefined ? [] : over.conversations,
+      promises: [],
+      payments: [],
       now: NOW,
     }),
     conversations: [],
@@ -95,6 +97,8 @@ describe('who is owed a word', () => {
         sales: [{ ...invoice, amount_paid: '465000',
           payload: { ...invoice.payload, payments: [{ date: '2026-08-19', amount: 465_000, id: 1 }] } }],
         conversations: [],
+        promises: [],
+        payments: [],
         now: NOW,
       }),
     });
@@ -103,7 +107,14 @@ describe('who is owed a word', () => {
 
   it('asks for the total, not an invoice, when no invoice stands behind it', () => {
     const carried = desk({
-      register: assembleRegister({ customers: [ken], sales: [], conversations: [], now: NOW }),
+      register: assembleRegister({
+        customers: [ken],
+        sales: [],
+        conversations: [],
+        promises: [],
+        payments: [],
+        now: NOW,
+      }),
     });
     const row = carried.desk.owed[0]!;
     // The balance is the stored one; there is no document to name.
@@ -255,6 +266,8 @@ describe('the money desk ranks what it is given', () => {
         customers: [ken, { ...ken, id: 'c-big', name: 'Kato Construction', phone: '0700999888', debt: '2640000' }],
         sales: [invoice],
         conversations: [],
+        promises: [],
+        payments: [],
         now: NOW,
       }),
     });

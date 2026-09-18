@@ -37,16 +37,18 @@ import {
   Money,
   type Customer,
   type CustomerInvoice,
+  type DebtPayment,
   type Derived,
   type MonthBought,
   type ProductShare,
+  type Promised,
   type SalesInvoice,
   known,
   receivedSoFar,
   unavailable,
 } from '@ow/domain';
 import { current } from './client.js';
-import { readMoney, readText } from './boundary.js';
+import { readDate, readMoney, readText } from './boundary.js';
 import { toSalesInvoice, type CustomerTerms, type SavedQuoteRow } from './savedQuotes.js';
 
 /** How far back the register looks. `keptTwelveMonths` is in the name. */
@@ -104,7 +106,7 @@ export async function readRegister(shopId: string, now: Date): Promise<Derived<R
   const since = new Date(now);
   since.setMonth(since.getMonth() - MONTHS_BACK);
 
-  const [customersRes, salesRes, convosRes] = await Promise.all([
+  const [customersRes, salesRes, convosRes, promisesRes, debtLogRes] = await Promise.all([
     sb
       .from('customers')
       .select('id, name, phone, location, notes, debt, terms_days, credit_limit')
@@ -124,6 +126,24 @@ export async function readRegister(shopId: string, now: Date): Promise<Derived<R
       .from('wa_conversations')
       .select('id, wa_id, last_inbound_at, wa_messages(direction, sent_at)')
       .eq('shop_id', shopId),
+    // What each account said it would pay, and when. This is what "past
+    // due" means in this shop: not one of its accounts has `terms_days` on
+    // file, so a lateness test built on terms alone never fires.
+    //
+    // Arrived in migration 0089, so a database that has not run it answers
+    // with an error — degraded, like the chases, never fatal.
+    sb
+      .from('payment_promises')
+      .select('id, customer_id, promised_on, made_on, amount, note')
+      .eq('shop_id', shopId)
+      .order('promised_on', { ascending: false }),
+    // Money in against an account. A promise that named a figure is kept by
+    // payments inside its own window, so the window needs the ledger.
+    sb
+      .from('customer_debt_log')
+      .select('customer_id, date, type, amount')
+      .eq('shop_id', shopId)
+      .eq('type', 'payment'),
   ]);
 
   // Without `customers` there is no register — every row on the screen IS a
@@ -143,6 +163,11 @@ export async function readRegister(shopId: string, now: Date): Promise<Derived<R
     customers: customersRes.data,
     sales: salesRes.data,
     conversations: convosRes.error === null ? convosRes.data : null,
+    // Both degrade rather than sink the screen, and both say so. Without
+    // promises every owing account reads as still in time, which is a
+    // claim; the footnote turns it back into an admission.
+    promises: promisesRes.error === null ? promisesRes.data : null,
+    payments: debtLogRes.error === null ? debtLogRes.data : null,
     now,
   });
 
@@ -163,9 +188,69 @@ export function assembleRegister(rows: {
   readonly customers: readonly unknown[];
   readonly sales: readonly unknown[];
   readonly conversations: readonly unknown[] | null;
+  /** `null` when `payment_promises` could not be read at all. */
+  readonly promises: readonly unknown[] | null;
+  /** `null` when `customer_debt_log` could not be read at all. */
+  readonly payments: readonly unknown[] | null;
   readonly now: Date;
 }): Register {
   const unreadable: string[] = [];
+
+  // Promises and the payments that keep them, both keyed by customer id.
+  const promisesById = new Map<string, Promised[]>();
+  const paymentsById = new Map<string, DebtPayment[]>();
+
+  if (rows.promises === null) {
+    // Without these no account can be shown as having broken its word, and
+    // on this shop's books that is the ONLY way an account is ever late —
+    // none of them has terms recorded. Silence here would report thirteen
+    // owing accounts as all in time.
+    unreadable.push(
+      'payment promises could not be read, so no account can be shown as having broken its word',
+    );
+  } else {
+    for (const raw of rows.promises) {
+      const row = obj(raw);
+      if (row === null) continue;
+      const who = readText(row.customer_id);
+      const promisedOn = readDate(row.promised_on);
+      if (who === null || promisedOn === null) continue;
+      const amount = readMoney(row.amount, 'amount', `promise for ${who}`);
+      // `id` is a bigint, so PostgREST sends a number — but the row is
+      // `unknown` here and stringifying an object would give every promise
+      // the same key, which is how two promises become one on screen.
+      const rowId =
+        typeof row.id === 'number' || typeof row.id === 'string' ? String(row.id) : null;
+      const list = promisesById.get(who) ?? [];
+      list.push({
+        id: rowId ?? `${who}-${promisedOn.toISOString().slice(0, 10)}`,
+        promisedOn,
+        // A promise with no made-on is treated as made the day it names,
+        // which is the old app's own fallback.
+        madeOn: readDate(row.made_on) ?? promisedOn,
+        // Null is not zero here: it means THE BALANCE, and nothing short of
+        // clearing it keeps that promise.
+        amount: amount.status === 'unavailable' ? null : amount.value,
+        note: readText(row.note),
+      });
+      promisesById.set(who, list);
+    }
+  }
+
+  if (rows.payments !== null) {
+    for (const raw of rows.payments) {
+      const row = obj(raw);
+      if (row === null) continue;
+      const who = readText(row.customer_id);
+      const on = readDate(row.date);
+      if (who === null || on === null) continue;
+      const amount = readMoney(row.amount, 'amount', `debt log for ${who}`);
+      if (amount.status === 'unavailable') continue;
+      const list = paymentsById.get(who) ?? [];
+      list.push({ on, amount: amount.value });
+      paymentsById.set(who, list);
+    }
+  }
 
   /** Invoices by the customer NAME they were raised against. */
   const byName = new Map<string, SalesInvoice[]>();
@@ -267,6 +352,8 @@ export function assembleRegister(rows: {
       area: readText(row.location) ?? '',
       creditLimit: limit.status === 'unavailable' ? null : limit.value,
       invoices,
+      promises: promisesById.get(id) ?? [],
+      payments: paymentsById.get(id) ?? [],
       chasesSent: chased?.sent ?? 0,
       chasesAnswered: chased?.answered ?? 0,
       ledgerBalance: ledger.status === 'unavailable' ? Money.ZERO : ledger.value,

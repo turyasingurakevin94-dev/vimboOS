@@ -105,6 +105,12 @@ export interface Customer {
   /** `null` when no limit has been agreed for this account. */
   readonly creditLimit: Amount | null;
   readonly invoices: readonly CustomerInvoice[];
+  /** What they have said they would pay, and when. Newest order is not
+   *  assumed — {@link promisesOf} sorts. */
+  readonly promises: readonly Promised[];
+  /** Money in against the account, from `customer_debt_log`. A promise
+   *  naming a figure is kept by payments inside its own window. */
+  readonly payments: readonly DebtPayment[];
   /** Chases sent against the debt that is open now. */
   readonly chasesSent: number;
   readonly chasesAnswered: number;
@@ -212,11 +218,104 @@ export function lastBought(c: Customer): Date | null {
  */
 export type Standing = 'past-due' | 'in-time' | 'quiet' | 'clear';
 
+/**
+ * What a customer said, on the day they said it.
+ *
+ * The chase message this shop sends ends "Please let us know when we can
+ * expect payment", and `payment_promises` is where the answer goes. It is a
+ * LEDGER, not a stamp: somebody who promises Friday, misses it, and promises
+ * next Tuesday is telling you something a single field per customer cannot
+ * hold, and the whole value is in the pattern.
+ */
+export interface Promised {
+  readonly id: string;
+  readonly promisedOn: Date;
+  /** The day they said it. A promise made today about today is not late. */
+  readonly madeOn: Date;
+  /** `null` means THE BALANCE — most people do not name a figure. */
+  readonly amount: Amount | null;
+  readonly note: string | null;
+}
+
+/** Money that arrived against the account, from the debt ledger. */
+export interface DebtPayment {
+  readonly on: Date;
+  readonly amount: Amount;
+}
+
+export type PromiseState = 'kept' | 'broken' | 'waiting';
+
+const onOrBefore = (a: Date, b: Date): boolean => a.getTime() <= b.getTime();
+
+/**
+ * Kept, broken, or still waiting — **derived every time, never stored**.
+ *
+ * A stored verdict and a ledger that disagrees with it is the drift this
+ * shop has already had to write a repair banner for once. Ported from the
+ * old app's `promiseState`, including the rule that matters most on a
+ * Monday morning: a promise for TODAY is still waiting. Nobody is called a
+ * liar at nine on the day they named.
+ */
+export function promiseState(p: Promised, c: Customer, now: Date): PromiseState {
+  // Owing nothing keeps any promise about paying, whatever the figures say
+  // about which shilling settled which charge.
+  if (!owesAnything(c)) return 'kept';
+
+  if (p.amount !== null && !Money.isZero(p.amount)) {
+    const paid = Money.add(
+      ...c.payments
+        .filter((x) => onOrBefore(p.madeOn, x.on) && onOrBefore(x.on, p.promisedOn))
+        .map((x) => x.amount),
+    );
+    if (Money.compare(paid, p.amount) >= 0) return 'kept';
+  }
+
+  // No figure named means the balance, and nothing short of clearing it
+  // keeps that promise — which the check above has already answered.
+  return daysBetween(p.promisedOn, now) > 0 ? 'broken' : 'waiting';
+}
+
+/** Their promises, newest first — the order every reading of them wants. */
+export const promisesOf = (c: Customer): readonly Promised[] =>
+  [...c.promises].sort((a, b) => b.madeOn.getTime() - a.madeOn.getTime());
+
+/** The word they gave most recently, and whether they have kept it. */
+export function latestPromise(
+  c: Customer,
+  now: Date,
+): { readonly promise: Promised; readonly state: PromiseState } | null {
+  const [newest] = promisesOf(c);
+  return newest === undefined ? null : { promise: newest, state: promiseState(newest, c, now) };
+}
+
+/** How many they have broken. One is a bad week; the third is the customer. */
+export const promisesBroken = (c: Customer, now: Date): number =>
+  promisesOf(c).filter((p) => promiseState(p, c, now) === 'broken').length;
+
+/**
+ * Whether the shop is owed money it was told it would have by now.
+ *
+ * This is what "past due" MEANS in this shop, and the real books are why.
+ * Not one of the 120 accounts has `terms_days` recorded — the column exists
+ * and nobody has ever filled it — so an invoice's `dueOn` is null on every
+ * row, `isPastDue` is false on every row, and a lateness test built on
+ * terms alone reports thirteen accounts owing 8,210,000 as all "in time".
+ *
+ * A broken promise is a date the CUSTOMER named, which is better evidence
+ * than a term the shop never agreed with them.
+ */
+export const hasBrokenPromise = (c: Customer, now: Date): boolean =>
+  promisesBroken(c, now) > 0;
+
 export function standing(c: Customer, now: Date): Standing {
   const last = lastBought(c);
   if (last !== null && daysBetween(last, now) >= QUIET_DAYS) return 'quiet';
   if (!owesAnything(c)) return 'clear';
-  return c.invoices.some((inv) => isPastDue(inv, now)) ? 'past-due' : 'in-time';
+  // Either kind of broken word puts an account on the list: a term the shop
+  // agreed, or a day the customer named. On this shop's books only the
+  // second ever fires, because no account has terms on file.
+  const late = c.invoices.some((inv) => isPastDue(inv, now)) || hasBrokenPromise(c, now);
+  return late ? 'past-due' : 'in-time';
 }
 
 /**

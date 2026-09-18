@@ -148,6 +148,11 @@ function build(w: Written): Customer {
     phone: w.phone,
     area: w.area,
     creditLimit: w.creditLimit === null ? null : m(w.creditLimit),
+    // The frames draw no promise on any account, and inventing one would
+    // put a demo customer on the past-due list for a reason the mockup
+    // never showed. The live register reads the real table.
+    promises: [],
+    payments: [],
     invoices: w.invoices,
     chasesSent: w.chasesSent ?? 0,
     chasesAnswered: w.chasesAnswered ?? 0,
