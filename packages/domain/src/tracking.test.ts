@@ -12,8 +12,10 @@ import {
   INVOICING_DOES,
   STAGE_LIMIT_HOURS,
   UNDOING_INVOICE_DOES,
+  QUEUE_EMPTY,
   ageLabel,
   ageTone,
+  asksFor,
   invoiced,
   lineCheckedIn,
   loaded,
@@ -21,6 +23,7 @@ import {
   nextInvoiceNumber,
   nextStage,
   notInvoiced,
+  onBoard,
   settledShort,
   steppedBack,
   supplierAnswered,
@@ -607,5 +610,144 @@ describe('clearing a padlock', () => {
     const preparing = card({ stage: 'preparing' });
     expect(supplierAnswered(preparing, 'Anyone', LATER)).toBe(preparing);
     expect(lineCheckedIn(preparing)).toBe(preparing);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+
+describe('9. what the board keeps, and what it has finished with', () => {
+  const board = (orders: readonly TrackedOrder[]) => readTracking(orders, trip, NOW);
+
+  it('lets an invoiced delivery go after a day, and only an invoiced one', () => {
+    const old = { stage: 'completed' as Stage, since: ago(30) };
+    const billed = card({ reference: '#286', ...old, invoice: 'INV-0286' });
+    const unbilled = card({ reference: '#288', ...old });
+
+    expect(onBoard([billed, unbilled], NOW).map((o) => o.reference)).toEqual(['#288']);
+  });
+
+  it('keeps an invoiced delivery that is still inside the day', () => {
+    const fresh = card({ stage: 'completed', since: ago(12), invoice: 'INV-0286' });
+    expect(onBoard([fresh], NOW)).toHaveLength(1);
+  });
+
+  /**
+   * The shop's own books carry orders flagged invoiced while they sit in
+   * Preparing — #150 is one. The work is in the lane, not in the flag.
+   */
+  it('keeps an order still in a lane however its invoice flag reads', () => {
+    const working = card({ stage: 'preparing', since: ago(900), invoice: 'INV-0150' });
+    expect(onBoard([working], NOW)).toHaveLength(1);
+  });
+
+  it('keeps a delivery whose books do not say when it arrived', () => {
+    const silent = card({ stage: 'completed', since: null, invoice: 'INV-0286' });
+    expect(onBoard([silent], NOW)).toHaveLength(1);
+  });
+
+  /**
+   * The bug this was written for: `INVOICED_STAY_HOURS` was declared,
+   * documented and never applied, so a month of finished orders sat in
+   * Delivered and `Past stage limit` read 152 of 156 on the real books.
+   */
+  it('counts only what it keeps, in every figure on the dock', () => {
+    const gone = Array.from({ length: 20 }, (_, i) =>
+      card({ reference: `#2${i}`, stage: 'completed', since: ago(200), invoice: `INV-02${i}` }),
+    );
+    const here = card({ reference: '#341', stage: 'draft', since: ago(30) });
+    const read = board([...gone, here]);
+
+    expect(read.totals.live).toBe(1);
+    expect(read.totals.pastStageLimit).toBe(1);
+    expect(read.totals.delivered).toBe(0);
+    expect(read.lanes[4]?.count).toBe(0);
+  });
+});
+
+describe('10. the queue is the board, read once', () => {
+  const asks = (orders: readonly TrackedOrder[]) => asksFor(readTracking(orders, trip, NOW), NOW);
+
+  it('says nothing wants you rather than nothing at all', () => {
+    expect(asks([card({ since: ago(1) })])).toEqual([]);
+    expect(QUEUE_EMPTY).toBe('Nothing on the board is waiting on you.');
+  });
+
+  it('waits for the board to call a card late before asking about it', () => {
+    const silent = [{ name: 'Mulongo Hardware', answered: false }];
+    expect(asks([card({ since: ago(3), suppliers: silent })])).toEqual([]);
+    expect(asks([card({ since: ago(21), suppliers: silent })])).toHaveLength(1);
+  });
+
+  it('names the silent suppliers rather than counting them', () => {
+    const late = card({
+      since: ago(21),
+      suppliers: [
+        { name: 'Mulongo Hardware', answered: false },
+        { name: 'Bbosa Steel', answered: true },
+        { name: 'Karddia', answered: false },
+      ],
+    });
+    expect(asks([late])[0]?.why).toBe(
+      'Mulongo Hardware and Karddia have not answered. Chase them or buy elsewhere.',
+    );
+  });
+
+  it('sends a buying question to the buying list and a move to the card', () => {
+    const buying = card({ stage: 'awaiting_goods', since: ago(21), toBuy: 9, checkedIn: 4 });
+    const ready = card({ stage: 'pending_delivery', since: ago(21) });
+
+    expect(asks([buying])[0]?.act).toEqual({ label: 'Buying list', door: 'sourcing' });
+    expect(asks([ready])[0]?.act).toEqual({ label: 'Move it on', door: null });
+  });
+
+  /**
+   * Buying's rule is "unlocks on the last line in", and an order with no
+   * line to buy waits for a line that does not exist. Only a person gets it
+   * out, which is the whole definition of this queue.
+   */
+  it('catches the order its own lane can never unlock', () => {
+    const stuck = card({ stage: 'awaiting_goods', since: ago(21), toBuy: 0, checkedIn: 0 });
+    expect(asks([stuck])[0]?.reason).toBe('lane-cannot-unlock');
+  });
+
+  it('leaves loading alone — a van is a job, not a decision', () => {
+    const toLoad = card({ stage: 'preparing', since: ago(21), shortPick: null });
+    expect(asks([toLoad])).toEqual([]);
+    expect(moveFor(toLoad).control).toBe('van');
+  });
+
+  it('asks about a short pick until somebody settles it', () => {
+    const at = { stage: 'preparing' as Stage, since: ago(21) };
+    expect(asks([card({ ...at, shortPick: unsettled })])[0]?.reason).toBe('short-pick');
+    expect(asks([card({ ...at, shortPick: { ...unsettled, settled: true } })])).toEqual([]);
+  });
+
+  it('asks about a handover nobody billed, a day after the handover', () => {
+    const at = { stage: 'completed' as Stage };
+    expect(asks([card({ ...at, since: ago(10) })])).toEqual([]);
+    expect(asks([card({ ...at, since: ago(30) })])[0]?.reason).toBe('not-invoiced');
+  });
+
+  it('asks once per order, longest waiting first', () => {
+    const late = [
+      card({ reference: '#344', stage: 'awaiting_goods', since: ago(17), toBuy: 9, checkedIn: 4 }),
+      card({ reference: '#341', since: ago(21), suppliers: [{ name: 'Mulongo', answered: false }] }),
+      card({ reference: '#357', stage: 'pending_delivery', since: ago(15) }),
+    ];
+    expect(asks(late).map((a) => a.reference)).toEqual(['#341', '#344', '#357']);
+  });
+
+  /**
+   * The queue cannot see a card the board has let go, because it is handed
+   * the board rather than the array behind it. The head of this screen used
+   * to print `54 live · 20 need you` about two readings that had never been
+   * compared.
+   */
+  it('cannot ask about a card the board has finished with', () => {
+    const gone = card({ stage: 'completed', since: ago(200), invoice: 'INV-0286' });
+    const unbilled = card({ reference: '#288', stage: 'completed', since: ago(200) });
+    const read = readTracking([gone, unbilled], trip, NOW);
+
+    expect(asksFor(read, NOW).map((a) => a.reference)).toEqual(['#288']);
   });
 });

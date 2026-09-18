@@ -504,9 +504,24 @@
   white-space: nowrap;
 }
 
-.askPrimary:hover {
+.askPrimary:hover:not(:disabled) {
   background: var(--ow-color-accent-btn-hover);
   border-color: var(--ow-color-accent-btn-hover);
+}
+
+/*
+ * An act the shop's own books will not let happen yet.
+ *
+ * It keeps its words — the decision is still the decision — and loses the
+ * fill, because the fill is this screen's promise that pressing does
+ * something. The page head says why once; a control that looked pressable
+ * and did nothing said it every time somebody tried.
+ */
+.askPrimary:disabled {
+  background: var(--ow-color-surface);
+  border-color: var(--ow-color-divider);
+  color: var(--ow-color-ink-3);
+  cursor: default;
 }
 
 .peek {

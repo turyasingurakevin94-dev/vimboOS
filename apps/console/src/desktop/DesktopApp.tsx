@@ -15,7 +15,8 @@ import {
   type ReactElement,
 } from 'react';
 import { owingBadge, read } from '@ow/domain';
-import { DEMO_TODAY, demoAsks, demoCustomers } from '@ow/data';
+import { DEMO_TODAY, demoCustomers } from '@ow/data';
+import { useNeedsYou } from '../app/useBoard.js';
 import { useToday } from '../app/useToday.js';
 import s from './DesktopApp.module.css';
 import { Rail, SECTIONS, TODAY, asksForBonus, resolveTab } from './chrome/Rail.js';
@@ -148,6 +149,7 @@ export default function DesktopApp(): ReactElement {
    * screen's own `useToday()` reads this same cache rather than asking again.
    */
   const today = useToday();
+  const needsYou = useNeedsYou();
 
   /**
    * The badges that come from the books.
@@ -161,14 +163,15 @@ export default function DesktopApp(): ReactElement {
     () => ({
       customers: owingBadge(read(demoCustomers(), DEMO_TODAY)),
       // The board's own queue, which is what a badge on this row means:
-      // twenty decisions only the owner can make.
-      orders: demoAsks().length,
+      // the decisions only the owner can make. Omitted until the board
+      // lands, for the same reason Today's is.
+      ...(needsYou === null ? {} : { orders: needsYou }),
       // Omitted until the read lands, rather than sent as zero: the rail
       // draws no badge for zero, and "nothing wants you" is the one thing
       // this row must not say while it is still finding out.
       ...(today.at === 'ready' ? { today: today.data.wantsYou } : {}),
     }),
-    [today],
+    [today, needsYou],
   );
 
   const onTrail = useCallback((next: string | null) => setTrail(next), []);

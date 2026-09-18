@@ -32,7 +32,6 @@
 import {
   Money,
   known,
-  type Ask,
   type Derived,
   type ShortPick,
   type Stage,
@@ -214,55 +213,18 @@ export const demoTrip = (): Trip => ({
 
 /* ------------------------------ Waiting on you ---------------------------- */
 
-const ask = (
-  reference: string,
-  customer: string,
-  place: string,
-  value: number,
-  h: number,
-  min: number,
-  why: string,
-  act: string,
-  instead: string,
-): Ask => ({
-  reference,
-  customer,
-  place,
-  value: m(value),
-  age: `${h}h ${min < 10 ? '0' : ''}${min}m`,
-  hours: h + min / 60,
-  tone: h + min / 60 > 12 ? 'past' : h + min / 60 > 6 ? 'closing' : 'quiet',
-  why,
-  act,
-  instead,
-});
-
-/**
- * The twenty decisions only the owner can make, longest waiting first.
+/*
+ * The queue used to live here as twenty hand-written sentences, and it was
+ * cut rather than rewritten. `asksFor` in `@ow/domain` reads the same board
+ * these cards make, so the example books and the shop's own books get their
+ * queue from one place and the head of the screen can no longer say
+ * `54 live · 20 need you` about two different readings.
  *
- * Every one of them names a specific order and a specific act. A queue that
- * says "3 orders need attention" is a queue nobody opens; these are the
- * sentences the owner would say out loud about each one.
+ * What was lost with it: five reasons the books do not record anywhere —
+ * a client asking for an order to be split, a supplier quoting above the
+ * price promised, a credit limit reached, a cost that changed on arrival,
+ * and cash asked for up front. Those are real decisions and they are not
+ * invented here again. Each needs a field the old app does not keep, and
+ * a queue that states them from nothing is the mockup lying about the shop.
  */
-export const demoAsks = (): readonly Ask[] => [
-  ask('#341', 'Ssekitoleko Hardware', 'Kisenyi', 1_240_000, 21, 8, 'Mulongo Hardware has not answered since yesterday. Chase them or buy elsewhere.', 'Draft the chase', 'Reassign'),
-  ask('#360', 'Ssendawula Sam', 'Trade Center', 235_000, 19, 4, '1 line is on no buying trip: Karddia. Put it on a list or nobody buys it.', 'Buying list', 'Hold'),
-  ask('#344', 'Mulongo Hardware', 'Industrial Area', 1_980_000, 17, 36, '4 of 9 items in. The rest are on no trip and the client asked twice.', 'Buying list', 'Hold'),
-  ask('#357', 'Jackson', 'Ndeeba', 250_000, 15, 19, 'Every supplier has confirmed. Move it on; announce it to the group when you like.', 'Move on', 'Announce'),
-  ask('#348', 'Kato Construction Ltd', 'Nateete', 860_000, 14, 52, 'Bbosa Steel quoted 12% above the price you promised. Accept or refuse.', 'Decide price', 'Reassign'),
-  ask('#350', 'Bbosa Steel', 'Kisenyi', 520_000, 13, 10, '1 of 3 items in. The van leaves in an hour without the other two.', 'Buying list', 'Hold'),
-  ask('#352', 'Kirumira & Sons', 'Nateete', 380_000, 11, 48, 'Both lines sit on the Industrial Area list that nobody has taken.', 'Buying list', 'Hold'),
-  ask('#354', 'Nakato Hardware', 'Ndeeba', 760_000, 10, 22, 'The client wants 2 lines split to a second delivery. Only you can split it.', 'Split order', 'Call client'),
-  ask('#361', 'Nabirye Stores', 'Katwe', 410_000, 9, 30, 'Karddia confirmed one item and refused the other. Choose a supplier.', 'Reassign', 'Hold'),
-  ask('#356', 'Zzimwe Contractors', 'Bweyogerere', 2_140_000, 9, 5, 'Past the credit you allowed. Nothing buys until you let it through.', 'Let it through', 'Hold'),
-  ask('#358', 'Byaruhanga Timber', 'Katwe', 295_000, 8, 40, 'The checked-in quantity is 1 short of the line. Accept or return it.', 'Decide', 'Call client'),
-  ask('#362', 'Tendo Hardware', 'Kisenyi', 165_000, 7, 15, 'The item came in at a different price. Confirm the new cost.', 'Confirm cost', 'Hold'),
-  ask('#364', 'Kigongo Traders', 'Bweyogerere', 95_000, 6, 45, 'Tendo has not answered. Small order, but it is holding a run.', 'Draft the chase', 'Reassign'),
-  ask('#363', 'Kyambogo Works', 'Industrial Area', 910_000, 6, 30, '1 of 6 items in and the trip is planned for tomorrow.', 'Buying list', 'Hold'),
-  ask('#365', 'Nakalema Stores', 'Nateete', 148_000, 5, 2, 'The client changed the delivery place after the run was planned.', 'Move to run 2', 'Call client'),
-  ask('#366', 'Namugongo Builders', 'Ndeeba', 620_000, 4, 12, 'Haidery answered with a part quantity. Accept the short delivery?', 'Decide', 'Call client'),
-  ask('#369', 'Ntale Hardware', 'Kisenyi', 180_000, 2, 55, 'Zzimwe asked for cash up front. Release the cash or refuse.', 'Release cash', 'Hold'),
-  ask('#370', 'Kato Construction Ltd', 'Nateete', 1_120_000, 2, 44, '0 of 7 items in. The client is asking for a date you have not set.', 'Set a date', 'Call client'),
-  ask('#371', 'Lubega Traders', 'Industrial Area', 740_000, 1, 40, '2 lines to buy and no trip planned for Industrial Area today.', 'Plan trip', 'Hold'),
-  ask('#373', 'Wasswa Hardware', 'Katwe', 135_000, 0, 21, 'Sent 20 minutes ago to a supplier with no WhatsApp. Ring them?', 'Call supplier', 'Hold'),
-];
+

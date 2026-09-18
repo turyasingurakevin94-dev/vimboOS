@@ -448,6 +448,35 @@ const SHORT: Readonly<Record<Stage, string>> = {
 };
 
 /**
+ * The board's own population: everything given to it, less the invoiced work
+ * it has finished with.
+ *
+ * `INVOICED_STAY_HOURS` was declared, documented and never applied, which
+ * cost nothing on the example books — every delivery there is hours old —
+ * and on the shop's own books put a month of finished orders in Delivered.
+ * The lane read 153 where it is drawn for a day of handovers, and
+ * `Past stage limit` read 152 of 156, which is a tile saying "everything",
+ * which is a tile saying nothing.
+ *
+ * Only an INVOICED and DELIVERED order leaves. An unbilled handover stays
+ * however old it is, because it is still money nobody has charged for; and
+ * an order still in Preparing stays even where the books have flagged it
+ * invoiced, because the work is in the lane, not in the flag. A card whose
+ * books do not say when it arrived also stays: dropping work because the
+ * age is unknown is hiding it.
+ */
+export function onBoard(
+  orders: readonly TrackedOrder[],
+  now: Date,
+): readonly TrackedOrder[] {
+  return orders.filter((o) => {
+    if (o.stage !== 'completed' || o.invoice === null) return true;
+    const hours = hoursWaiting(o, now);
+    return hours === null || hours <= INVOICED_STAY_HOURS;
+  });
+}
+
+/**
  * The board, read once.
  *
  * Both designs call this and render nothing that is not in what it returns.
@@ -459,8 +488,10 @@ export function readTracking(
   trip: Trip,
   now: Date,
 ): BoardTracking {
+  const on = onBoard(orders, now);
+
   const lanes = STAGES.map((stage): LaneReading => {
-    const inLane = orders.filter((o) => o.stage === stage);
+    const inLane = on.filter((o) => o.stage === stage);
     return {
       stage,
       name: STAGE[stage].name,
@@ -480,19 +511,19 @@ export function readTracking(
     };
   });
 
-  const delivered = orders.filter((o) => o.stage === 'completed');
+  const delivered = on.filter((o) => o.stage === 'completed');
 
   return {
     lanes,
     trip,
     totals: {
-      live: orders.length,
+      live: on.length,
       // The cash to buy in IS what the buyer carries today. One figure, read
       // by the dock tile and by the trip line under it — they sat beside each
       // other in the frame saying 2,180,000 twice, and two sources for one
       // number beside itself is how they start disagreeing.
       cashToBuyIn: trip.carry,
-      pastStageLimit: orders.filter((o) => ageTone(o, now) === 'past').length,
+      pastStageLimit: on.filter((o) => ageTone(o, now) === 'past').length,
       toInvoice: delivered.filter((o) => o.invoice === null).length,
       invoiced: delivered.filter((o) => o.invoice !== null).length,
       delivered: delivered.length,
@@ -519,12 +550,181 @@ export interface Ask {
   readonly age: string;
   readonly hours: number;
   readonly tone: AgeTone;
-  /** Why it is in the queue, in the owner's own words. */
+  /** Which rule put it here. The screen groups and tests assert on this. */
+  readonly reason: AskRule;
+  /** Why it is in the queue, said the way the shop would say it. */
   readonly why: string;
-  /** The control's label — says what will happen, never `Submit`. */
-  readonly act: string;
-  readonly instead: string;
+  /** The one control. Says what will happen, never `Submit`. */
+  readonly act: AskAct;
+  /** A second door, only where one honestly exists. */
+  readonly instead: AskAct | null;
 }
+
+/**
+ * What an ask's control does.
+ *
+ * `door` is the screen it opens. `null` means the act is the card's own
+ * control on this board — the queue points at the card rather than growing
+ * a second way to do the same thing. A label with nowhere to go and nothing
+ * to press is not in this type at all, which is the point: the queue used to
+ * carry `instead` strings like `Hold` whose button only served the next ask,
+ * and a button that does nothing teaches that the board does nothing.
+ */
+export interface AskAct {
+  readonly label: string;
+  readonly door: string | null;
+}
+
+/**
+ * The six things that put an order in front of the owner.
+ *
+ * Each one is a decision nobody else in the shop can make, and each is read
+ * off the order itself. There is no seventh for "it is taking a while":
+ * being slow is what the card's coral age says, and a queue that repeats it
+ * is a second reckoning of the board.
+ */
+export type AskRule =
+  | 'supplier-silent'
+  | 'nothing-in'
+  | 'lane-cannot-unlock'
+  | 'short-pick'
+  | 'nobody-moved-it'
+  | 'not-invoiced';
+
+/** `Shafik Katwe and Roto Industry`. Two names, not `2 suppliers`. */
+const namesOf = (list: readonly string[]): string =>
+  list.length <= 1
+    ? (list[0] ?? '')
+    : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1] ?? ''}`;
+
+/** The one rule this order trips, or null. At most one — they are exclusive. */
+function askFor(order: TrackedOrder, now: Date): Pick<Ask, 'reason' | 'why' | 'act' | 'instead'> | null {
+  // Nothing enters the queue until the board itself says it is late. An
+  // order three hours into Buying does not want the owner; it wants the
+  // morning.
+  //
+  // This gate applies to invoicing too, and that was not the first draft.
+  // Without it every handover of the day joined the queue the moment it
+  // landed: on the example books, seventeen copies of one sentence in front
+  // of the five decisions that were actually decisions. Billing the day's
+  // deliveries is a job for the end of the day, and the Delivered lane's own
+  // `Invoice` door already does it. What the queue is for is the handover
+  // that was missed — past a day, still unbilled, still off nobody's books.
+  if (ageTone(order, now) !== 'past') return null;
+
+  if (order.stage === 'completed') {
+    return order.invoice !== null
+      ? null
+      : {
+          reason: 'not-invoiced',
+          why: 'Handed over more than a day ago and still not invoiced — the stock is on the shelf and the customer owes nothing for it.',
+          act: { label: 'Invoice it', door: null },
+          instead: null,
+        };
+  }
+
+  const move = moveFor(order);
+
+  switch (order.stage) {
+    case 'draft': {
+      const silent = unanswered(order);
+      if (silent.length === 0) break;
+      return {
+        reason: 'supplier-silent',
+        why: `${namesOf(silent.map((s) => s.name))} ${
+          silent.length === 1 ? 'has' : 'have'
+        } not answered. Chase them or buy elsewhere.`,
+        act: { label: 'Chase them', door: 'messages' },
+        instead: { label: 'Other suppliers', door: 'suppliers' },
+      };
+    }
+    case 'awaiting_goods': {
+      if (move.control !== 'lock') break;
+      // A lane whose rule is "unlocks on the last line in" holds an order
+      // with no lines to buy for ever. Nothing but a person gets it out.
+      if (order.toBuy === 0) {
+        return {
+          reason: 'lane-cannot-unlock',
+          why: 'Nothing on this order is bought in, so Buying has nothing to unlock it. It has to be moved on by hand.',
+          act: { label: 'Move it on', door: null },
+          instead: null,
+        };
+      }
+      return {
+        reason: 'nothing-in',
+        why: `${order.checkedIn} of ${order.toBuy} bought-in ${
+          order.toBuy === 1 ? 'line is' : 'lines are'
+        } in. Put the rest on a buying list or nobody buys them.`,
+        act: { label: 'Buying list', door: 'sourcing' },
+        instead: null,
+      };
+    }
+    case 'preparing': {
+      const short = order.shortPick;
+      if (short === null || short.settled) break;
+      return {
+        reason: 'short-pick',
+        why: `The pick found ${short.found} of ${short.asked}. Amend the order or confirm the full quantity out — until one of those, it cannot be loaded.`,
+        act: { label: 'Settle the pick', door: null },
+        instead: null,
+      };
+    }
+    case 'pending_delivery':
+      break;
+  }
+
+  // It can move, it is late, and nobody has moved it. The shortest ask on
+  // the board and the one most often true.
+  if (move.control === 'chevron') {
+    return {
+      reason: 'nobody-moved-it',
+      why: 'Everything it was waiting for is done and it has not moved.',
+      act: { label: 'Move it on', door: null },
+      instead: null,
+    };
+  }
+
+  // Loading is a warehouse job, not a decision, so a van is never an ask.
+  return null;
+}
+
+/**
+ * The queue, read off the board it points at.
+ *
+ * It takes the whole `BoardTracking` rather than an array of orders so that
+ * it cannot see a card the board has dropped. That is not caution: the
+ * board's population and its queue sat in two different files reading two
+ * different arrays, and the head of this screen printed `54 live · 20 need
+ * you` where the twenty came from neither the fifty-four nor anything else.
+ *
+ * Longest waiting first, and at most one ask per order — a card that is both
+ * late and unbilled is one decision, not two.
+ */
+export function asksFor(board: BoardTracking, now: Date): readonly Ask[] {
+  const asks: Ask[] = [];
+
+  for (const lane of board.lanes) {
+    for (const order of lane.orders) {
+      const rule = askFor(order, now);
+      if (rule === null) continue;
+      asks.push({
+        reference: order.reference,
+        customer: order.customer,
+        place: order.place,
+        value: order.value,
+        age: ageLabel(order, now),
+        hours: hoursWaiting(order, now) ?? 0,
+        tone: ageTone(order, now),
+        ...rule,
+      });
+    }
+  }
+
+  return asks.sort(byLongestWaiting);
+}
+
+/** What to say when nothing wants the owner. The queue's own empty state. */
+export const QUEUE_EMPTY = 'Nothing on the board is waiting on you.';
 
 /** The queue, longest waiting first. */
 export const byLongestWaiting = (a: Ask, b: Ask): number => b.hours - a.hours;

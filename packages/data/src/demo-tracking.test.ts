@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Money,
   ageTone,
+  asksFor,
   dockBasis,
   handedOverAt,
   laneWindow,
@@ -22,7 +23,7 @@ import {
   readTracking,
   steps,
 } from '@ow/domain';
-import { DEMO_BOARD_NOW, demoAsks, demoTrackedOrders, demoTrip } from './demo-tracking.js';
+import { DEMO_BOARD_NOW, demoTrackedOrders, demoTrip } from './demo-tracking.js';
 
 const NOW = DEMO_BOARD_NOW;
 const board = readTracking(demoTrackedOrders(), demoTrip(), NOW);
@@ -74,17 +75,39 @@ describe('the dock', () => {
     expect(board.totals.pastStageLimit).toBe(coral.length);
   });
 
-  it('gives the queue twenty decisions, longest waiting first', () => {
-    const asks = demoAsks();
-    expect(asks).toHaveLength(20);
+  /**
+   * The queue used to be twenty hand-written sentences in this file, and the
+   * head of the board printed `54 live · 20 need you` about two arrays that
+   * had never been compared. It is derived now, off the board it points at.
+   */
+  it('serves a queue read off the board, longest waiting first', () => {
+    const asks = asksFor(board, NOW);
     expect(asks.map((a) => a.hours)).toEqual([...asks.map((a) => a.hours)].sort((a, b) => b - a));
-    expect(asks[0]?.reference).toBe('#341');
+    // The six coral cards, less the ones whose next move is somebody else's
+    // job. Nothing else on this board is waiting on the owner, and the
+    // queue saying so is the point of it.
+    expect(asks.map((a) => a.reference)).toEqual([
+      '#341',
+      '#360',
+      '#344',
+      '#357',
+      '#348',
+      '#350',
+    ]);
+    expect(asks.map((a) => a.reason)).toEqual([
+      'supplier-silent',
+      'nothing-in',
+      'nothing-in',
+      'nobody-moved-it',
+      'supplier-silent',
+      'nothing-in',
+    ]);
     expect(asks[0]?.age).toBe('21h 08m');
   });
 
   it('points at cards that are on the board, never at a second copy of one', () => {
-    const onBoard = new Set(demoTrackedOrders().map((o) => o.reference));
-    for (const ask of demoAsks()) expect(onBoard.has(ask.reference)).toBe(true);
+    const onBoard = new Set(board.lanes.flatMap((l) => l.orders).map((o) => o.reference));
+    for (const ask of asksFor(board, NOW)) expect(onBoard.has(ask.reference)).toBe(true);
   });
 });
 

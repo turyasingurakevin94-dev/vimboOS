@@ -37,12 +37,14 @@
  *    it. The design system allows one such row per screen.
  */
 
-import { useMemo, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import {
   LEGEND,
   Money,
+  QUEUE_EMPTY,
   ageLabel,
   ageTone,
+  asksFor,
   dockBasis,
   hoursWaiting,
   invoiced,
@@ -62,11 +64,11 @@ import {
   steppedBack,
   supplierAnswered,
   unanswered,
+  type AskAct,
   type Control,
   type LaneReading,
   type TrackedOrder,
 } from '@ow/domain';
-import { demoAsks } from '@ow/data';
 import { useBoard } from '../../app/useBoard.js';
 import s from './OrderTracking.module.css';
 import { MoveOrder, type Ask as MoveAsk } from './MoveOrder.js';
@@ -188,7 +190,6 @@ function Board({
 }): ReactElement {
   const now = read.today;
   const trip = read.data.trip;
-  const asks = useMemo(demoAsks, []);
   /**
    * The board's controls move a card in memory and nothing else.
    *
@@ -220,8 +221,23 @@ function Board({
 
   const board = readTracking(orders, trip, now);
   const basis = dockBasis(board);
-  const current = asks[served % asks.length];
-  const peek = [asks[(served + 1) % asks.length], asks[(served + 2) % asks.length]];
+  /**
+   * The queue, off the board it points at.
+   *
+   * Not memoised on `orders`: `board` is the thing the lanes and the dock
+   * draw, and reading the queue from anything else is how the head of this
+   * screen came to say `54 live · 20 need you` about two different arrays.
+   * Deriving it here also means a move made on this screen leaves the queue
+   * on the next render — the card moved, so the decision is made.
+   */
+  const asks = asksFor(board, now);
+  const at = asks.length === 0 ? 0 : served % asks.length;
+  const current = asks[at];
+  // Behind it, and only behind it. The peek used to wrap, so a queue of two
+  // listed the card being served as the one waiting after itself.
+  const peek = asks.slice(at + 1, at + 3);
+  const nextAsk = (step: number): void =>
+    setServed(() => (asks.length === 0 ? 0 : (at + step + asks.length) % asks.length));
 
   const change = (reference: string, how: (o: TrackedOrder) => TrackedOrder): void => {
     if (!canMove) return;
@@ -244,6 +260,26 @@ function Board({
     // say so only in its `title` — a hover, which is nothing on a phone and
     // a guess on a console. It opens and says what is owed.
     else setAsk({ at: 'owed', reference: order.reference });
+  };
+
+  /**
+   * An ask's control.
+   *
+   * A door opens the screen where the decision is actually made. No door
+   * means the decision IS the card's own control, so the queue presses that
+   * one — it does not grow a second way to do the same thing, and it does
+   * not print a copy of the card to press it on.
+   */
+  const act = (what: AskAct | null): void => {
+    if (what === null) return;
+    if (what.door !== null) {
+      onGo(what.door);
+      return;
+    }
+    const order = orders.find((o) => o.reference === current?.reference);
+    if (order === undefined) return;
+    setActing(order.reference);
+    press(order);
   };
 
   /**
@@ -408,31 +444,31 @@ function Board({
       <section className={s.queue} aria-label="Waiting on you">
         <div className={s.queueHead}>
           <span className={s.queueName}>Needs you</span>
-          <span className={s.queueCount}>{asks.length}</span>
+          {asks.length > 0 && <span className={s.queueCount}>{asks.length}</span>}
           <span className={s.queueNote}>
-            A queue, longest waiting first. One at a time; the rest wait their turn.
+            {asks.length === 0
+              ? QUEUE_EMPTY
+              : 'A queue, longest waiting first. One at a time; the rest wait their turn.'}
           </span>
-          <div className={s.queueNav}>
-            <span className={s.queuePos}>
-              {(served % asks.length) + 1} of {asks.length}
-            </span>
-            <button
-              type="button"
-              className={s.queuePrev}
-              aria-label="The one before"
-              onClick={() => setServed((i) => (i + asks.length - 1) % asks.length)}
-            >
-              <Icon name="step-back" size={14} />
-            </button>
-            <button
-              type="button"
-              className={s.queueNext}
-              onClick={() => setServed((i) => (i + 1) % asks.length)}
-            >
-              Next
-              <Icon name="move-on" size={14} />
-            </button>
-          </div>
+          {asks.length > 1 && (
+            <div className={s.queueNav}>
+              <span className={s.queuePos}>
+                {at + 1} of {asks.length}
+              </span>
+              <button
+                type="button"
+                className={s.queuePrev}
+                aria-label="The one before"
+                onClick={() => nextAsk(-1)}
+              >
+                <Icon name="step-back" size={14} />
+              </button>
+              <button type="button" className={s.queueNext} onClick={() => nextAsk(1)}>
+                Next
+                <Icon name="move-on" size={14} />
+              </button>
+            </div>
+          )}
         </div>
 
         {current !== undefined && (
@@ -442,7 +478,9 @@ function Board({
                 <div className={s.askTop}>
                   <span className={s.askClient}>{current.customer}</span>
                   <span className={s.askMeta}>
-                    {current.reference} · {current.place} · {current.age}
+                    {current.reference}
+                    {current.place === '' ? '' : ` \u00b7 ${current.place}`}
+                    {` \u00b7 ${current.age}`}
                   </span>
                 </div>
                 <p className={s.askWhy}>{current.why}</p>
@@ -452,48 +490,57 @@ function Board({
                   {match(current.value, {
                     known: (m) => Money.format(m),
                     partial: (m) => Money.format(m),
-                    unavailable: () => '—',
+                    unavailable: () => '\u2014',
                   })}
                 </span>
                 <div className={s.askActs}>
-                  <button
-                    type="button"
-                    className={s.askSecondary}
-                    onClick={() => onGo('messages')}
-                  >
-                    {current.instead}
-                  </button>
+                  {current.instead !== null && (
+                    <button
+                      type="button"
+                      className={s.askSecondary}
+                      onClick={() => act(current.instead)}
+                    >
+                      {current.instead.label}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className={s.askPrimary}
-                    onClick={() => setServed((i) => (i + 1) % asks.length)}
+                    // An act with no door is the card's own control, and on
+                    // the shop's own books that control does not write yet.
+                    // The head of the page says why once; the button here
+                    // simply does not pretend.
+                    disabled={current.act.door === null && !canMove}
+                    onClick={() => act(current.act)}
                   >
-                    {current.act}
+                    {current.act.label}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className={s.peek}>
-              <span className={s.peekLabel}>Behind it</span>
-              {peek.map((next, i) =>
-                next === undefined ? null : (
+            {peek.length > 0 && (
+              <div className={s.peek}>
+                <span className={s.peekLabel}>Behind it</span>
+                {peek.map((next, i) => (
                   <button
                     type="button"
                     className={s.peekRow}
                     key={next.reference}
-                    onClick={() => setServed((at) => (at + i + 1) % asks.length)}
+                    onClick={() => nextAsk(i + 1)}
                   >
                     <span className={s.peekClient}>{next.customer}</span>
                     <span className={s.peekRef}>{next.reference}</span>
                     <span className={`${s.peekAge} ${AGE[next.tone]}`}>{next.age}</span>
                   </button>
-                ),
-              )}
-              <span className={s.peekFoot}>
-                +{Math.max(0, asks.length - 3)} more behind · open the Waiting-on-you list
-              </span>
-            </div>
+                ))}
+                {asks.length - 1 - peek.length > 0 && (
+                  <span className={s.peekFoot}>
+                    +{asks.length - 1 - peek.length} more behind this one
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
       </section>
