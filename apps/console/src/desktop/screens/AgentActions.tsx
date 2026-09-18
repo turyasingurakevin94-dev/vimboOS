@@ -40,6 +40,7 @@ import {
   owes,
   dayAndMonth,
   everythingOwed,
+  bonusFrom,
   match,
   monthLabel,
   settlementReads,
@@ -286,7 +287,7 @@ function PayCommission({
   readonly onClose: () => void;
 }): ReactElement {
   const bonus = commission(agent, span);
-  const [from, setFrom] = useState(agent.bonusFrom);
+  const [from, setFrom] = useState(bonusFrom(agent) ?? '');
   const claimable = match(bonus.claimable, {
     known: (amount) => amount,
     partial: (amount) => amount,
@@ -362,7 +363,7 @@ function PayCommission({
               aria-label="Claiming from"
               onChange={(e) => setFrom(e.target.value)}
             >
-              {[...new Set([agent.bonusFrom, ...demoBonusSuppliers])].map((name) => (
+              {[...new Set([bonusFrom(agent), ...demoBonusSuppliers].filter((n) => n !== null))].map((name) => (
                 <option key={name}>{name}</option>
               ))}
             </select>

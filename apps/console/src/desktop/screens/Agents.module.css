@@ -801,6 +801,27 @@
   text-wrap: pretty;
 }
 
+/* The empty state can have two things to say: what is here, and what these
+   books cannot hold even once something is. */
+.emptyStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-14);
+}
+
+.emptyList {
+  margin: 0;
+  padding-left: var(--ow-space-18);
+  max-width: var(--ow-measure);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-3);
+}
+
+.emptyList li + li {
+  margin-top: var(--ow-space-4);
+}
+
 /* ------------------------- the desktop, on a laptop ------------------------ */
 
 /**

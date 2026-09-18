@@ -31,7 +31,7 @@
  * about the same shilling, which is what a second screen could not promise.
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactElement, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode, type RefObject } from 'react';
 import {
   Money,
   agentMark,
@@ -42,6 +42,7 @@ import {
   behind,
   clusterReads,
   commission,
+  counterFor,
   cycle,
   groups,
   initials,
@@ -60,10 +61,11 @@ import {
   waitingReads,
   waterfall,
   type Agent,
+  type Counter,
   type Period,
   type Span,
 } from '@ow/domain';
-import { DEMO_TODAY, demoAgents, demoCounter } from '@ow/data';
+import { useAgents } from '../../app/useAgents.js';
 import s from './Agents.module.css';
 import { Icon } from '../icons.js';
 import { AgentAction, type Action } from './AgentActions.js';
@@ -108,13 +110,108 @@ export interface AgentsProps {
   readonly bonusAsk?: number;
 }
 
-export function Agents({
+export function Agents(props: AgentsProps): ReactElement {
+  const read = useAgents();
+  if (read.at === 'loading') return <Waiting />;
+  if (read.at === 'failed') return <Refused why={read.why} />;
+  return <Desk {...props} read={read} />;
+}
+
+/**
+ * Reading, not an empty round.
+ *
+ * An empty agent list and a refused one look identical from PostgREST, and
+ * only one of them means nobody is selling for you.
+ */
+function Waiting(): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div className={s.titles}>
+          <h1 className={s.title}>Agents</h1>
+          <p className={s.sub}>Reading the round\u2026</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+function Refused({ why }: { readonly why: string }): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div className={s.titles}>
+          <h1 className={s.title}>Agents</h1>
+          <p className={s.sub}>The agents could not be read. {why}</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+/**
+ * The screen with nothing on it — and what these books could not hold even
+ * if there were.
+ *
+ * The second list is the point. The frames draw a cluster, a bonus per
+ * order and a supplier's payout, and the shop's own books record none of
+ * the three. Left to the figures, that reads as a scheme paying nothing;
+ * said in words, it reads as the thing somebody has to go and record.
+ */
+function Nothing({
+  sub,
+  note,
+  missing,
+  children,
+}: {
+  readonly sub: string;
+  /** Said once, where the screen describes itself. Null where it does not apply. */
+  readonly note: string | null;
+  readonly missing: readonly string[];
+  readonly children: ReactNode;
+}): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div className={s.titles}>
+          <h1 className={s.title}>Agents</h1>
+          <p className={s.sub}>
+            {sub}
+            {note === null ? '' : ` \u00b7 ${note}`}
+          </p>
+        </div>
+      </header>
+      <div className={s.empty}>
+        <div className={s.emptyStack}>
+          <p className={s.emptyWords}>{children}</p>
+          {missing.length > 0 && (
+            <>
+              <p className={s.emptyWords}>
+                Some of this screen has nowhere to read from. Your books do not record:
+              </p>
+              <ul className={s.emptyList}>
+                {missing.map((what) => (
+                  <li key={what}>{what}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Desk({
   inviting = false,
   onInviteClose,
   bonusAsk = 0,
-}: AgentsProps): ReactElement {
-  const all = useMemo(() => demoAgents(), []);
-  const counter = useMemo(() => demoCounter(), []);
+  read,
+}: AgentsProps & {
+  readonly read: Extract<ReturnType<typeof useAgents>, { at: 'ready' }>;
+}): ReactElement {
+  const all = read.data.agents;
+  const today = read.today;
   const [period, setPeriod] = useState<Period>('month');
   const [pickedId, setPickedId] = useState<string | null>(all[0]?.id ?? null);
   const [action, setAction] = useState<Action | null>(null);
@@ -125,33 +222,76 @@ export function Agents({
     if (bonusAsk > 0) bonusBlock.current?.scrollIntoView({ block: 'nearest' });
   }, [bonusAsk]);
 
-  const span = useMemo(() => spanFor(period, DEMO_TODAY), [period]);
+  const span = useMemo(() => spanFor(period, today), [period, today]);
+  /**
+   * The counter, for the span being looked at.
+   *
+   * Read here and handed down, never fetched again inside the panel. It was
+   * a constant a month wide, and the `Year` lens put it beside a year of
+   * agent orders — a share wrong by a factor of nine, from two readings of
+   * one figure.
+   */
+  const counter = useMemo(() => counterFor(read.data.sales, span), [read.data.sales, span]);
   const strip = useMemo(() => position(all, span, counter), [all, span, counter]);
   const bands = useMemo(() => groups(all, span), [all, span]);
   const picked = all.find((a) => a.id === pickedId) ?? null;
 
-  const open = inviting ? ({ at: 'invite' } as const) : action;
+  /**
+   * Nothing on this screen writes yet.
+   *
+   * Same ruling as the order board, for the same reason: inviting an agent,
+   * settling a cycle, holding him and paying a commission all end in a row
+   * somebody would look for tomorrow. A dialog that takes those details and
+   * drops them is worse than a control that does not respond, so on the
+   * shop's own books none of them open, and the sub-line says so once
+   * instead of every control saying it.
+   */
+  const canAct = !read.live;
+  const open = !canAct ? null : inviting ? ({ at: 'invite' } as const) : action;
   const close = (): void => {
     setAction(null);
     onInviteClose?.();
   };
 
+  // The shell holds the flag for its own button, so a press it will not act
+  // on still has to be given back — otherwise the button stays down.
+  useEffect(() => {
+    if (!canAct && inviting) onInviteClose?.();
+  }, [canAct, inviting, onInviteClose]);
+
+  const note = canAct ? null : 'reading only \u2014 nothing here is written back yet';
+
   if (all.length === 0) {
     return (
-      <div className={s.page}>
-        <header className={s.head}>
-          <div className={s.titles}>
-            <h1 className={s.title}>Agents</h1>
-            <p className={s.sub}>Nobody is selling for you yet.</p>
-          </div>
-        </header>
-        <div className={s.empty}>
-          <p className={s.emptyWords}>
-            An agent buys the goods from the shop and sells them on his own round. Invite one and
-            what he sells, keeps and owes will be here.
-          </p>
-        </div>
-      </div>
+      <Nothing sub="Nobody is selling for you yet." note={note} missing={read.data.notRecorded}>
+        An agent buys the goods from the shop and sells them on his own round. Invite one and what
+        he sells, keeps and owes will be here.
+      </Nothing>
+    );
+  }
+
+  /**
+   * Agents on the books, and not one order taken through them.
+   *
+   * Drawn rather than letting the strip read four zeros and the rows read
+   * `—` fourteen times, because those are two different sentences. A zero
+   * means he sold nothing this month; this means the channel has never been
+   * used, and the one thing the owner can do about it is not on this screen.
+   */
+  if (!all.some((a) => a.orders.length > 0)) {
+    return (
+      <Nothing
+        sub={`${all.length} ${all.length === 1 ? 'agent' : 'agents'}, and nothing sold yet.`}
+        note={note}
+        missing={read.data.notRecorded}
+      >
+        {all.map((a) => a.name).join(' and ')}{' '}
+        {all.length === 1 ? 'is on the books' : 'are on the books'}, and no order has been put in{' '}
+        {all.length === 1 ? 'his' : 'their'} name. An order is attributed to an agent when it is
+        raised, so what{' '}
+        {all.length === 1 ? 'he sells, keeps and owes' : 'they sell, keep and owe'} will be here
+        from the first one.
+      </Nothing>
     );
   }
 
@@ -162,6 +302,7 @@ export function Agents({
           <h1 className={s.title}>Agents</h1>
           <p className={s.sub}>
             {all.length} active · what they sold, what you kept, what they owe you
+            {note === null ? '' : ` \u00b7 ${note}`}
           </p>
         </div>
 
@@ -203,7 +344,13 @@ export function Agents({
               partial: (pct) => `${pct}% so far`,
               unavailable: () => 'no margin to read',
             })}{' '}
-            · shop counter runs {counter.keptPercent}%
+            {match(counter.keptPercent, {
+              known: (pct) => ` \u00b7 shop counter runs ${pct}%`,
+              partial: (pct) => ` \u00b7 shop counter runs ${pct}% so far`,
+              // Nothing sold at the counter, so there is nothing to run
+              // against. The line stops rather than printing 0%.
+              unavailable: () => '',
+            })}
           </div>
         </div>
 
@@ -293,6 +440,8 @@ export function Agents({
         {picked !== null && (
           <aside className={s.panel} aria-label={picked.name}>
             <Panel
+              counter={counter}
+              today={today}
               agent={picked}
               span={span}
               bonusRef={bonusBlock}
@@ -309,7 +458,7 @@ export function Agents({
           action={open}
           agents={all}
           span={span}
-          today={DEMO_TODAY}
+          today={today}
           onClose={close}
         />
       )}
@@ -402,6 +551,8 @@ function Panel({
   onSettle,
   onHold,
   onPay,
+  counter,
+  today,
 }: {
   readonly agent: Agent;
   readonly span: Span;
@@ -409,12 +560,14 @@ function Panel({
   readonly onSettle: () => void;
   readonly onHold: () => void;
   readonly onPay: () => void;
+  /** Handed down, never read again here: one counter per screen, per span. */
+  readonly counter: Counter;
+  readonly today: Date;
 }): ReactElement {
   const wf = waterfall(agent, span);
   const owed = owes(agent);
   const bonus = commission(agent, span);
-  const series = monthlySeries(agent, DEMO_TODAY);
-  const counter = demoCounter();
+  const series = monthlySeries(agent, today);
 
   return (
     <>
@@ -506,7 +659,13 @@ function Panel({
               ),
             })}
           </div>
-          <p className={s.reading}>{clusterReads(agent)}</p>
+          <p className={s.reading}>{match(clusterReads(agent), {
+            known: (line) => line,
+            partial: (line) => line,
+            // The books record no cluster at all, so the rule has no figure
+            // to introduce. It says which, rather than reading `0 of 0`.
+            unavailable: (why) => `Nothing here yet — ${why}.`,
+          })}</p>
           <div className={s.three}>
             <div className={s.cell}>
               <div className={s.cellLabel}>Shown as earned</div>

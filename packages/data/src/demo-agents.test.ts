@@ -53,7 +53,7 @@ describe('the strip, frame 1a', () => {
     expect(fig(strip.kept)).toBe('2,310,000');
     expect(strip.keptPercent.status).toBe('known');
     expect(strip.keptPercent.status === 'known' ? strip.keptPercent.value : 0).toBe(12.5);
-    expect(counter.keptPercent).toBe(24);
+    expect(counter.keptPercent.status === 'known' ? counter.keptPercent.value : 0).toBe(24);
   });
 
   it('earned 1,860,000 of supplier commission', () => {

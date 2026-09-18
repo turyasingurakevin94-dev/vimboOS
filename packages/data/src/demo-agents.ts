@@ -28,11 +28,15 @@
 
 import {
   Money,
+  counterFor,
+  known,
+  spanFor,
   type Agent,
   type AgentOrder,
   type Counter,
   type LineShare,
   type Payout,
+  type Sale,
 } from '@ow/domain';
 import { DEMO_TODAY } from './demo-invoices.js';
 
@@ -240,10 +244,10 @@ const wasswa: Agent = {
   terms: 'credit',
   ceiling: m(2_000_000),
   onHold: false,
-  items: 21,
-  clusterItems: 14,
-  clusterAddedThisWeek: 3,
-  bonusFrom: 'Hima Cement',
+  cluster: known(
+    { items: 21, clusterItems: 14, addedThisWeek: 3, from: 'Hima Cement' },
+    'his cluster, as the supplier set it',
+  ),
   payouts: [payout(0, 148_000), payout(1, 147_000)],
   lines: [
     line('Cement 50kg', 'cement', 58, 11),
@@ -271,10 +275,10 @@ const joan: Agent = {
   terms: 'credit',
   ceiling: m(1_200_000),
   onHold: false,
-  items: 12,
-  clusterItems: 7,
-  clusterAddedThisWeek: 0,
-  bonusFrom: 'Hima Cement',
+  cluster: known(
+    { items: 12, clusterItems: 7, addedThisWeek: 0, from: 'Hima Cement' },
+    'his cluster, as the supplier set it',
+  ),
   payouts: [payout(0, 249_000), payout(1, 204_000)],
   lines: [
     line('Cement 50kg', 'cement', 61, 10),
@@ -300,10 +304,10 @@ const derrick: Agent = {
   terms: 'prepay',
   ceiling: null,
   onHold: false,
-  items: 26,
-  clusterItems: 19,
-  clusterAddedThisWeek: 1,
-  bonusFrom: 'Roofings Group',
+  cluster: known(
+    { items: 26, clusterItems: 19, addedThisWeek: 1, from: 'Roofings Group' },
+    'his cluster, as the supplier set it',
+  ),
   payouts: [payout(0, 820_000), payout(1, 690_000)],
   lines: [
     line('Iron sheets G28', 'iron sheets', 44, 21),
@@ -327,10 +331,10 @@ const annet: Agent = {
   terms: 'prepay',
   ceiling: null,
   onHold: false,
-  items: 15,
-  clusterItems: 9,
-  clusterAddedThisWeek: 0,
-  bonusFrom: 'Hima Cement',
+  cluster: known(
+    { items: 15, clusterItems: 9, addedThisWeek: 0, from: 'Hima Cement' },
+    'his cluster, as the supplier set it',
+  ),
   payouts: [payout(0, 367_000), payout(1, 301_000)],
   lines: [
     line('Cement 50kg', 'cement', 52, 10),
@@ -361,10 +365,10 @@ const moses: Agent = {
   terms: 'prepay',
   ceiling: null,
   onHold: false,
-  items: 9,
-  clusterItems: 5,
-  clusterAddedThisWeek: 0,
-  bonusFrom: 'Hima Cement',
+  cluster: known(
+    { items: 9, clusterItems: 5, addedThisWeek: 0, from: 'Hima Cement' },
+    'his cluster, as the supplier set it',
+  ),
   payouts: [payout(0, 159_000), payout(1, 142_000)],
   lines: [
     line('Cement 50kg', 'cement', 66, 11),
@@ -419,10 +423,10 @@ const small: readonly Agent[] = SMALL_NAMES.map((name, n) => {
     terms: n % 3 === 0 ? 'credit' : 'prepay',
     ceiling: n % 3 === 0 ? m(400_000) : null,
     onHold: false,
-    items: 6,
-    clusterItems: 2,
-    clusterAddedThisWeek: 0,
-    bonusFrom: 'Hima Cement',
+    cluster: known(
+      { items: 6, clusterItems: 2, addedThisWeek: 0, from: 'Hima Cement' },
+      'his cluster, as the supplier set it',
+    ),
     payouts: [],
     lines: [line('Cement 50kg', 'cement', 74, 9), line('Roofing nails', 'nails', 26, 19)],
     orders: SMALL_MONTHS.flatMap((month) => {
@@ -458,11 +462,36 @@ export const demoAgents = (): readonly Agent[] => [wasswa, joan, derrick, annet,
  * What the shop sold altogether, so the channel can state its share.
  *
  * 18,420,000 of 59,420,000 is the 31% the strip claims, and the counter's
- * own 24% is the figure the agent margin is read against — both live here
- * rather than in the screen, because they are the shop's numbers and the
- * screen only reads them.
+ * own 24% is the figure the agent margin is read against.
+ *
+ * It is generated from the rows, like everything else in this file. It was
+ * a pair of literals, and the screen read them once and used them under
+ * every lens — so `Year` showed a month's counter beside a year of agent
+ * orders, and the share was wrong by a factor of nine. `counterFor` works
+ * both figures out of the span it is given.
  */
-export const demoCounter = (): Counter => ({ sold: m(59_420_000), keptPercent: 24 });
+export const demoSales = (): readonly Sale[] => {
+  const throughAgents = demoAgents().flatMap((agent) =>
+    agent.orders
+      .filter((o) => !o.voided)
+      .map((o) => ({ on: o.taken, billed: o.shopPrice, cost: o.cost, throughAgent: true })),
+  );
+
+  // The counter's own month, at the margin the shop runs: 41,000,000 billed
+  // against 31,160,000 of goods is exactly 24%, and beside September's agent
+  // orders it makes the 59,420,000 the strip is drawn against.
+  const own = Array.from({ length: 13 }, (_, back) => ({
+    on: on(back, 15),
+    billed: m(41_000_000),
+    cost: m(31_160_000),
+    throughAgent: false,
+  }));
+
+  return [...throughAgents, ...own];
+};
+
+/** The counter as it stands in the month the console is standing in. */
+export const demoCounter = (): Counter => counterFor(demoSales(), spanFor('month', DEMO_TODAY));
 
 /** The cash accounts a settlement can be taken into. */
 export const demoSettlementAccounts: readonly string[] = [

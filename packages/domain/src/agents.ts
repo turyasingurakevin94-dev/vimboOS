@@ -36,7 +36,7 @@
  * month-by-month table is gone and its three figures are on the panel.
  */
 
-import { known, match, unavailable, type Derived } from './derived.js';
+import { known, match, partial, unavailable, type Derived } from './derived.js';
 import { inWords, monthLabel } from './customers.js';
 import * as Money from './money.js';
 import type { Money as Amount } from './money.js';
@@ -156,23 +156,86 @@ export interface Agent {
   /** Whether new orders in his name are refused at the counter. */
   readonly onHold: boolean;
   readonly orders: readonly AgentOrder[];
-  /** How many items he sells, and how many of them are in his cluster. */
-  readonly items: number;
-  readonly clusterItems: number;
-  /** Cluster items added inside {@link CLUSTER_WAIT_DAYS} — they earn nothing yet. */
-  readonly clusterAddedThisWeek: number;
-  /** Which supplier funds his cluster's bonus. */
-  readonly bonusFrom: string;
+  /**
+   * The supplier's bonus scheme, where anything records one.
+   *
+   * `Derived` because the shop's own books do not record it at all — there
+   * is no cluster, no membership and no funding supplier anywhere in
+   * `agents` or in a quote's payload. Held as four plain numbers, an agent
+   * off those books reads `On 0 of 0 items` and names no supplier, which is
+   * a sentence about a bonus scheme invented out of nothing.
+   */
+  readonly cluster: Derived<Cluster>;
   readonly payouts: readonly Payout[];
   readonly lines: readonly LineShare[];
+}
+
+/** An agent's cluster: which of the things he sells earn the bonus, and whose. */
+export interface Cluster {
+  /** How many items he sells. */
+  readonly items: number;
+  /** How many of them are in the cluster. */
+  readonly clusterItems: number;
+  /** Cluster items added inside {@link CLUSTER_WAIT_DAYS} — they earn nothing yet. */
+  readonly addedThisWeek: number;
+  /** Which supplier funds the bonus. */
+  readonly from: string;
 }
 
 /** What the rest of the shop sold, so the agent channel can state its share. */
 export interface Counter {
   /** Everything the shop sold in the span, agents included. */
   readonly sold: Amount;
-  /** What the counter itself keeps, as a percentage. */
-  readonly keptPercent: number;
+  /**
+   * What the counter itself keeps, as a percentage.
+   *
+   * `Derived` because a month the shop sold nothing in has no margin, and a
+   * screen that reads it as 0% says the counter gave its goods away. The
+   * agent's own margin is read against this figure, so a wrong zero here is
+   * a wrong sentence about every agent on the page.
+   */
+  readonly keptPercent: Derived<number>;
+}
+
+/** One sale the shop made, as the channel's share is worked out from it. */
+export interface Sale {
+  readonly on: Date;
+  /** What the client was charged. */
+  readonly billed: Amount;
+  /** What those goods cost the shop. */
+  readonly cost: Amount;
+  /** Whether it was taken through an agent. */
+  readonly throughAgent: boolean;
+}
+
+/**
+ * The counter, for the span being looked at.
+ *
+ * `sold` is everything, agents included, because the channel's share is a
+ * share of the whole shop. `keptPercent` is the counter's OWN margin, with
+ * the agent orders taken out — the sentence it appears in is "the shop keeps
+ * 12.5% here, against the counter's 24%", and a counter figure that included
+ * the agents would be comparing the agents with themselves.
+ */
+export function counterFor(sales: readonly Sale[], span: Span): Counter {
+  const inside = sales.filter((s) => s.on >= span.from && s.on < span.to);
+  const sold = Money.add(...inside.map((s) => s.billed));
+
+  const own = inside.filter((s) => !s.throughAgent);
+  const billed = Money.add(...own.map((s) => s.billed));
+  const cost = Money.add(...own.map((s) => s.cost));
+
+  return {
+    sold,
+    keptPercent: Money.isZero(billed)
+      ? unavailable<number>(
+          `the counter sold nothing ${span.period === 'year' ? `in ${span.names}` : span.names === 'this month' ? 'this month' : `in ${span.names}`}, so it kept no percentage of anything`,
+        )
+      : known(
+          Math.round(((billed - cost) / billed) * 100),
+          `${Money.format(Money.money(billed - cost))} of ${Money.format(billed)} at the counter`,
+        ),
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -385,19 +448,45 @@ export function commission(agent: Agent, span: Span): Commission {
 }
 
 /**
+ * Which supplier funds his bonus, where anything records one.
+ *
+ * `null` where nothing does, and the difference matters at the one place it
+ * is read: the claim form's *Claiming from*. A blank option in that list is
+ * a claim addressed to nobody.
+ */
+export const bonusFrom = (agent: Agent): string | null =>
+  match(agent.cluster, {
+    known: (c) => c.from,
+    partial: (c) => c.from,
+    unavailable: () => null,
+  });
+
+/**
  * The cluster rule, in words, before any figure is shown.
  *
  * The order matters: a figure that is smaller than the agent expects is an
  * argument unless the rule that made it smaller is read first.
  */
-export const clusterReads = (agent: Agent): string => {
-  const wait = `a cluster item earns only from its ${ordinal(CLUSTER_WAIT_DAYS + 1)} day`;
-  const added =
-    agent.clusterAddedThisWeek === 0
-      ? ''
-      : `, and ${inWords(agent.clusterAddedThisWeek)} of his were added this week`;
-  return `On ${agent.clusterItems} of his ${agent.items} items — ${wait}${added}.`;
-};
+export const clusterReads = (agent: Agent): Derived<string> =>
+  match(agent.cluster, {
+    known: (c) => {
+      const wait = `a cluster item earns only from its ${ordinal(CLUSTER_WAIT_DAYS + 1)} day`;
+      const added =
+        c.addedThisWeek === 0
+          ? ''
+          : `, and ${inWords(c.addedThisWeek)} of his were added this week`;
+      return known(`On ${c.clusterItems} of his ${c.items} items — ${wait}${added}.`, 'his cluster');
+    },
+    partial: (c, basis) =>
+      partial(
+        `On ${c.clusterItems} of his ${c.items} items — a cluster item earns only from its ${ordinal(
+          CLUSTER_WAIT_DAYS + 1,
+        )} day.`,
+        basis,
+        'part of the cluster is not recorded',
+      ),
+    unavailable: (why) => unavailable<string>(why),
+  });
 
 /** What the bonus that has not counted yet is waiting on. */
 export const waitingReads = (c: Commission): string => {
@@ -677,10 +766,18 @@ export function linesReads(agent: Agent, span: Span, counter: Counter): string {
   if (most === undefined || best === undefined) {
     return `No line mix has been worked out for ${agent.name} yet.`;
   }
+  // The counter's own margin is what his sits under, so a span the counter
+  // sold nothing in has nothing to sit under. The sentence stops at the
+  // fact rather than finishing with a comparison it cannot make.
+  const against = match(counter.keptPercent, {
+    known: (percent) => `sits under the counter's ${percent}%`,
+    partial: (percent) => `sits under the counter's ${percent}%`,
+    unavailable: () => 'has no counter margin to sit under this time',
+  });
   return `His round is mostly ${most.shortName}, which is why the ${keptReads(
     agent,
     span,
-  )} the shop keeps here sits under the counter's ${counter.keptPercent}%. Putting ${
+  )} the shop keeps here ${against}. Putting ${
     best.shortName
   } in his cluster would move it more than raising ${most.shortName} would.`;
 }

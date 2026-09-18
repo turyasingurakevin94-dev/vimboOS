@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   HOLD_WORDS,
   Money,
+  bonusFrom,
   clusterReads,
   commission,
   creditReads,
@@ -241,7 +242,7 @@ function PayCommission({
   readonly onClose: () => void;
 }): ReactElement {
   const bonus = commission(agent, span);
-  const [from, setFrom] = useState(agent.bonusFrom);
+  const [from, setFrom] = useState(bonusFrom(agent) ?? '');
   const claimable = match(bonus.claimable, {
     known: (amount) => amount,
     partial: (amount) => amount,
@@ -257,7 +258,13 @@ function PayCommission({
       </div>
 
       {/* The rule before the figures, here as on the desktop. */}
-      <p className={s.sheetWords}>{clusterReads(agent)}</p>
+      <p className={s.sheetWords}>{match(clusterReads(agent), {
+            known: (line) => line,
+            partial: (line) => line,
+            // The books record no cluster at all, so the rule has no figure
+            // to introduce. It says which, rather than reading `0 of 0`.
+            unavailable: (why) => `Nothing here yet — ${why}.`,
+          })}</p>
 
       <div className={s.claimRow}>
         <div>
@@ -278,7 +285,7 @@ function PayCommission({
           value={from}
           onChange={(e) => setFrom(e.target.value)}
         >
-          {[...new Set([agent.bonusFrom, ...demoBonusSuppliers])].map((name) => (
+          {[...new Set([bonusFrom(agent), ...demoBonusSuppliers].filter((n) => n !== null))].map((name) => (
             <option key={name}>{name}</option>
           ))}
         </select>

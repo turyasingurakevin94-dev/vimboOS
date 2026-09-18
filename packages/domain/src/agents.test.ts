@@ -33,6 +33,7 @@ import {
   type AgentOrder,
   type Counter,
 } from './agents.js';
+import { known, match, unavailable } from './derived.js';
 import * as Money from './money.js';
 
 const NOW = new Date(Date.UTC(2026, 8, 15));
@@ -61,10 +62,10 @@ const agent = (o: Partial<Agent> = {}): Agent => ({
   terms: 'credit',
   ceiling: m(2_000_000),
   onHold: false,
-  items: 21,
-  clusterItems: 14,
-  clusterAddedThisWeek: 3,
-  bonusFrom: 'Hima Cement',
+  cluster: known(
+    { items: 21, clusterItems: 14, addedThisWeek: 3, from: 'Hima Cement' },
+    'his cluster',
+  ),
   payouts: [],
   lines: [],
   orders: [],
@@ -160,10 +161,35 @@ describe('commission is read, never recomputed', () => {
   });
 
   it('states the cluster rule before it states a figure', () => {
-    expect(clusterReads(him)).toBe(
+    expect(
+      match(clusterReads(him), {
+        known: (line) => line,
+        partial: (line) => line,
+        unavailable: (why) => why,
+      }),
+    ).toBe(
       'On 14 of his 21 items — a cluster item earns only from its 8th day, and three of his were added this week.',
     );
     expect(CLUSTER_WAIT_DAYS).toBe(7);
+  });
+
+  /**
+   * The shop's own books record no cluster at all: no membership, no funding
+   * supplier, nothing in `agents` and nothing in a quote's payload. Held as
+   * four plain numbers, such an agent read `On 0 of 0 items` and named no
+   * supplier — a whole bonus scheme stated out of nothing.
+   */
+  it('says the cluster is not recorded rather than reading it as none', () => {
+    const noScheme = agent({ cluster: unavailable('the books record no cluster for him') });
+
+    expect(clusterReads(noScheme).status).toBe('unavailable');
+    expect(
+      match(clusterReads(noScheme), {
+        known: () => 'known',
+        partial: () => 'partial',
+        unavailable: (why) => why,
+      }),
+    ).toBe('the books record no cluster for him');
   });
 });
 
@@ -175,7 +201,7 @@ describe('absence is not zero', () => {
   });
 
   it('has no share of a shop that sold nothing', () => {
-    const counter: Counter = { sold: Money.ZERO, keptPercent: 24 };
+    const counter: Counter = { sold: Money.ZERO, keptPercent: known(24, 'the counter') };
     expect(position([agent()], span, counter).share.status).toBe('unavailable');
   });
 });
