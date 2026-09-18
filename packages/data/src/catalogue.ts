@@ -22,11 +22,15 @@
  */
 
 import {
+  NO_MARKUPS,
   known,
   stockKey,
   unavailable,
   type Derived,
   type Lot,
+  type Markup,
+  type MarkupFrom,
+  type Markups,
   type PriceRow,
   type Tier,
 } from '@ow/domain';
@@ -74,6 +78,8 @@ export interface Sellable {
   readonly lots: readonly Lot[];
   /** What the shelf count says, which is not always the lots' sum. */
   readonly counted: number;
+  /** The four rules that can price it, already resolved. */
+  readonly markups: Markups;
 }
 
 export interface Catalogue {
@@ -116,6 +122,77 @@ export const variantLabel = (combo: unknown): string =>
     .map((v) => readText(v))
     .filter((v): v is string => v !== null)
     .join(' · ');
+
+/**
+ * A markup rule off a row, where it sets one.
+ *
+ * A value of zero or less is NOT a rule. That is the old app's own reading
+ * and it matters: an empty box and a deliberate zero look identical in the
+ * column, and treating the empty one as "add nothing" would price every
+ * unruled product at cost.
+ */
+function markupOn(
+  row: Record<string, unknown>,
+  typeKey: string,
+  valueKey: string,
+  from: MarkupFrom,
+): Markup | null {
+  const value = num(row[valueKey]);
+  if (value === null || value <= 0) return null;
+  return { kind: readText(row[typeKey]) === 'fixed' ? 'fixed' : 'percent', value, from };
+}
+
+/**
+ * The rule that prices one side of one line: the variant's own, else the
+ * product's, else the shop's default.
+ */
+function ruleFor(
+  product: Record<string, unknown>,
+  variant: Record<string, unknown> | null,
+  side: 'wholesale' | 'retail',
+  shopDefault: Markups,
+): Markup | null {
+  return (
+    (variant === null ? null : markupOn(variant, `${side}MarkupType`, `${side}MarkupValue`, 'variant')) ??
+    markupOn(product, `${side}_markup_type`, `${side}_markup_value`, 'product') ??
+    (side === 'wholesale' ? shopDefault.wholesale : shopDefault.retail) ??
+    null
+  );
+}
+
+/**
+ * The rule for something already on the shelf.
+ *
+ * Its own pair where the shop set one, and otherwise the ordinary rule —
+ * so shelf pricing always has an answer without anybody having to set a
+ * second rule for every product.
+ */
+function stockRuleFor(
+  product: Record<string, unknown>,
+  variant: Record<string, unknown> | null,
+  side: 'wholesale' | 'retail',
+  shopDefault: Markups,
+): Markup | null {
+  const cap = `${side.charAt(0).toUpperCase()}${side.slice(1)}`;
+
+  return (
+    (variant === null
+      ? null
+      : markupOn(variant, `stock${cap}MarkupType`, `stock${cap}MarkupValue`, 'variant-stock')) ??
+    markupOn(product, `stock_${side}_markup_type`, `stock_${side}_markup_value`, 'product-stock') ??
+    ruleFor(product, variant, side, shopDefault)
+  );
+}
+
+/** The shop's own default markup, out of `app_settings.presets`. */
+export function shopMarkups(presets: unknown): Markups {
+  const d = obj(obj(presets)?.presetDefaultMarkup);
+  if (d === null) return NO_MARKUPS;
+
+  const wholesale = markupOn(d, 'wholesaleType', 'wholesaleValue', 'shop');
+  const retail = markupOn(d, 'retailType', 'retailValue', 'shop');
+  return { wholesale, retail, stockWholesale: wholesale, stockRetail: retail };
+}
 
 /** One `products` row, as a product — or null with a reason. */
 export function toProduct(raw: unknown): {
@@ -195,7 +272,9 @@ export function assembleCatalogue(
   stockRows: readonly unknown[],
   lotRows: readonly unknown[],
   supplierRows: readonly unknown[],
+  presets: unknown = null,
 ): Catalogue {
+  const shopDefault = shopMarkups(presets);
   const unreadable: string[] = [];
 
   const supplierNames = new Map<string, string>();
@@ -260,9 +339,12 @@ export function assembleCatalogue(
      * description and nowhere else, and a search that cannot see them
      * answers "no matching products" about something the shop is holding.
      */
+    const productRow = obj(raw) ?? {};
+
     const one = (variantIdx: number | null, name: string, code: string, image: string | null): void => {
       const key = stockKey(product.id, variantIdx);
       const prices = pricesAt.get(key) ?? [];
+      const variantRow = variantIdx === null ? null : obj(arr(productRow.variants)[variantIdx]);
 
       sellables.push({
         productId: product.id,
@@ -290,6 +372,12 @@ export function assembleCatalogue(
         prices,
         lots: lotsAt.get(key) ?? [],
         counted: countAt.get(key) ?? 0,
+        markups: {
+          wholesale: ruleFor(productRow, variantRow, 'wholesale', shopDefault),
+          retail: ruleFor(productRow, variantRow, 'retail', shopDefault),
+          stockWholesale: stockRuleFor(productRow, variantRow, 'wholesale', shopDefault),
+          stockRetail: stockRuleFor(productRow, variantRow, 'retail', shopDefault),
+        },
       });
     };
 
@@ -342,7 +430,11 @@ async function all(table: string, columns: string, shopId: string): Promise<read
 export async function readCatalogue(shopId: string): Promise<Derived<Catalogue>> {
   try {
     const [products, prices, stock, lots, suppliers] = await Promise.all([
-      all('products', 'id, name, category, subcategory, notes, short_description, image, variants', shopId),
+      all(
+        'products',
+        'id, name, category, subcategory, notes, short_description, image, variants, wholesale_markup_type, wholesale_markup_value, retail_markup_type, retail_markup_value, stock_wholesale_markup_type, stock_wholesale_markup_value, stock_retail_markup_type, stock_retail_markup_value',
+        shopId,
+      ),
       all(
         'prices',
         'product_id, supplier_id, variant_idx, wholesale, retail, date, unit, pack_unit, pack_qty, tiers, out_of_stock, out_of_stock_since, supplier_sku',
@@ -353,7 +445,23 @@ export async function readCatalogue(shopId: string): Promise<Derived<Catalogue>>
       all('suppliers', 'id, name', shopId),
     ]);
 
-    const catalogue = assembleCatalogue(products, prices, stock, lots, suppliers);
+    // The shop's own default markup, for everything that has no rule of its
+    // own. One row, and its absence is not an error: a shop that has set no
+    // default has products that cannot be priced, which the picker says.
+    const { data: settings } = await current()
+      .sb.from('app_settings')
+      .select('presets')
+      .eq('shop_id', shopId)
+      .maybeSingle();
+
+    const catalogue = assembleCatalogue(
+      products,
+      prices,
+      stock,
+      lots,
+      suppliers,
+      (settings as { readonly presets?: unknown } | null)?.presets ?? null,
+    );
     const priced = catalogue.sellables.filter((s) => s.prices.length > 0).length;
 
     return known(
@@ -363,4 +471,91 @@ export async function readCatalogue(shopId: string): Promise<Derived<Catalogue>>
   } catch (err) {
     return unavailable(`the catalogue: ${err instanceof Error ? err.message : String(err)}`);
   }
+}
+
+/* -------------------------------------------------------------------------- *
+ * The example books
+ * -------------------------------------------------------------------------- */
+
+/**
+ * A catalogue to demonstrate the picker with.
+ *
+ * Small on purpose — six things, one of them variable, one on the shelf and
+ * one nobody can price. That is enough for every state the picker draws,
+ * and a fake catalogue of four hundred would be four hundred things nobody
+ * checked.
+ */
+export function demoCatalogue(): Catalogue {
+  const price = (over: Partial<PriceRow> = {}): PriceRow => ({
+    supplierId: 'S094',
+    supplierName: 'Roto Industry',
+    wholesale: null,
+    retail: null,
+    unit: 'Pc',
+    packUnit: '',
+    packQty: 0,
+    tiers: [],
+    outOfStock: false,
+    outOfStockSince: null,
+    on: '2026-09-02',
+    supplierSku: null,
+    ...over,
+  });
+
+  const thing = (
+    productId: string,
+    variantIdx: number | null,
+    name: string,
+    code: string,
+    category: string,
+    over: Partial<Sellable> = {},
+  ): Sellable => ({
+    productId,
+    variantIdx,
+    name,
+    category,
+    subcategory: '',
+    findBy: `${name} ${code} ${category} ${productId}`.toLowerCase(),
+    code,
+    image: null,
+    prices: [],
+    lots: [],
+    counted: 0,
+    markups: NO_MARKUPS,
+    ...over,
+  });
+
+  return {
+    unreadable: [],
+    sellables: [
+      thing('P044', 0, 'Soft Close Mulper — Flat', 'FLAT', 'Furniture', {
+        prices: [
+          price({ retail: 2_500, packQty: 100, packUnit: 'Ctn', tiers: [{ minQty: 100, price: 2_350 }] }),
+          price({ supplierId: 'S012', supplierName: 'Shafik Katwe', retail: 2_600 }),
+        ],
+      }),
+      thing('P044', 1, 'Soft Close Mulper — Half Bend', 'HALFBEND', 'Furniture', {
+        prices: [price({ retail: 2_500, wholesale: 2_300, packQty: 100, packUnit: 'Ctn' })],
+        counted: 8,
+        lots: [{ qty: 8, cost: 1_900, consign: null }],
+      }),
+      thing('P101', null, 'Wheelbarrow 90L', 'P101', 'Site', {
+        findBy: 'wheelbarrow 90l p101 site the heavy duty barrow',
+        prices: [price({ supplierId: 'S012', supplierName: 'Shafik Katwe', retail: 240_000 })],
+      }),
+      thing('P202', null, 'Sofa Legs — Silver 4"', 'P202', 'Furniture', {
+        prices: [price({ retail: 12_000, supplierSku: '10 CP' })],
+        findBy: 'sofa legs silver 4" p202 furniture 10 cp',
+      }),
+      thing('P303', null, 'Hinge Screws', 'P303', 'Fixings', {
+        // On the shelf, and nothing on file says what it cost.
+        counted: 40,
+        lots: [{ qty: 40, cost: null, consign: null }],
+      }),
+      thing('P404', null, 'Drawer Runner 450mm', 'P404', 'Furniture', {
+        // Everybody who sells it has run out.
+        prices: [price({ retail: 18_000, outOfStock: true, outOfStockSince: '2026-09-04' })],
+      }),
+    ],
+  };
 }

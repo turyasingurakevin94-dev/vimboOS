@@ -9,22 +9,31 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  NO_MARKUPS,
   OWN_SHELF,
   consigned,
   costOfLine,
   find,
+  markupFor,
   onShelf,
   purchasePriceAtQty,
   rankedAtQty,
   shelfCost,
   sideAtQty,
+  sideBought,
+  sideSold,
+  suggestedSell,
   stockKey,
   tieredUnitPrice,
   tiersForSide,
   type Lot,
   type PriceRow,
 } from './catalogue.js';
-import { known } from './derived.js';
+import { known, match, type Derived } from './derived.js';
+
+/** A suggested price, or null where none could be worked out. */
+const sell = (at: Derived<number>): number | null =>
+  match(at, { known: (n) => n, partial: (n) => n, unavailable: () => null });
 
 const row = (over: Partial<PriceRow> = {}): PriceRow => ({
   supplierId: 'S094',
@@ -281,5 +290,105 @@ describe('finding it', () => {
 
   it('is not case sensitive about anything', () => {
     expect(find(shelf, 'SOFT CLOSE').map((t) => t.code)).toEqual(['FLAT']);
+  });
+});
+
+describe('what to charge for it', () => {
+  const cheap = row({ wholesale: 250_000, retail: null, packQty: 0 });
+
+  /**
+   * A fixed wholesale markup is an amount added to the PACK price, not to
+   * the unit price — wholesale is bought and sold by the pack. `+10,000` on
+   * a 300,000 carton is 310,000 a carton, which is 15,500 a dozen and not
+   * 310,000 a dozen.
+   */
+  it('adds a fixed wholesale markup to the pack, not to the unit', () => {
+    const rule = { kind: 'fixed' as const, value: 10_000, from: 'product' as const };
+
+    expect(sell(suggestedSell(25_000, rule, 'wholesale', 20))).toBe(25_500);
+    // No pack to convert through, so it applies directly.
+    expect(sell(suggestedSell(25_000, rule, 'wholesale', 0))).toBe(35_000);
+    // Retail never converts: it is not bought by the pack.
+    expect(sell(suggestedSell(25_000, rule, 'retail', 20))).toBe(35_000);
+  });
+
+  it('scales a percent the same whichever way it is worked out', () => {
+    const rule = { kind: 'percent' as const, value: 20, from: 'product' as const };
+    expect(sell(suggestedSell(250_000, rule, 'wholesale', 100))).toBe(300_000);
+    expect(sell(suggestedSell(250_000, rule, 'retail', 0))).toBe(300_000);
+  });
+
+  /**
+   * The shop has not said what it charges for this. Filling the box with
+   * the cost, or with nothing plus a guess, is how a price nobody agreed
+   * ends up on a quote.
+   */
+  it('has no price rather than a made-up one where no rule is set', () => {
+    expect(suggestedSell(250_000, null, 'retail', 0).status).toBe('unavailable');
+  });
+
+  it('prices the shelf by the shelf rule and a bought-in line by the other', () => {
+    const markups = {
+      wholesale: { kind: 'percent' as const, value: 10, from: 'product' as const },
+      retail: { kind: 'percent' as const, value: 40, from: 'product' as const },
+      stockWholesale: { kind: 'percent' as const, value: 15, from: 'product-stock' as const },
+      stockRetail: { kind: 'percent' as const, value: 50, from: 'product-stock' as const },
+    };
+
+    expect(markupFor(markups, 'retail', false)?.value).toBe(40);
+    expect(markupFor(markups, 'retail', true)?.value).toBe(50);
+    expect(markupFor(markups, 'wholesale', true)?.value).toBe(15);
+  });
+
+  /**
+   * Half this shop's catalogue is carton-only — a wholesale rate and no
+   * retail anything — so a quantity under the pack still gets a price, out
+   * of the WHOLESALE column. Asking the retail markup rule about it is
+   * asking about a column the money did not come from, and 311 of 485
+   * things here carry a perfectly good wholesale rule that was being
+   * reported as none.
+   */
+  it('sells off the column the money came out of', () => {
+    const cartonOnly = row({ wholesale: 250_000, retail: null, packQty: 100 });
+
+    // One unit: the natural side is retail, and retail has nothing.
+    expect(sideBought(cartonOnly, 1)).toBe('wholesale');
+    expect(sideSold(cartonOnly, 1, 100, NO_MARKUPS, false)).toBe('wholesale');
+  });
+
+  /**
+   * Off the shelf there are no columns to read at all. The shop having set
+   * a wholesale markup and left retail empty IS the shop saying which side
+   * it sells at.
+   */
+  it('sells off the side the shop has a rule for, where there is no row', () => {
+    const wholesaleOnly = {
+      ...NO_MARKUPS,
+      wholesale: { kind: 'fixed' as const, value: 15_000, from: 'product' as const },
+      stockWholesale: { kind: 'fixed' as const, value: 15_000, from: 'product' as const },
+    };
+
+    expect(sideSold(null, 1, 100, wholesaleOnly, true)).toBe('wholesale');
+    // And with rules on both sides, the quantity decides, exactly as ever.
+    const both = {
+      ...wholesaleOnly,
+      retail: { kind: 'percent' as const, value: 40, from: 'product' as const },
+      stockRetail: { kind: 'percent' as const, value: 40, from: 'product' as const },
+    };
+    expect(sideSold(null, 1, 100, both, true)).toBe('retail');
+    expect(sideSold(null, 100, 100, both, true)).toBe('wholesale');
+  });
+
+  /**
+   * The shop's own first line, off its own books: Soft Close Mulper — Half
+   * Bend at 250,000 from Roto Industry with a `+15,000 fixed` rule, which
+   * is the 265,000 the Quote mockup was drawn with.
+   */
+  it('reaches the figure the mockup was drawn with', () => {
+    const rule = { kind: 'fixed' as const, value: 15_000, from: 'product' as const };
+    const side = sideSold(cheap, 1, 0, { ...NO_MARKUPS, wholesale: rule }, false);
+
+    expect(side).toBe('wholesale');
+    expect(sell(suggestedSell(250_000, rule, side, 0))).toBe(265_000);
   });
 });

@@ -28,6 +28,14 @@ const item = (over: Partial<ItemLine> = {}): ItemLine => ({
   priceEach: Money.money(29_000),
   inStock: 4,
   buyFrom: 'Kampala Steel',
+  source: {
+    productId: 'P077',
+    variantIdx: null,
+    supplierId: 'S012',
+    packUnit: '',
+    packQty: 0,
+    countedIn: 'unit',
+  },
   buyAt: known(Money.money(27_500), 'the last invoice'),
   ...over,
 });

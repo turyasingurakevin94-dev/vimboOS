@@ -59,6 +59,31 @@ export interface ItemLine {
     readonly supplier: string;
     readonly saves: Amount;
   };
+  /**
+   * What the line has to carry to be written down, and none of it is drawn.
+   *
+   * A quote on screen is a document about to become a row, and the row's
+   * shape is the old app's. Held on the line rather than looked up again at
+   * save time: the catalogue can change between choosing a thing and saving
+   * the order — a price edited in another window, a variant renumbered —
+   * and a line that re-derived its own product at the last moment would
+   * quietly save something the person never chose.
+   */
+  readonly source: LineSource;
+}
+
+/** Where a line came from, in the terms the books record it in. */
+export interface LineSource {
+  readonly productId: string;
+  /** Null for a simple product; the variant's position otherwise. */
+  readonly variantIdx: number | null;
+  /** The supplier it is bought from, or `__stock__` off the shop's shelf. */
+  readonly supplierId: string;
+  readonly packUnit: string;
+  /** How many base units in a pack. 0 where the supplier sells no pack. */
+  readonly packQty: number;
+  /** Whether the quantity was counted in packs or in the base unit. */
+  readonly countedIn: 'unit' | 'pack';
 }
 
 /**
@@ -223,3 +248,26 @@ export const totalSaving = (lines: readonly QuoteLine[]): Derived<Amount> =>
     (a, b) => Money.add(a, b),
     Money.ZERO,
   );
+
+/* -------------------------------------------------------------------------- *
+ * From the catalogue onto the quote, and off it into the books
+ * -------------------------------------------------------------------------- */
+
+/**
+ * A quantity typed in packs is still a quantity in base units.
+ *
+ * The unit the rep chose is the unit the screen speaks, and everything is
+ * still RESOLVED in the base unit — tiers, cost, the shelf. A quantity typed
+ * as 1 Ctn was once met with a price box counting per Pair, so the box said
+ * 2,400 under a card saying 240,000/Ctn and the line arrived on the quote as
+ * 10 Pair.
+ */
+export const qtyInBaseUnits = (
+  typed: number,
+  countedIn: 'unit' | 'pack',
+  packQty: number,
+): number => (countedIn === 'pack' && packQty > 0 ? typed * packQty : typed);
+
+/** How many base units one of the chosen unit is. The pack size, or one. */
+export const perChosen = (countedIn: 'unit' | 'pack', packQty: number): number =>
+  countedIn === 'pack' && packQty > 0 ? packQty : 1;

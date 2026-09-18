@@ -8,8 +8,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { Money, asId, known, unavailable, type ItemLine } from '@ow/domain';
 import { PAYLOAD_KEYS, lineIds, type QuoteLineWrite } from './savedQuotes.js';
-import { quoteRow, whyNotSaveable, type NewQuote } from './quotes.js';
+import { quoteRow, whyNotSaveable, writeLine, writeQuote, type NewQuote } from './quotes.js';
 
 const NOW = new Date('2026-09-18T09:30:00.000Z');
 
@@ -129,5 +130,109 @@ describe('what is refused before an invoice number is spent', () => {
 
   it('lets a whole and priced order through', () => {
     expect(whyNotSaveable(order())).toBeNull();
+  });
+});
+
+describe('a quote on screen, as lines in the books', () => {
+  const item = (over: Partial<ItemLine> = {}): ItemLine => ({
+    kind: 'item',
+    id: asId('v1'),
+    name: 'Soft Close Mulper — Half Bend',
+    unit: 'Pc',
+    qty: 2,
+    priceEach: Money.money(2_500),
+    inStock: 8,
+    buyFrom: 'Roto Industry',
+    buyAt: known(Money.money(2_000), 'the last invoice'),
+    source: {
+      productId: 'P044',
+      variantIdx: 1,
+      supplierId: 'S094',
+      packUnit: '',
+      packQty: 0,
+      countedIn: 'unit',
+    },
+    ...over,
+  });
+
+  it('writes the buy price and the sell price the way round the books hold them', () => {
+    const written = writeLine(item(), 1);
+
+    expect(written.price).toBe(2_000);
+    expect(written.sellPrice).toBe(2_500);
+    expect(written.productId).toBe('P044');
+    expect(written.variantIdx).toBe(1);
+    expect(written.supplierId).toBe('S094');
+  });
+
+  /**
+   * The unit the rep chose is the unit the screen speaks, but the books
+   * count in base units. A quantity typed as 1 Ctn was once met with a
+   * price box counting per Pair, so the box said 2,400 under a card saying
+   * 240,000/Ctn and the line arrived on the quote as 10 Pair.
+   */
+  it('counts a pack in base units, price included', () => {
+    const byCarton = item({
+      qty: 1,
+      priceEach: Money.money(240_000),
+      buyAt: known(Money.money(200_000), 'the carton'),
+      source: {
+        productId: 'P044',
+        variantIdx: null,
+        supplierId: 'S094',
+        packUnit: 'Ctn',
+        packQty: 100,
+        countedIn: 'pack',
+      },
+    });
+    const written = writeLine(byCarton, 1);
+
+    expect(written.qty).toBe(100);
+    expect(written.sellPrice).toBe(2_400);
+    expect(written.price).toBe(2_000);
+    expect(written.qtyIn).toBe('pack');
+    expect(written.packQty).toBe(100);
+  });
+
+  /**
+   * Zero is what the old app writes for a shelf line with no cost on file,
+   * and a margin read off it is wrong where everybody can see. A guessed
+   * cost is wrong where nobody checks.
+   */
+  it('writes no buy price rather than a guessed one', () => {
+    expect(writeLine(item({ buyAt: unavailable('nothing on the shelf has a cost') }), 1).price).toBe(
+      0,
+    );
+  });
+
+  it('numbers the lines of the order and keeps the charges beside them', () => {
+    const written = writeQuote(
+      {
+        date: '18 Sep 2026',
+        client: {
+          id: asId('c1'),
+          name: 'Adinan',
+          phone: '0702301512',
+          orders: 3,
+          owesNow: Money.ZERO,
+          lastOrder: null,
+        },
+        lines: [
+          item(),
+          { kind: 'charge', id: 'ch1', name: 'Transport', basis: 'charge', amount: Money.money(60_000) },
+          item({ id: asId('v2'), name: 'Normal Mulper — Flat' }),
+        ],
+      },
+      'C019',
+    );
+
+    expect(written.items.map((i) => i.lineId)).toEqual([1, 2]);
+    expect(written.items.map((i) => i.productName)).toEqual([
+      'Soft Close Mulper — Half Bend',
+      'Normal Mulper — Flat',
+    ]);
+    expect(written.charges).toEqual([{ name: 'Transport', amount: 60_000 }]);
+    expect(written.client).toEqual({ name: 'Adinan', phone: '0702301512' });
+    expect(written.customerId).toBe('C019');
   });
 });

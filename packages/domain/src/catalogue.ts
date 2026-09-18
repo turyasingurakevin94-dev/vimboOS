@@ -105,6 +105,61 @@ export const sideAtQty = (packQty: number, qty: number): Side =>
   packQty > 0 && qty >= packQty ? 'wholesale' : 'retail';
 
 /**
+ * Which side the money actually came off — which `purchasePriceAtQty` knows
+ * and does not say.
+ *
+ * The fallback is the point. Half this shop's catalogue is carton-only,
+ * with a wholesale rate and no retail anything, so a quantity under the
+ * pack still gets a price — out of the WHOLESALE column. Anything that then
+ * asks the RETAIL markup rule about it is asking about a column the money
+ * did not come from, and a product carrying a perfectly good rule for the
+ * tier it is really sold at is reported as having none.
+ *
+ * Kept beside `purchasePriceAtQty`, in the same words, so the two cannot
+ * drift into disagreeing about which column they mean.
+ */
+export function sideBought(row: PriceRow, qty: number): Side | null {
+  const natural = sideAtQty(row.packQty, qty);
+  const other: Side = natural === 'wholesale' ? 'retail' : 'wholesale';
+  if (tieredUnitPrice(row, qty, natural) !== null) return natural;
+  return tieredUnitPrice(row, qty, other) !== null ? other : null;
+}
+
+/**
+ * Which side a line is actually SOLD at, in order of how hard the evidence
+ * is.
+ *
+ * 1. The column the money came out of, where there is a supplier row to
+ *    read it off. That is a fact about the money, not a guess.
+ * 2. The side the shop has a RULE for, where only one side has one. This is
+ *    what a carton-only catalogue looks like from the shelf, where there
+ *    are no columns to read: the shop set a wholesale markup and left
+ *    retail empty, and that IS the shop saying which side it sells at. On
+ *    these books 311 of 485 things are exactly that.
+ * 3. The quantity against the pack, as ever.
+ *
+ * Never a guess between two real answers: with rules on both sides and no
+ * row to read, the quantity decides.
+ */
+export function sideSold(
+  row: PriceRow | null,
+  qty: number,
+  packQty: number,
+  markups: Markups,
+  offTheShelf: boolean,
+): Side {
+  const natural = sideAtQty(packQty, qty);
+  const other: Side = natural === 'wholesale' ? 'retail' : 'wholesale';
+
+  const fromRow = row === null ? null : sideBought(row, qty);
+  if (fromRow !== null) return fromRow;
+
+  const hasNatural = markupFor(markups, natural, offTheShelf) !== null;
+  const hasOther = markupFor(markups, other, offTheShelf) !== null;
+  return !hasNatural && hasOther ? other : natural;
+}
+
+/**
  * What buying this quantity from this row would actually cost per unit.
  *
  * Whichever side the quantity earns, falling back to the other side when
@@ -287,3 +342,87 @@ export function find<T extends Findable & { readonly name: string; readonly code
     .sort((a, b) => a.rank - b.rank || a.at - b.at)
     .map(({ it }) => it);
 }
+
+/* -------------------------------------------------------------------------- *
+ * What to charge for it
+ * -------------------------------------------------------------------------- */
+
+/** How a markup is written: an amount added, or a share of the cost. */
+export type MarkupKind = 'fixed' | 'percent';
+
+/** Where the rule that priced this came from. Said on screen, never guessed. */
+export type MarkupFrom = 'variant' | 'product' | 'shop' | 'variant-stock' | 'product-stock';
+
+export interface Markup {
+  readonly kind: MarkupKind;
+  readonly value: number;
+  readonly from: MarkupFrom;
+}
+
+/**
+ * The four rules that can price a line, already resolved.
+ *
+ * Resolved where the product row and its variant are both in hand, rather
+ * than looked up again per keystroke: a variant's own rule beats the
+ * product's, which beats the shop's default, and the shelf has its own pair
+ * that falls through to the other two. Four lookups with three fallbacks
+ * each is exactly the sort of thing that gets half-remembered at the call
+ * site.
+ */
+export interface Markups {
+  readonly wholesale: Markup | null;
+  readonly retail: Markup | null;
+  /** What the counter charges for something already on the shelf. */
+  readonly stockWholesale: Markup | null;
+  readonly stockRetail: Markup | null;
+}
+
+export const NO_MARKUPS: Markups = {
+  wholesale: null,
+  retail: null,
+  stockWholesale: null,
+  stockRetail: null,
+};
+
+/**
+ * What to charge, from what it cost.
+ *
+ * **A fixed wholesale markup is an amount added to the PACK price**, not to
+ * the unit price — wholesale is bought and sold by the pack, so `+10,000` on
+ * a 300,000 carton is 310,000 a carton, which is 15,500 a dozen and not
+ * 310,000 a dozen. A percent scales the same either way, so only `fixed`
+ * needs the conversion.
+ *
+ * `unavailable` where no rule applies: the shop has not said what it charges
+ * for this, and inventing a figure to fill the box is how a price nobody
+ * agreed ends up on a quote.
+ */
+export function suggestedSell(
+  cost: number,
+  markup: Markup | null,
+  side: Side,
+  packQty: number,
+): Derived<number> {
+  if (markup === null) {
+    return unavailable('no markup rule is set for this, so nothing says what to charge');
+  }
+
+  const basis = `${markup.kind === 'fixed' ? `+${markup.value}` : `+${markup.value}%`} on ${cost}`;
+
+  if (markup.kind === 'fixed') {
+    const perUnit = side === 'wholesale' && packQty > 0 ? markup.value / packQty : markup.value;
+    return known(cost + perUnit, basis);
+  }
+
+  return known(cost * (1 + markup.value / 100), basis);
+}
+
+/** Which of the four rules prices this line. */
+export const markupFor = (
+  markups: Markups,
+  side: Side,
+  offTheShelf: boolean,
+): Markup | null =>
+  offTheShelf
+    ? (side === 'wholesale' ? markups.stockWholesale : markups.stockRetail)
+    : (side === 'wholesale' ? markups.wholesale : markups.retail);

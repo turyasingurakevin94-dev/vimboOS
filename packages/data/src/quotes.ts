@@ -33,7 +33,16 @@
  */
 
 import {
+  match,
+  perChosen,
+  qtyInBaseUnits,
+  type ChargeLine,
+  type ItemLine,
+  type Quote,
+} from '@ow/domain';
+import {
   QUOTE_ID_KIND,
+  lineIds,
   newQuotePayload,
   type QuoteLineWrite,
 } from './savedQuotes.js';
@@ -193,4 +202,64 @@ export async function raiseQuote(
   } finally {
     raising.delete(shopId);
   }
+}
+
+/* -------------------------------------------------------------------------- *
+ * A quote on screen, as lines in the books
+ * -------------------------------------------------------------------------- */
+
+/**
+ * One line of the quote, in the exact shape the old app's own item picker
+ * pushes onto `payload.items`.
+ *
+ * `price` is the BUY price and `sellPrice` what the client pays, and they
+ * are that way round in the books — a reader that swapped them would show
+ * the shop's buying price as the customer's. Both count per BASE unit,
+ * whatever unit the person typed in, which is what `qtyInBaseUnits` and
+ * `perChosen` are for.
+ *
+ * A buy price that could not be derived is written as 0 and NOT as a guess.
+ * Zero is what the old app writes for a line off a shelf with no cost on
+ * file, and the margin read off it is wrong in the direction everybody can
+ * see — where a guessed cost is wrong in the direction nobody checks.
+ */
+export function writeLine(line: ItemLine, lineId: number): QuoteLineWrite {
+  const per = perChosen(line.source.countedIn, line.source.packQty);
+
+  return {
+    lineId,
+    productId: line.source.productId,
+    variantIdx: line.source.variantIdx,
+    productName: line.name,
+    unit: line.unit,
+    packUnit: line.source.packUnit,
+    packQty: line.source.packQty,
+    qtyIn: line.source.countedIn,
+    qty: qtyInBaseUnits(line.qty, line.source.countedIn, line.source.packQty),
+    supplierId: line.source.supplierId,
+    supplierName: line.buyFrom,
+    price: match(line.buyAt, {
+      known: (at) => at / per,
+      partial: (at) => at / per,
+      unavailable: () => 0,
+    }),
+    sellPrice: line.priceEach / per,
+  };
+}
+
+/** The whole quote, as the order it is about to become. */
+export function writeQuote(
+  quote: Quote,
+  customerId: string | null,
+): NewQuote {
+  const items = quote.lines.filter((l): l is ItemLine => l.kind === 'item');
+
+  return {
+    client: { name: quote.client.name, phone: quote.client.phone },
+    customerId,
+    items: items.map((line, at) => writeLine(line, lineIds(items.length)[at] ?? at + 1)),
+    charges: quote.lines
+      .filter((l): l is ChargeLine => l.kind === 'charge')
+      .map((c) => ({ name: c.name, amount: c.amount })),
+  };
 }

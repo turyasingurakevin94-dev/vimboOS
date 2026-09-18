@@ -39,6 +39,14 @@ export function demoQuote(): Quote {
         inStock: 4,
         buyFrom: 'Roto Industry',
         buyAt: known(m(250_000), 'the last invoice, 2 Sept'),
+        source: {
+          productId: 'P044',
+          variantIdx: 1,
+          supplierId: 'S094',
+          packUnit: '',
+          packQty: 0,
+          countedIn: 'unit',
+        },
       },
       {
         kind: 'item',
@@ -51,6 +59,14 @@ export function demoQuote(): Quote {
         buyFrom: 'Mulongo Hardware',
         buyAt: known(m(95_000), 'the last invoice, 28 Aug'),
         cheaperElsewhere: { supplier: 'Shafik Katwe', saves: m(500) },
+        source: {
+          productId: 'P101',
+          variantIdx: null,
+          supplierId: 'S012',
+          packUnit: '',
+          packQty: 0,
+          countedIn: 'unit',
+        },
       },
       {
         kind: 'item',
@@ -62,6 +78,14 @@ export function demoQuote(): Quote {
         inStock: 0,
         buyFrom: 'Kampala Steel',
         buyAt: known(m(27_500), 'the last invoice, 20 July'),
+        source: {
+          productId: 'P077',
+          variantIdx: null,
+          supplierId: '__stock__',
+          packUnit: '',
+          packQty: 0,
+          countedIn: 'unit',
+        },
       },
       { kind: 'charge', id: 'transport', name: 'Transport', basis: 'charge', amount: m(60_000) },
       {
