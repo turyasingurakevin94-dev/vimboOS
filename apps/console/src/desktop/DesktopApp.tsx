@@ -16,6 +16,7 @@ import {
 } from 'react';
 import { owingBadge, read } from '@ow/domain';
 import { DEMO_TODAY, demoAsks, demoCustomers } from '@ow/data';
+import { useToday } from '../app/useToday.js';
 import s from './DesktopApp.module.css';
 import { Rail, SECTIONS, TODAY, asksForBonus, resolveTab } from './chrome/Rail.js';
 import { Icon } from './icons.js';
@@ -138,7 +139,18 @@ export default function DesktopApp(): ReactElement {
   };
 
   /**
-   * The Customers badge, from the same reckoning the screen reads.
+   * Today's own count, read here so the rail cannot disagree with the page.
+   *
+   * `wantsYou` exists to be one number read twice — the page's sub-line and
+   * this badge — and wiring the sub-line while leaving the badge at the
+   * frame's literal 8 produced exactly the drift it was written to prevent:
+   * a rail saying 8 beside a sentence saying 10. The query is keyed, so the
+   * screen's own `useToday()` reads this same cache rather than asking again.
+   */
+  const today = useToday();
+
+  /**
+   * The badges that come from the books.
    *
    * Every other badge in the rail is still the frame's literal, because
    * every other screen is still `NotBuiltYet` — a number invented for a
@@ -151,8 +163,12 @@ export default function DesktopApp(): ReactElement {
       // The board's own queue, which is what a badge on this row means:
       // twenty decisions only the owner can make.
       orders: demoAsks().length,
+      // Omitted until the read lands, rather than sent as zero: the rail
+      // draws no badge for zero, and "nothing wants you" is the one thing
+      // this row must not say while it is still finding out.
+      ...(today.at === 'ready' ? { today: today.data.wantsYou } : {}),
     }),
-    [],
+    [today],
   );
 
   const onTrail = useCallback((next: string | null) => setTrail(next), []);

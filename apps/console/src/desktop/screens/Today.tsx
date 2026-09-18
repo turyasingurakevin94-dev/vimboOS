@@ -12,13 +12,29 @@
  * 3. **Every alert carries its arithmetic** — both ends of the comparison,
  *    so a row can be checked rather than believed.
  *
- * The figures are demonstration data. They are wired to the real
- * derivations before review; the handoff says so and it is right.
+ * ## The strip is wired; the list below it is not yet
+ *
+ * The five cells, the date and the "things want you" count all come from
+ * `useToday` now. The moves and the week bars below are still the handoff's
+ * own arrays.
+ *
+ * Wiring the strip changed four things the handoff states in prose, because
+ * the prose disagreed with the data beside it. All four are raised for
+ * design rather than kept:
+ *
+ * | the handoff draws | the reckoning says |
+ * | ----------------- | ------------------ |
+ * | Monday 15 September | **Tuesday** — 15 Sep 2026 is a Tuesday |
+ * | 9 customers | **11** accounts owing that 23,650,000 |
+ * | a 3-segment aging bar | `agingBands` returns **four** bands |
+ * | margin `−1.4 pts` | needs a second window nothing computes |
  */
 
 import { useState, type ReactElement } from 'react';
+import { Money, type AgingBand, type Derived, type TodayStrip } from '@ow/domain';
 import s from './Today.module.css';
 import { Icon, type IconName } from '../icons.js';
+import { useToday } from '../../app/useToday.js';
 
 const v = (token: string): string => `var(--ow-color-${token})`;
 
@@ -37,69 +53,187 @@ interface Metric {
   readonly aging?: readonly { readonly pct: number; readonly fill: string }[];
 }
 
-const METRICS: readonly Metric[] = [
-  {
+/** The five cells as the handoff paints them. Presentation only. */
+type Skin = Pick<Metric, 'label' | 'icon' | 'fill' | 'edge' | 'chip' | 'chipInk'>;
+
+const SKIN: Readonly<Record<'cash' | 'owed' | 'owe' | 'margin' | 'stock', Skin>> = {
+  cash: {
     label: 'Cash on hand',
     icon: 'wallet',
     fill: v('cash-fill'),
     edge: v('cash-edge'),
     chip: v('cash-chip'),
     chipInk: v('info-ink'),
-    figure: '8,420,000',
-    basis: <>2 accounts · 2.4 months of cover</>,
   },
-  {
+  owed: {
     label: 'Owed to you',
     icon: 'trending-down',
     fill: v('bad-fill'),
     edge: v('debt-edge'),
     chip: v('bad-chip-soft'),
     chipInk: v('bad-ink'),
-    figure: '23,650,000',
-    // Widths come from the real aging split, never from a guess.
-    aging: [
-      { pct: 42, fill: v('aging-fresh') },
-      { pct: 29, fill: v('aging-middle') },
-      { pct: 29, fill: v('aging-oldest') },
-    ],
-    basis: (
-      <>
-        9 customers · <span className={s.metricBad}>6,900,000 over 60 days</span>
-      </>
-    ),
   },
-  {
+  owe: {
     label: 'You owe',
     icon: 'credit-card',
     fill: v('surface'),
     edge: v('hairline'),
     chip: v('owed-chip'),
     chipInk: v('ink-2'),
-    figure: '11,200,000',
-    basis: <>4 suppliers · 3,400,000 due this week</>,
   },
-  {
+  margin: {
     label: 'Margin · 7 days',
     icon: 'trending-up',
     fill: v('good-fill'),
     edge: v('margin-edge'),
     chip: v('good-chip'),
     chipInk: v('good-ink-strong'),
-    figure: '18.6%',
-    delta: { text: '−1.4 pts', fill: v('warn-fill'), ink: v('warn-ink') },
-    basis: <>4,380,000 profit on 23,500,000 sold</>,
   },
-  {
+  stock: {
     label: 'Stock on the shelf',
     icon: 'package',
     fill: v('study-fill'),
     edge: v('stock-edge'),
     chip: v('study-chip'),
     chipInk: v('study-ink'),
-    figure: '41,300,000',
-    basis: <>3,100,000 unsold past 120 days</>,
   },
-];
+};
+
+/**
+ * A figure the books produced, or an honest gap.
+ *
+ * An em dash, never a nought. The design system's second rule: *"If a
+ * derivation failed, say what failed — never render zero."* The reason
+ * travels to the basis line under it, where it can be read.
+ */
+const fig = (d: Derived<Money.Money>): string =>
+  d.status === 'unavailable' ? '—' : Money.format(d.value);
+
+/**
+ * The three-segment aging bar, from four bands.
+ *
+ * The handoff draws three segments and the design system's `aging` ramp has
+ * three stops, over 0–14, 15–30 and 30+. `agingBands` splits at 0, 30, 45
+ * and 60, because that is what the Customers register's own bar shows. The
+ * two do not line up, and neither is obviously wrong — so the middle pair is
+ * folded into the middle stop rather than inventing a fourth colour, which
+ * §7 forbids, or quietly dropping a band, which would understate the debt
+ * the bar is about.
+ *
+ * **This is an approximation and it is the one thing on this screen that is.
+ * The bar wants a design decision: four stops, or bands at 14 and 30.**
+ */
+function agingSegments(bands: readonly AgingBand[]): readonly {
+  readonly pct: number;
+  readonly fill: string;
+}[] {
+  const share = (from: number): number => bands.find((b) => b.from === from)?.share ?? 0;
+
+  return [
+    { pct: share(0), fill: v('aging-fresh') },
+    { pct: share(30) + share(45), fill: v('aging-middle') },
+    { pct: share(60), fill: v('aging-oldest') },
+  ];
+}
+
+/**
+ * The strip, from the one reckoning.
+ *
+ * Not one figure here is this screen's own arithmetic — `packages/domain/
+ * src/today.ts` composes the Cash Book's, the Customers register's and the
+ * Invoices band's. This function only decides how each cell reads when its
+ * figure could not be derived, which the handoff has no state for.
+ */
+function metricsOf(strip: TodayStrip): readonly Metric[] {
+  const cover = strip.cash.cover;
+  const due = strip.youOwe.dueThisWeek;
+  const margin = strip.margin.percent;
+
+  return [
+    {
+      ...SKIN.cash,
+      figure: fig(strip.cash.held),
+      basis:
+        cover.status === 'unavailable' ? (
+          <>
+            {strip.cash.accounts} accounts · {cover.reason}
+          </>
+        ) : (
+          <>
+            {strip.cash.accounts} accounts · {cover.value} months of cover
+          </>
+        ),
+    },
+    {
+      ...SKIN.owed,
+      figure: fig(strip.owedToYou.total),
+      aging: agingSegments(strip.owedToYou.aging),
+      basis: (
+        <>
+          {strip.owedToYou.customers} customers ·{' '}
+          <span className={s.metricBad}>{fig(strip.owedToYou.overSixty)} over 60 days</span>
+        </>
+      ),
+    },
+    {
+      ...SKIN.owe,
+      figure: fig(strip.youOwe.total),
+      basis: (
+        <>
+          {strip.youOwe.suppliers} suppliers · {fig(due)} due this week
+          {/* A purchase with no due date is not "not due this week". The
+              register says so rather than letting the figure imply it. */}
+          {due.status === 'partial' ? <> · {due.missing}</> : null}
+        </>
+      ),
+    },
+    {
+      ...SKIN.margin,
+      figure: margin.status === 'unavailable' ? '—' : `${margin.value}%`,
+      basis:
+        margin.status === 'unavailable' ? (
+          <>{margin.reason}</>
+        ) : (
+          <>
+            {Money.format(strip.margin.kept)} profit on {Money.format(strip.margin.sold)} sold
+            {margin.status === 'partial' ? <> · {margin.missing}</> : null}
+          </>
+        ),
+    },
+    {
+      ...SKIN.stock,
+      figure: fig(strip.stock.held),
+      basis:
+        strip.stock.dead.status === 'unavailable' ? (
+          <>
+            {strip.stock.linesOnShelf} lines · {strip.stock.deadLines} have stopped selling, not
+            yet valued
+          </>
+        ) : (
+          <>
+            {strip.stock.linesOnShelf} lines · {fig(strip.stock.dead)} of it has stopped selling
+          </>
+        ),
+    },
+  ];
+}
+
+/** "Tuesday 15 September". UTC, as every other date in these books is. */
+const longDay = (d: Date): string =>
+  d.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+
+const clock = (d: Date): string =>
+  d.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'UTC',
+  });
 
 /* --------------------------------- moves ---------------------------------- */
 
@@ -234,6 +368,56 @@ const TONE = {
 const WEEKS = [38, 44, 41, 52, 47, 58, 55, 63, 60, 71, 68, 82];
 
 export function Today(): ReactElement {
+  const read = useToday();
+  if (read.at === 'loading') return <Waiting />;
+  if (read.at === 'failed') return <Refused why={read.why} />;
+  return <Morning read={read} />;
+}
+
+/**
+ * Reading, not a quiet morning.
+ *
+ * PostgREST answers "still fetching", "refused by RLS" and "this shop has
+ * traded nothing" with the same empty array, and only the last of those is a
+ * morning worth drawing. "Nothing wants you" would be the worst of the three
+ * to get wrong.
+ */
+function Waiting(): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div className={s.greeting}>
+          <h1 className={s.title}>Good morning, Kevin</h1>
+          <p className={s.sub}>Reading the books…</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+function Refused({ why }: { readonly why: string }): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div className={s.greeting}>
+          <h1 className={s.title}>Good morning, Kevin</h1>
+          {/* What failed, in the words the database used. An empty strip
+              here would be a claim that the shop holds nothing and is owed
+              nothing. */}
+          <p className={s.sub}>This morning could not be read. {why}</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+function Morning({
+  read,
+}: {
+  readonly read: Extract<ReturnType<typeof useToday>, { at: 'ready' }>;
+}): ReactElement {
+  const books = read.data;
+  const metrics = metricsOf(books.strip);
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
   const toggle = (pos: string): void =>
@@ -250,7 +434,8 @@ export function Today(): ReactElement {
         <div className={s.greeting}>
           <h1 className={s.title}>Good morning, Kevin</h1>
           <p className={s.sub}>
-            Monday 15 September · read at 07:42 · eight things want you today
+            {longDay(books.asOf)} · read at {clock(books.asOf)} ·{' '}
+            {books.wantsYou === 1 ? 'one thing wants' : `${books.wantsYou} things want`} you today
           </p>
         </div>
         <div className={s.headActions}>
@@ -267,7 +452,7 @@ export function Today(): ReactElement {
       </header>
 
       <section className={s.metrics} aria-label="The position">
-        {METRICS.map((m) => (
+        {metrics.map((m) => (
           <div
             key={m.label}
             className={s.metric}
