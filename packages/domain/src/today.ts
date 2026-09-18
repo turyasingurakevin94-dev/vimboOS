@@ -113,10 +113,15 @@ export interface Shelf {
  * balance sheet both take.
  *
  * The naive reading — sum `qty × cost` over the lots — is wrong, and the
- * real books prove it: it returns 15,634,018 where the shop's own Inventory
- * screen reads 11,186,018. Lots are a purchase ledger. They record what was
- * bought, including units long since sold. What is on the shelf is
+ * real books prove it. Run against production on 2026-09-18 this reckoning
+ * returns **11,186,018, to the shilling, the figure the shop's own Inventory
+ * screen shows**; the naive sum over the same rows returns 16,952,518, which
+ * overstates the shelf by 5,766,500. Lots are a purchase ledger. They record
+ * what was bought, including units long since sold. What is on the shelf is
  * `stock.qty`, and the lots only say what a unit of it cost.
+ *
+ * The overstatement grows as the shop trades, so it is dated rather than
+ * quoted as a constant — an earlier session recorded it as 15,634,018.
  *
  * So: take what is on the shelf, remove the consignor's units, and price the
  * remainder at the weighted average of the costed owned lots — capped at the
@@ -154,14 +159,15 @@ export function shelfLineValue(line: ShelfLine): {
 /**
  * The whole shelf.
  *
- * A line with nothing on it is skipped, as the old app skips it — 434 of
- * this shop's 485 lines have an empty shelf, and valuing them would add 434
- * noughts to a figure that is about what is there.
+ * A line with nothing on it is skipped, as the old app skips it — 79 of this
+ * shop's 130 stock rows have an empty shelf, and valuing them would add 79
+ * noughts to a figure that is about what is there. (Production, 2026-09-18:
+ * 130 rows, 51 standing, 81 lots behind them.)
  *
  * The rounding happens ONCE, on the total. A weighted unit cost is
- * fractional by nature (the real books' own sum lands on
- * `15634017.99999…`), and rounding each line before adding them would drift
- * from the figure the shop already reads on its own screen.
+ * fractional by nature, and rounding each line before adding them would
+ * drift from the figure the shop already reads on its own screen — which is
+ * the figure this now matches exactly.
  */
 export function shelfValue(lines: readonly ShelfLine[]): Shelf {
   const standing = lines.filter((l) => l.onShelf > 0);

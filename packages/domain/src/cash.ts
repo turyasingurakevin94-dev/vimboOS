@@ -282,18 +282,92 @@ function balancesTotal(byAccount: readonly AccountBalance[]): Derived<Amount> {
 /** How far back the burn is measured. The old app's window, kept. */
 export const BURN_WINDOW_DAYS = 90;
 
+/**
+ * Buying stock, by the old app's own definition of it.
+ *
+ * Its `stockOut` bucket is exactly this pair, and its comment says why it
+ * is named rather than defined by exclusion: *"that set also holds Loan
+ * Repayment, which is financing, and folding it in here reported a
+ * repayment as money spent on stock."* Matched on the exact category
+ * strings the old app matches, so a row cannot be stock to one app and a
+ * running cost to the other.
+ */
+export const STOCK_CATEGORIES: readonly string[] = ['Stock Purchase', 'Supplier Payment'];
+
+/**
+ * The shop's own money moving between the shop's own tills.
+ *
+ * Withdrawing 500,000 from the bank to put in the drawer spends nothing —
+ * the shop has exactly what it had. The old app writes both legs under
+ * `CASH_TRANSFER_CATEGORY` and puts it in `CASH_NOT_OPEX` and
+ * `CASH_NOT_REVENUE` alike, so the pair cancels.
+ */
+export const TRANSFER_CATEGORIES: readonly string[] = ['Account Transfer'];
+
+const STOCK = new Set(STOCK_CATEGORIES);
+const TRANSFER = new Set(TRANSFER_CATEGORIES);
+
+/** Money out that went on stock rather than on running the shop. */
+export const isStockMoneyOut = (t: CashTxn): boolean =>
+  isMoneyOut(t) && t.category !== null && STOCK.has(t.category);
+
+/** A leg of a transfer: out of one till and into another of the shop's own. */
+export const isOwnMoneyMoving = (t: CashTxn): boolean =>
+  t.category !== null && TRANSFER.has(t.category);
+
 const DAY = 86_400_000;
 
 const isoDay = (d: Date): string => d.toISOString().slice(0, 10);
 
 /**
- * Average monthly outflow, over the history that actually EXISTS.
+ * The average monthly cost of RUNNING the shop, over the history that
+ * actually exists.
  *
- * Dividing a 90-day window by a flat three months is the second bug this
- * module inherits a fix for: a shop ten days old had ten days of spending
- * divided by three months, understating the burn ninefold and overstating
- * the cover by the same — 3.0 months reported where there were 0.3. The
- * window is right; assuming it is full is what was wrong.
+ * ## Buying stock is not burn
+ *
+ * This is the fix the real books forced. Over 49 days this shop paid out
+ * 84,276,386, of which **77,567,014 — 92% — was category `Stock
+ * Purchase`**. Counted as burn, that put the cover at 0.2 months, six days,
+ * with a warning on the owner's Today screen. Take the stock out and the
+ * running cost is 3,979,207 a month, which against 10,474,426 of cash is
+ * 2.6 months. Over the same window 108,271,245 came IN: the shop is cash
+ * generative and was being told it had a week to live.
+ *
+ * Stock is not consumption, it is cash in another shape. It sits on the
+ * shelf — valued at 11,186,018 in the cell two along — and comes back when
+ * it sells. The old app's own income statement says exactly this about the
+ * same rows: *"`Stock Purchase` — inventory. It becomes a cost when the
+ * goods are SOLD, through COGS — counting the purchase as well would charge
+ * for it twice."* Its `dashMonthlyBurn` nonetheless filters on `type` alone
+ * and includes them, so the shop's dashboard has shown the alarming figure
+ * all along. This is a deliberate, argued divergence from the old app,
+ * approved by the owner — not a port.
+ *
+ * ## A transfer never left
+ *
+ * Also excluded, and this one is not a judgement call: the outgoing leg of
+ * a bank-to-drawer transfer is not money the shop spent. The matching
+ * receipt is counted as money in, so a transfer nets to nothing in the
+ * POSITION while inflating the BURN by its own size. The old app puts
+ * `Account Transfer` in `CASH_NOT_OPEX` for the same reason.
+ *
+ * ## What stays in, and why
+ *
+ * `CASH_NOT_OPEX` has seven entries; only three of them are dropped here.
+ * Loan Repayment, Capital Withdrawal, Equipment purchase and Owner
+ * Withdrawal are all excluded from the shop's INCOME STATEMENT, because
+ * they are not costs of trading. They are not excluded here, because cover
+ * is not a question about profit — it is a question about cash, and that
+ * money has left the shop and is not coming back. A van, a loan payment
+ * and the owner's own drawings all shorten the runway.
+ *
+ * ## The span, not the window
+ *
+ * Dividing a 90-day window by a flat three months is the other bug this
+ * inherits a fix for: a shop ten days old had ten days of spending divided
+ * by three months, understating the burn ninefold and overstating the cover
+ * by the same — 3.0 months reported where there were 0.3. The window is
+ * right; assuming it is full is what was wrong.
  */
 export function monthlyBurn(asOf: Date, txns: readonly CashTxn[]): Derived<Amount> {
   const from = isoDay(new Date(asOf.getTime() - (BURN_WINDOW_DAYS - 1) * DAY));
@@ -309,7 +383,18 @@ export function monthlyBurn(asOf: Date, txns: readonly CashTxn[]): Derived<Amoun
     return unavailable(`nothing was paid out in the last ${BURN_WINDOW_DAYS} days`);
   }
 
-  const spent = Money.add(...out.map((t) => t.amount));
+  const running = out.filter((t) => !isStockMoneyOut(t) && !isOwnMoneyMoving(t));
+  // A shop whose every payment in the window was stock has no running cost
+  // to measure. That is not a burn of zero — a burn of zero would divide
+  // into cover as "forever", which is the `total || 0` bug wearing a hat.
+  if (running.length === 0) {
+    return unavailable(
+      `everything paid out in the last ${BURN_WINDOW_DAYS} days went on stock or moved between your own tills, so there is no running cost to measure`,
+    );
+  }
+
+  const spent = Money.add(...running.map((t) => t.amount));
+  const onStock = Money.add(...out.filter(isStockMoneyOut).map((t) => t.amount));
 
   // Measured from the first movement of any kind in the window, not the
   // first payment: a shop that took money for a week before spending any
@@ -322,9 +407,15 @@ export function monthlyBurn(asOf: Date, txns: readonly CashTxn[]): Derived<Amoun
   );
   const months = Math.max(spanDays / 30, 1 / 30);
 
+  // The basis names the stock it left out, because the figure changed
+  // meaning and the design system renders this line under the number: an
+  // owner who remembers paying out 84 million has to be able to see where
+  // the other 77 went.
+  const aside = Money.isZero(onStock) ? '' : `, apart from ${Money.format(onStock)} on stock`;
+
   return known(
     Money.roundDown(spent / months),
-    `${Money.format(spent)} paid out over ${spanDays} days`,
+    `${Money.format(spent)} paid out over ${spanDays} days${aside}`,
   );
 }
 

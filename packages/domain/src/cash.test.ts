@@ -213,6 +213,72 @@ describe('the burn, and the cover it feeds', () => {
     expect(BURN_WINDOW_DAYS).toBe(90);
   });
 
+  // The fix the real books forced. 92% of this shop's outflow over 49 days
+  // was category 'Stock Purchase', which put its cover at six days while
+  // more money came in than went out.
+  it('does not count buying stock as burn — it is cash in another shape', () => {
+    const asOf = new Date('2026-09-30T00:00:00Z');
+    const txns = [
+      txn({ on: '2026-09-01', amount: 300_000, type: 'payment', category: 'Rent' }),
+      txn({ on: '2026-09-15', amount: 9_000_000, type: 'payment', category: 'Stock Purchase' }),
+      txn({ on: '2026-09-20', amount: 1_000_000, type: 'payment', category: 'Supplier Payment' }),
+    ];
+
+    const burn = monthlyBurn(asOf, txns);
+
+    // 300,000 of rent over a 30-day span, and not a shilling of the ten
+    // million that went onto the shelf.
+    expect(burn.status !== 'unavailable' && burn.value).toBe(300_000);
+  });
+
+  it('names the stock it left out, so 84 million paid out is still findable', () => {
+    const burn = monthlyBurn(new Date('2026-09-30T00:00:00Z'), [
+      txn({ on: '2026-09-01', amount: 300_000, type: 'payment', category: 'Rent' }),
+      txn({ on: '2026-09-15', amount: 9_000_000, type: 'payment', category: 'Stock Purchase' }),
+    ]);
+
+    expect(burn.status !== 'unavailable' && burn.basis).toBe(
+      '300,000 paid out over 30 days, apart from 9,000,000 on stock',
+    );
+  });
+
+  it('does not count the shop’s own money moving between its own tills', () => {
+    // The outgoing leg of a bank-to-drawer transfer. Its matching receipt is
+    // counted as money in, so counting this as burn inflates the rate by the
+    // size of the transfer while the position is unchanged.
+    const burn = monthlyBurn(new Date('2026-09-30T00:00:00Z'), [
+      txn({ on: '2026-09-01', amount: 300_000, type: 'payment', category: 'Rent' }),
+      txn({ on: '2026-09-10', amount: 5_000_000, type: 'payment', category: 'Account Transfer' }),
+      txn({ on: '2026-09-10', amount: 5_000_000, type: 'receipt', category: 'Account Transfer' }),
+    ]);
+
+    expect(burn.status !== 'unavailable' && burn.value).toBe(300_000);
+  });
+
+  // Excluded from the shop's INCOME STATEMENT, because they are not costs of
+  // trading. Not excluded here: cover is a question about cash, and this
+  // money has left and is not coming back.
+  it.each(['Loan Repayment', 'Capital Withdrawal', 'Equipment purchase'])(
+    'counts %s, which shortens the runway even though it is not a trading cost',
+    (category) => {
+      const burn = monthlyBurn(new Date('2026-09-30T00:00:00Z'), [
+        txn({ on: '2026-09-01', amount: 300_000, type: 'payment', category }),
+      ]);
+
+      expect(burn.status !== 'unavailable' && burn.value).toBe(300_000);
+    },
+  );
+
+  it('cannot measure a running cost when every payment was stock', () => {
+    // Not a burn of zero. A zero would divide into cover as "forever".
+    const burn = monthlyBurn(new Date('2026-09-30T00:00:00Z'), [
+      txn({ on: '2026-09-15', amount: 9_000_000, type: 'payment', category: 'Stock Purchase' }),
+    ]);
+
+    expect(burn.status).toBe('unavailable');
+    expect(burn.status === 'unavailable' && burn.reason).toMatch(/went on stock/);
+  });
+
   it('gives no cover when nothing has been spent — not "forever"', () => {
     const cover = monthsOfCover(
       { status: 'known', value: Money.money(1_000_000), basis: 'held' },
