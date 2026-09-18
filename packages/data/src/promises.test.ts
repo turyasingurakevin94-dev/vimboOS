@@ -13,7 +13,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { Money } from '@ow/domain';
-import { promiseRow, PROMISE_ID_KIND, topPromiseId } from './promises.js';
+import { promiseRow, PROMISE_ID_KIND } from './promises.js';
+import { topId as topPromiseId } from './writer.js';
 
 const SHOP = 'e8d8beaf-8c2f-4734-bf55-4c206d117037';
 

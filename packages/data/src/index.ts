@@ -3,6 +3,8 @@ export * from './savedQuotes.js';
 export * from './invoices.js';
 export * from './customers.js';
 export * from './promises.js';
+export * from './quotes.js';
+export * from './writer.js';
 export * from './today.js';
 export * from './agents.js';
 export * from './tracking.js';
