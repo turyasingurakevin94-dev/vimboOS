@@ -9,7 +9,7 @@ import * as Money from './money.js';
 import { known, unavailable } from './derived.js';
 import { agingBands, read as readBook, totalOwed, type Customer } from './customers.js';
 import type { PurchaseInvoice } from './invoices.js';
-import type { CashPosition } from './cash.js';
+import type { CashPosition, CashTxn } from './cash.js';
 import {
   DUE_SOON_DAYS,
   MARGIN_DAYS,
@@ -20,7 +20,10 @@ import {
   type StockInput,
   type ShelfLine,
   type StockLot,
+  profitByProduct,
   soldByWeek,
+  yesterday,
+  type SoldLine,
   type StripInputs,
   weekStart,
 } from './today.js';
@@ -446,5 +449,134 @@ describe('sold by week', () => {
     expect(sold.tradedWeeks).toBe(0);
     expect(sold.runLength).toBe(0);
     expect(sold.bestIsLatest).toBe(false);
+  });
+});
+
+describe('where the profit came from', () => {
+  const line = (over: Partial<SoldLine> = {}): SoldLine => ({
+    on: daysAgo(3),
+    name: 'Iron sheets G28',
+    qty: 10,
+    sell: Money.money(12_000),
+    buy: Money.money(10_000),
+    ...over,
+  });
+
+  it('ranks by what was kept, not by what was sold', () => {
+    // Cement sells for more and keeps less. A panel headed "where the
+    // profit came from" that ranked by revenue would put it first.
+    const p = profitByProduct(
+      [
+        line({ name: 'Iron sheets G28', qty: 10, sell: Money.money(12_000), buy: Money.money(10_000) }),
+        line({ name: 'Cement', qty: 10, sell: Money.money(30_000), buy: Money.money(29_500) }),
+      ],
+      NOW,
+    );
+
+    expect(p.lines.map((l) => l.name)).toEqual(['Iron sheets G28', 'Cement']);
+    expect(p.lines[0]?.kept).toBe(Money.money(20_000));
+    expect(p.lines[1]?.kept).toBe(Money.money(5_000));
+  });
+
+  it('scales the bars against the biggest line', () => {
+    const p = profitByProduct(
+      [
+        line({ name: 'A', qty: 1, sell: Money.money(200), buy: Money.money(100) }),
+        line({ name: 'B', qty: 1, sell: Money.money(150), buy: Money.money(100) }),
+      ],
+      NOW,
+    );
+
+    expect(p.lines.map((l) => l.share)).toEqual([100, 50]);
+  });
+
+  it('counts a line with no buying price into sold and not into kept', () => {
+    const p = profitByProduct(
+      [line({ qty: 1, sell: Money.money(1_000), buy: null }), line({ qty: 1, sell: Money.money(1_000) })],
+      NOW,
+    );
+
+    // 2,000 sold, only the costed line's 200 kept — and it says so.
+    expect(p.lines[0]?.sold).toBe(Money.money(2_000));
+    expect(p.lines[0]?.margin.status).toBe('partial');
+  });
+
+  it('counts the lines it did not name rather than dropping them', () => {
+    const many = ['A', 'B', 'C', 'D', 'E', 'F'].map((name, i) =>
+      line({ name, qty: 1, sell: Money.money(1_000 - i), buy: Money.ZERO }),
+    );
+    const p = profitByProduct(many, NOW);
+
+    expect(p.lines).toHaveLength(4);
+    expect(p.otherLines).toBe(2);
+    expect(p.otherKept).toBe(Money.money(996 + 995));
+  });
+
+  it('leaves out what was sold before the window', () => {
+    expect(profitByProduct([line({ on: daysAgo(45) })], NOW).lines).toHaveLength(0);
+  });
+});
+
+describe('yesterday', () => {
+  const YESTERDAY = '2026-09-14';
+
+  const invoice = (over: Record<string, unknown> = {}): Parameters<typeof yesterday>[0][number] => ({
+    issued: new Date(`${YESTERDAY}T09:00:00Z`),
+    total: Money.money(1_000_000),
+    payments: [],
+    ...over,
+  });
+
+  const cash = (type: string, amount: number, on = YESTERDAY): CashTxn => ({
+    id: `${type}-${amount}`,
+    on,
+    account: 'cash',
+    type,
+    category: null,
+    amount: Money.money(amount),
+  });
+
+  it('counts what was invoiced, what arrived and what left', () => {
+    const y = yesterday(
+      [invoice()],
+      [cash('receipt', 700_000), cash('payment', 250_000), cash('receipt', 40_000, '2026-09-13')],
+      NOW,
+    );
+
+    expect(y.on.toISOString().slice(0, 10)).toBe(YESTERDAY);
+    expect(y.sold).toBe(Money.money(1_000_000));
+    expect(y.collected).toBe(Money.money(700_000));
+    expect(y.paidOut).toBe(Money.money(250_000));
+  });
+
+  // Cover asks how long the shop can keep running, where stock is cash
+  // changing shape. This tile asks what left the till, where it did.
+  it('counts stock purchases into what was paid out, unlike the burn', () => {
+    const stock = { ...cash('payment', 9_000_000), category: 'Stock Purchase' };
+
+    expect(yesterday([], [stock], NOW).paidOut).toBe(Money.money(9_000_000));
+  });
+
+  it('adds only the part of an invoice that was not settled on the day', () => {
+    const paid = invoice({
+      payments: [{ on: new Date(`${YESTERDAY}T10:00:00Z`), amount: Money.money(400_000) }],
+    });
+
+    expect(yesterday([paid], [], NOW).newDebt).toBe(Money.money(600_000));
+  });
+
+  it('adds nothing for an invoice paid in full at the counter', () => {
+    const paid = invoice({
+      payments: [{ on: new Date(`${YESTERDAY}T10:00:00Z`), amount: Money.money(1_000_000) }],
+    });
+
+    expect(yesterday([paid], [], NOW).newDebt).toBe(Money.ZERO);
+  });
+
+  it('ignores a cancelled invoice entirely', () => {
+    const void_ = invoice({ voided: { on: NOW, replacedBy: null } });
+
+    expect(yesterday([void_], [], NOW).sold).toBe(Money.ZERO);
+    expect(yesterday([void_], [], NOW).newDebt).toBe(Money.ZERO);
   });
 });

@@ -37,6 +37,7 @@ import {
   type AgingBand,
   type Derived,
   type ManagerMove,
+  type ProfitLine,
   type SoldByWeek,
   type TodayStrip,
 } from '@ow/domain';
@@ -259,6 +260,10 @@ function weeksReading(sold: SoldByWeek): string {
   return `The last ${weeks} above the ${window} — ${thisWeek}.`;
 }
 
+/** "14 Sep" — the shop's own date format, per §6. */
+const dayAndMonth = (d: Date): string =>
+  d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+
 /** "Tuesday 15 September". UTC, as every other date in these books is. */
 const longDay = (d: Date): string =>
   d.toLocaleDateString('en-GB', {
@@ -380,12 +385,23 @@ const WATCH: readonly Alert[] = [
 
 /* ------------------------------ insight rail ------------------------------ */
 
-const PRODUCTS = [
-  { name: 'Iron sheets G28', money: '4,120,000', pct: '31%', tone: 'good', width: 100 },
-  { name: 'Cement — Tororo', money: '2,980,000', pct: '18%', tone: 'neutral', width: 72 },
-  { name: 'Steel bars Y12', money: '1,640,000', pct: '9%', tone: 'thin', width: 40 },
-  { name: 'Binding wire', money: '1,205,000', pct: '22%', tone: 'good', width: 29 },
-] as const;
+/**
+ * Which tint a product's margin earns.
+ *
+ * The handoff paints these by hand — G28 and binding wire good, cement
+ * neutral, steel bars thin — and reading the numbers back gives the rule it
+ * was following: 31% and 22% good, 18% neutral, 9% thin. So the thresholds
+ * are 20 and 15, and the tint follows the figure rather than the row.
+ *
+ * A tint means something here, per §2: green is money kept, amber is thin,
+ * grey is inert. A margin that cannot be derived gets the inert one — it is
+ * not a thin margin, it is no answer.
+ */
+function marginTone(p: ProfitLine): keyof typeof TONE {
+  if (p.margin.status === 'unavailable') return 'neutral';
+  if (p.margin.value >= 20) return 'good';
+  return p.margin.value >= 15 ? 'neutral' : 'thin';
+}
 
 const TONE = {
   good: { fill: v('good-chip-light'), ink: v('good-ink') },
@@ -659,36 +675,43 @@ function Morning({
           <section className={`${s.card} ${s.panel}`}>
             <div className={s.panelTitle}>Where the profit came from</div>
             <div className={s.panelSub}>Last 30 days · gross margin</div>
-            {PRODUCTS.map((p, i) => (
+            {books.profit.lines.map((p, i) => (
               <div className={s.product} key={p.name}>
                 <div className={s.productTop}>
                   <span className={s.productName} title={p.name}>
                     {p.name}
                   </span>
-                  <span className={s.productFig}>{p.money}</span>
+                  <span className={s.productFig}>{Money.format(p.kept)}</span>
                   <span
                     className={`${s.chip} ${s.chipSm}`}
-                    style={{ background: TONE[p.tone].fill, color: TONE[p.tone].ink }}
+                    style={{ background: TONE[marginTone(p)].fill, color: TONE[marginTone(p)].ink }}
                   >
-                    {p.pct}
+                    {/* A line that sold nothing has no share to take, and
+                        says so rather than reading 0%. */}
+                    {p.margin.status === 'unavailable' ? '—' : `${p.margin.value}%`}
                   </span>
                 </div>
                 <div className={s.productBarTrack}>
                   <div
                     className={s.productBar}
                     style={{
-                      width: `${p.width}%`,
-                      background: `var(--ow-violet-${i + 1})`,
+                      width: `${p.share}%`,
+                      background: `var(--ow-violet-${Math.min(4, i + 1)})`,
                     }}
                   />
                 </div>
               </div>
             ))}
             {/* Truncating a list says how many were cut. */}
-            <div className={s.notListed}>
-              <span className={s.grow}>54 other lines</span>
-              <span className={s.productFig}>3,260,000</span>
-            </div>
+            {books.profit.otherLines > 0 && (
+              <div className={s.notListed}>
+                <span className={s.grow}>
+                  {books.profit.otherLines} other{' '}
+                  {books.profit.otherLines === 1 ? 'line' : 'lines'}
+                </span>
+                <span className={s.productFig}>{Money.format(books.profit.otherKept)}</span>
+              </div>
+            )}
           </section>
 
           <section className={`${s.card} ${s.panel} ${s.weeks}`}>
@@ -729,26 +752,29 @@ function Morning({
           </section>
 
           <section className={`${s.card} ${s.panel}`}>
-            <div className={s.panelTitle}>Yesterday</div>
+            {/* The day, not the word. "Yesterday" on a Monday morning means
+                Sunday, and a shop that did not open on Sunday is owed an
+                explanation rather than four noughts. */}
+            <div className={s.panelTitle}>Yesterday · {dayAndMonth(books.yesterday.on)}</div>
             <div className={s.tiles}>
               <div className={s.tile} style={{ background: v('surface-2') }}>
                 <div className={s.tileLabel}>Sold</div>
-                <div className={s.tileFig}>4,186,000</div>
+                <div className={s.tileFig}>{Money.format(books.yesterday.sold)}</div>
               </div>
               <div className={s.tile} style={{ background: v('good-fill') }}>
                 <div className={s.tileLabel}>Collected</div>
                 <div className={s.tileFig} style={{ color: v('good-ink') }}>
-                  2,940,000
+                  {Money.format(books.yesterday.collected)}
                 </div>
               </div>
               <div className={s.tile} style={{ background: v('surface-2') }}>
                 <div className={s.tileLabel}>Paid out</div>
-                <div className={s.tileFig}>1,760,000</div>
+                <div className={s.tileFig}>{Money.format(books.yesterday.paidOut)}</div>
               </div>
               <div className={s.tile} style={{ background: v('bad-fill') }}>
                 <div className={s.tileLabel}>New debt</div>
                 <div className={s.tileFig} style={{ color: v('bad-ink') }}>
-                  1,246,000
+                  {Money.format(books.yesterday.newDebt)}
                 </div>
               </div>
             </div>

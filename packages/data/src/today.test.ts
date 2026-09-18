@@ -16,6 +16,7 @@ import {
   readCashTxns,
   readMarginLines,
   readShelfLines,
+  readSoldLines,
 } from './today.js';
 
 const NOW = new Date('2026-09-18T06:00:00Z');
@@ -104,7 +105,7 @@ describe('the week’s margin', () => {
     // 10 × (12,000 − 10,000) kept on 10 × 12,000 sold. The 500,000 of
     // transport is revenue with no cost beside it; counting it as sold would
     // report it as pure margin.
-    const m = readMarginLines([quote([{ qty: 10, sellPrice: 12_000, price: 10_000 }])]);
+    const m = readMarginLines(readSoldLines([quote([{ qty: 10, sellPrice: 12_000, price: 10_000 }])]));
 
     expect(m.sold).toBe(Money.money(120_000));
     expect(m.kept).toBe(Money.money(20_000));
@@ -113,15 +114,30 @@ describe('the week’s margin', () => {
   });
 
   it('counts a line with no buying price into what was sold and not what was kept', () => {
-    const m = readMarginLines([quote([{ qty: 2, sellPrice: 5_000 }])]);
+    const m = readMarginLines(readSoldLines([quote([{ qty: 2, sellPrice: 5_000 }])]));
 
     expect(m.sold).toBe(Money.money(10_000));
     expect(m.kept).toBe(Money.ZERO);
     expect(m.linesWithoutCost).toBe(1);
   });
 
+  it('names a line by the product on the order', () => {
+    const [line] = readSoldLines([quote([{ qty: 1, sellPrice: 1, productName: 'Iron sheets G28' }])]);
+
+    expect(line?.name).toBe('Iron sheets G28');
+    // A line with no name at all is numbered rather than dropped: it still
+    // sold something, and losing it would understate the month.
+    expect(readSoldLines([quote([{ qty: 1, sellPrice: 1 }])])[0]?.name).toBe('item 1');
+  });
+
+  it('drops an order with no date, which no window could place', () => {
+    expect(readSoldLines([quote([{ qty: 1, sellPrice: 1 }], { date: null })])).toHaveLength(0);
+  });
+
   it('ignores a voided sale', () => {
-    const m = readMarginLines([quote([{ qty: 2, sellPrice: 5_000, price: 1_000 }], { voided: true })]);
+    const m = readMarginLines(
+      readSoldLines([quote([{ qty: 2, sellPrice: 5_000, price: 1_000 }], { voided: true })]),
+    );
 
     expect(m.linesCounted).toBe(0);
   });

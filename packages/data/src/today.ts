@@ -39,9 +39,11 @@ import {
   DEAD_STOCK_DAYS,
   known,
   MARGIN_DAYS,
+  profitByProduct,
   rankMoves,
   SOLD_WEEKS,
   soldByWeek,
+  yesterday,
   Money,
   monthlyBurn,
   readStrip,
@@ -56,12 +58,15 @@ import {
   type PurchaseInvoice,
   type ManagerMove,
   type MoveRecord,
+  type ProfitByProduct,
   type ShelfLine,
   type SoldByWeek,
+  type SoldLine,
+  type Yesterday,
   type StockLot,
   type TodayStrip,
 } from '@ow/domain';
-import { readMoney, readText } from './boundary.js';
+import { readDate, readMoney, readText } from './boundary.js';
 import { current } from './client.js';
 import { readRegister } from './customers.js';
 import {
@@ -99,6 +104,10 @@ export interface TodayBooks {
   readonly moves: readonly ManagerMove[];
   /** The twelve week bars and the sentence under them, as one reckoning. */
   readonly sold: SoldByWeek;
+  /** Which lines the last month's profit came from. */
+  readonly profit: ProfitByProduct;
+  /** The four tiles: what the shop did on the last full day. */
+  readonly yesterday: Yesterday;
   /** Manager moves still open. The mockup draws three; the shop has 39. */
   readonly openMoves: number;
   /** The page's sub-line and the rail badge, as one number. */
@@ -275,17 +284,17 @@ export function deadLines(
  * than quietly reporting the shop's best-ever margin on its worst-documented
  * line.
  */
-export function readMarginLines(sales: readonly unknown[]): MarginInput {
-  let sold = 0;
-  let kept = 0;
-  let linesWithoutCost = 0;
-  let linesCounted = 0;
+export function readSoldLines(sales: readonly unknown[]): readonly SoldLine[] {
+  const out: SoldLine[] = [];
 
   for (const rawQuote of sales) {
     const quote = obj(rawQuote);
     if (quote === null || quote.voided === true) continue;
 
-    for (const rawItem of arr(obj(quote.payload)?.items)) {
+    const on = readDate(quote.date);
+    if (on === null) continue;
+
+    for (const [i, rawItem] of arr(obj(quote.payload)?.items).entries()) {
       const item = obj(rawItem);
       if (item === null) continue;
 
@@ -293,23 +302,41 @@ export function readMarginLines(sales: readonly unknown[]): MarginInput {
       const sell = num(item.sellPrice);
       if (qty === null || sell === null) continue;
 
-      linesCounted += 1;
-      sold += qty * sell;
-
       const buy = num(item.price);
-      if (buy === null) {
-        linesWithoutCost += 1;
-        continue;
-      }
-      kept += qty * (sell - buy);
+
+      out.push({
+        on,
+        // The name the order carried. `productId` is the better key the day
+        // every row has one — the same note the Invoices register makes
+        // about matching a customer.
+        name: readText(item.productName) ?? readText(item.name) ?? `item ${i + 1}`,
+        qty,
+        sell: Money.money(Math.round(sell)),
+        buy: buy === null ? null : Money.money(Math.round(buy)),
+      });
     }
+  }
+
+  return out;
+}
+
+/** The margin cell's four figures, over whichever lines it is given. */
+export function readMarginLines(lines: readonly SoldLine[]): MarginInput {
+  let sold = 0;
+  let kept = 0;
+  let linesWithoutCost = 0;
+
+  for (const l of lines) {
+    sold += l.qty * l.sell;
+    if (l.buy === null) linesWithoutCost += 1;
+    else kept += l.qty * (l.sell - l.buy);
   }
 
   return {
     kept: Money.money(Math.round(kept)),
     sold: Money.money(Math.round(sold)),
     linesWithoutCost,
-    linesCounted,
+    linesCounted: lines.length,
   };
 }
 
@@ -409,8 +436,9 @@ export function assembleToday(rows: {
     unreadable.push(...bad.map((b) => `${purchase.doc}: ${b}`));
   }
 
-  const marginFrom = isoDay(new Date(rows.now.getTime() - MARGIN_DAYS * DAY));
-  const marginRows = rows.sales.filter((raw) => (readText(obj(raw)?.date) ?? '') >= marginFrom);
+  const soldLines = readSoldLines(rows.sales);
+  const marginFrom = rows.now.getTime() - MARGIN_DAYS * DAY;
+  const marginLines = soldLines.filter((l) => l.on.getTime() >= marginFrom);
 
   const sales = [];
   for (const raw of rows.sales) {
@@ -449,7 +477,7 @@ export function assembleToday(rows: {
       burn: monthlyBurn(rows.now, txns),
       customers: rows.customers,
       purchases,
-      margin: readMarginLines(marginRows),
+      margin: readMarginLines(marginLines),
       stock: {
         shelf,
         // Named, not guessed. See the header.
@@ -467,6 +495,8 @@ export function assembleToday(rows: {
   return {
     strip,
     sold: soldByWeek(sales, rows.now),
+    profit: profitByProduct(soldLines, rows.now),
+    yesterday: yesterday(sales, txns, rows.now),
     moves: moves ?? [],
     openMoves,
     wantsYou: wantsYou(strip, openMoves),

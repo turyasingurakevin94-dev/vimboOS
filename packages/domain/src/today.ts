@@ -26,8 +26,8 @@
 import { known, partial, unavailable, type Derived } from './derived.js';
 import * as Money from './money.js';
 import type { Money as Amount } from './money.js';
-import type { CashPosition } from './cash.js';
-import { monthsOfCover } from './cash.js';
+import type { CashPosition, CashTxn } from './cash.js';
+import { isMoneyIn, isMoneyOut, monthsOfCover } from './cash.js';
 import {
   agingBands,
   read as readBook,
@@ -531,5 +531,161 @@ export function soldByWeek(
     tradedWeeks: traded.length,
     bestIsLatest: newest !== undefined && tallest > 0 && newest.sold === tallest,
     runLength,
+  };
+}
+
+/* --------------------------- where profit came from ----------------------- */
+
+/** The window the profit panel measures. Its own "Last 30 days". */
+export const PROFIT_DAYS = 30;
+
+/** How many lines the panel names before it starts counting the rest. */
+export const PROFIT_LINES = 4;
+
+/** One line off an order, in the terms profit is worked out from. */
+export interface SoldLine {
+  readonly on: Date;
+  readonly name: string;
+  readonly qty: number;
+  /** What the client paid. `payload.items[].sellPrice`. */
+  readonly sell: Amount;
+  /** What the shop paid. `payload.items[].price`. `null` when unrecorded. */
+  readonly buy: Amount | null;
+}
+
+export interface ProfitLine {
+  readonly name: string;
+  readonly kept: Amount;
+  readonly sold: Amount;
+  readonly margin: Derived<number>;
+  /** Share of the biggest line's profit, 0–100 — the bar's width. */
+  readonly share: number;
+}
+
+export interface ProfitByProduct {
+  readonly lines: readonly ProfitLine[];
+  /** Lines not named, and what they kept between them. */
+  readonly otherLines: number;
+  readonly otherKept: Amount;
+}
+
+/**
+ * Which lines the month's profit actually came from.
+ *
+ * Grouped by the name the order carried, because that is the only key every
+ * version of the payload has — `productId` exists on newer rows and is the
+ * better key the day every row has one, exactly as the Invoices register
+ * says about matching a customer.
+ *
+ * A line whose buying price was never recorded counts into what was SOLD
+ * and not into what was KEPT, so its product's margin comes back `partial`
+ * naming how many. Treating the missing cost as zero would report the
+ * shop's best-ever margin on its worst-documented product — the bug
+ * `Derived` exists to end, and the same rule the strip's margin cell takes.
+ */
+export function profitByProduct(
+  lines: readonly SoldLine[],
+  now: Date,
+  days: number = PROFIT_DAYS,
+  top: number = PROFIT_LINES,
+): ProfitByProduct {
+  const since = now.getTime() - days * DAY;
+  const inWindow = lines.filter((l) => l.on.getTime() >= since);
+
+  const byName = new Map<string, { kept: number; sold: number; blind: number; count: number }>();
+  for (const l of inWindow) {
+    const at = byName.get(l.name) ?? { kept: 0, sold: 0, blind: 0, count: 0 };
+    at.sold += l.qty * l.sell;
+    at.count += 1;
+    if (l.buy === null) at.blind += 1;
+    else at.kept += l.qty * (l.sell - l.buy);
+    byName.set(l.name, at);
+  }
+
+  const ranked = [...byName.entries()]
+    .map(([name, at]) => ({ name, ...at }))
+    .sort((a, b) => b.kept - a.kept);
+
+  const biggest = ranked[0]?.kept ?? 0;
+  const named = ranked.slice(0, top);
+  const rest = ranked.slice(top);
+
+  return {
+    lines: named.map((l) => {
+      const pct = l.sold === 0 ? null : Math.round((l.kept / l.sold) * 100);
+      const basis = `${Money.format(Money.money(Math.round(l.kept)))} kept on ${Money.format(Money.money(Math.round(l.sold)))} sold`;
+
+      return {
+        name: l.name,
+        kept: Money.money(Math.round(l.kept)),
+        sold: Money.money(Math.round(l.sold)),
+        margin:
+          pct === null
+            ? unavailable('nothing was sold on this line, so there is no share to take')
+            : l.blind === 0
+              ? known(pct, basis)
+              : partial(pct, basis, `${l.blind} of ${l.count} lines have no buying price`),
+        share: biggest <= 0 ? 0 : Math.max(0, Math.round((l.kept / biggest) * 100)),
+      };
+    }),
+    otherLines: rest.length,
+    otherKept: Money.money(Math.round(rest.reduce((n, l) => n + l.kept, 0))),
+  };
+}
+
+/* -------------------------------- yesterday ------------------------------- */
+
+/** The four tiles: what the shop did on the last full day. */
+export interface Yesterday {
+  readonly on: Date;
+  /** What was invoiced. */
+  readonly sold: Amount;
+  /** What actually arrived, across the tills. */
+  readonly collected: Amount;
+  /** Everything that left, stock included — this is not the burn. */
+  readonly paidOut: Amount;
+  /** What was invoiced and not settled on the day. */
+  readonly newDebt: Amount;
+}
+
+/**
+ * Yesterday, in four figures.
+ *
+ * **`paidOut` is every shilling that left, stock purchases included**, and
+ * that is deliberately not the reckoning `monthlyBurn` uses. Cover asks how
+ * long the shop can keep running, where buying stock is cash changing
+ * shape; this tile asks what went out of the till yesterday, where it very
+ * much did. Two questions, two answers, and the tile labels say which.
+ *
+ * `newDebt` is what was invoiced and not settled on the day, off the
+ * invoices' own payments — not a second debt ledger. An invoice paid in
+ * full at the counter adds nothing here, which is the point.
+ */
+export function yesterday(
+  sales: readonly Pick<SalesInvoice, 'issued' | 'total' | 'payments' | 'voided'>[],
+  txns: readonly CashTxn[],
+  now: Date,
+): Yesterday {
+  const on = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - DAY,
+  );
+  const day = on.toISOString().slice(0, 10);
+
+  const raised = sales.filter(
+    (s) => s.voided === undefined && s.issued.toISOString().slice(0, 10) === day,
+  );
+  const settled = (s: (typeof raised)[number]): Amount =>
+    Money.add(...s.payments.filter((p) => p.on.toISOString().slice(0, 10) === day).map((p) => p.amount));
+
+  const moved = txns.filter((t) => t.on === day);
+
+  return {
+    on,
+    sold: Money.add(...raised.map((s) => s.total)),
+    collected: Money.add(...moved.filter(isMoneyIn).map((t) => t.amount)),
+    paidOut: Money.add(...moved.filter(isMoneyOut).map((t) => t.amount)),
+    newDebt: Money.add(
+      ...raised.map((s) => Money.max(Money.ZERO, Money.subtract(s.total, settled(s)))),
+    ),
   };
 }

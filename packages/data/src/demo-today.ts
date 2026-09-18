@@ -42,6 +42,7 @@
 import {
   known,
   Money,
+  profitByProduct,
   rankMoves,
   readStrip,
   soldByWeek,
@@ -50,6 +51,8 @@ import {
   type CashPosition,
   type MarginInput,
   type MoveRecord,
+  type SoldLine,
+  type Yesterday,
   type StockInput,
 } from '@ow/domain';
 import { demoCustomers } from './demo-customers.js';
@@ -116,6 +119,62 @@ const demoStock = (): StockInput => ({
     'dead stock is valued at FIFO cost in the shop’s own books, and that reckoning is not ported yet',
   ),
   deadLines: 6,
+});
+
+/**
+ * The four lines the handoff's profit panel names, plus the 54 it counts.
+ *
+ * Stated here rather than taken from `demoSalesInvoices()`, because an
+ * invoice line carries no buying price — deliberately: *"an invoice is what
+ * the client was charged, and the buying price is not part of that
+ * document."* Profit needs both halves, so it comes from order lines, and
+ * the example books have none yet. Sized to the handoff's own figures so
+ * the real reckoning reproduces the panel it drew.
+ */
+const demoSoldLines = (): readonly SoldLine[] => {
+  const on = new Date(DEMO_TODAY.getTime() - 5 * 86_400_000);
+
+  /** One line that keeps `kept` at `pct` per cent, which fixes what it sold. */
+  const line = (name: string, kept: number, pct: number): SoldLine => {
+    const sold = Math.round(kept / (pct / 100));
+    return {
+      on,
+      name,
+      qty: 1,
+      sell: Money.money(sold),
+      buy: Money.money(sold - kept),
+    };
+  };
+
+  // The 54 the panel does not name, sharing their 3,260,000 a shilling at a
+  // time so the total it prints is the total of the rows behind it.
+  const rest = Money.allocate(Money.money(3_260_000), 54).map((share, i) =>
+    line(`Other line ${i + 1}`, share, 25),
+  );
+
+  return [
+    line('Iron sheets G28', 4_120_000, 31),
+    line('Cement — Tororo', 2_980_000, 18),
+    line('Steel bars Y12', 1_640_000, 9),
+    line('Binding wire', 1_205_000, 22),
+    ...rest,
+  ];
+};
+
+/**
+ * Yesterday, at the handoff's four figures.
+ *
+ * Stated for the same reason cash is: there is no Cash Book screen and no
+ * example cash movements for one to own. Its own numbers are consistent —
+ * 4,186,000 sold less 2,940,000 collected is the 1,246,000 of new debt it
+ * prints — which is more than can be said for several of its sentences.
+ */
+const demoYesterday = (): Yesterday => ({
+  on: new Date(DEMO_TODAY.getTime() - 86_400_000),
+  sold: Money.money(4_186_000),
+  collected: Money.money(2_940_000),
+  paidOut: Money.money(1_760_000),
+  newDebt: Money.money(1_246_000),
 });
 
 /**
@@ -198,6 +257,10 @@ export function demoToday(): TodayBooks {
     // sentence written next to them. The handoff's own is wrong four ways
     // over; see `soldByWeek`.
     sold: soldByWeek(demoSalesInvoices(), DEMO_TODAY),
+    // Off the example invoices' own lines, so the panel and the strip's
+    // margin cell are reading the same rows.
+    profit: profitByProduct(demoSoldLines(), DEMO_TODAY),
+    yesterday: demoYesterday(),
     moves,
     openMoves: moves.length,
     wantsYou: wantsYou(strip, moves.length),
