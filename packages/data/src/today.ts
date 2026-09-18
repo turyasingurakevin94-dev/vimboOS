@@ -39,6 +39,7 @@ import {
   DEAD_STOCK_DAYS,
   known,
   MARGIN_DAYS,
+  rankMoves,
   SOLD_WEEKS,
   soldByWeek,
   Money,
@@ -53,6 +54,8 @@ import {
   type Derived,
   type MarginInput,
   type PurchaseInvoice,
+  type ManagerMove,
+  type MoveRecord,
   type ShelfLine,
   type SoldByWeek,
   type StockLot,
@@ -87,6 +90,13 @@ const num = (v: unknown): number | null => {
 
 export interface TodayBooks {
   readonly strip: TodayStrip;
+  /**
+   * The moves still open, ranked. The handoff's sub-heading says "three
+   * moves from last night's reading" and draws eight; this shop has 39
+   * open. The owner has decided Today shows more than three — a named
+   * deviation from the mockup, flagged for design, not done quietly.
+   */
+  readonly moves: readonly ManagerMove[];
   /** The twelve week bars and the sentence under them, as one reckoning. */
   readonly sold: SoldByWeek;
   /** Manager moves still open. The mockup draws three; the shop has 39. */
@@ -303,6 +313,54 @@ export function readMarginLines(sales: readonly unknown[]): MarginInput {
   };
 }
 
+/* ------------------------------- the moves ------------------------------- */
+
+/**
+ * `manager_notes` move rows, in the terms `manager.ts` ranks.
+ *
+ * The body is a jsonb blob written by a language model and stored as data,
+ * never trusted as structure — the old app's own words. So every field is
+ * read defensively and an unknown one becomes nothing rather than a label
+ * the screen would print unchallenged.
+ */
+export function readMoves(rows: readonly unknown[], notes: string[]): readonly MoveRecord[] {
+  const out: MoveRecord[] = [];
+
+  for (const raw of rows) {
+    const row = obj(raw);
+    if (row === null) continue;
+
+    const body = obj(row.body) ?? {};
+    const title = readText(body.title);
+    if (title === null) {
+      notes.push('a manager move has no title, so there is nothing to show for it');
+      continue;
+    }
+
+    const worth = num(body.worth);
+    const after = num(body.after);
+
+    out.push({
+      id: String(num(row.id) ?? readText(row.id) ?? ''),
+      meetingId: readText(row.meeting_id) ?? (num(row.meeting_id)?.toString() ?? null),
+      title,
+      why: readText(body.why) ?? '',
+      worth: worth === null ? null : Money.money(Math.round(worth)),
+      worthBasis: readText(body.worthBasis),
+      lever: readText(body.lever),
+      unlocks: readText(body.unlocks),
+      door: readText(body.door),
+      after: after === null || !Number.isInteger(after) || after < 0 ? null : after,
+      // 'open' is the only unsettled state 0081 writes. Anything else —
+      // done, declined, or a status this app has never heard of — is not
+      // something to put in front of the owner as work outstanding.
+      settled: readText(row.status) !== 'open',
+    });
+  }
+
+  return out;
+}
+
 /* ------------------------------ assembling ------------------------------- */
 
 /** Rows in, Today out — with no client anywhere near it. */
@@ -324,7 +382,14 @@ export function assembleToday(rows: {
   readonly lots: readonly unknown[];
   /** `null` when `stock_log` could not be read at all. */
   readonly saleLog: readonly unknown[] | null;
-  /** `null` when `manager_notes` could not be read at all. */
+  /**
+   * Every move row, settled ones included and in id order.
+   *
+   * Not just the open ones: `after` is a position within a meeting's own
+   * plan, so a list with the settled moves removed repoints every
+   * dependency at whatever rose into the vacated slot. `null` when
+   * `manager_notes` could not be read at all.
+   */
   readonly moves: readonly unknown[] | null;
   /** The shop's own `presets.deadStockDays`, or `null` if unset. */
   readonly deadStockDays: number | null;
@@ -373,8 +438,8 @@ export function assembleToday(rows: {
     unreadable.push('the stock history could not be read, so no line can be called dead');
   }
 
-  const openMoves = rows.moves === null ? null : rows.moves.length;
-  if (openMoves === null) {
+  const moves = rows.moves === null ? null : rankMoves(readMoves(rows.moves, unreadable));
+  if (moves === null) {
     unreadable.push('the manager’s moves could not be read');
   }
 
@@ -397,11 +462,14 @@ export function assembleToday(rows: {
     rows.now,
   );
 
+  const openMoves = moves?.length ?? 0;
+
   return {
     strip,
     sold: soldByWeek(sales, rows.now),
-    openMoves: openMoves ?? 0,
-    wantsYou: wantsYou(strip, openMoves ?? 0),
+    moves: moves ?? [],
+    openMoves,
+    wantsYou: wantsYou(strip, openMoves),
     asOf: rows.now,
     unreadable,
   };
@@ -441,12 +509,14 @@ export async function readToday(shopId: string, now: Date): Promise<Derived<Toda
       sb.from('stock_lots').select('key, qty, cost, consign').eq('shop_id', shopId),
       // Only sales end a quiet run, so only sales are fetched.
       sb.from('stock_log').select('key, type, date').eq('shop_id', shopId).eq('type', 'sale'),
+      // Every move, not only the open ones, and in id order — `after`
+      // counts within a meeting's plan and a gap in the list moves it.
       sb
         .from('manager_notes')
-        .select('id, kind, status')
+        .select('id, meeting_id, kind, status, date, body')
         .eq('shop_id', shopId)
         .eq('kind', 'move')
-        .eq('status', 'open'),
+        .order('id', { ascending: true }),
       sb.from('app_settings').select('presets').eq('shop_id', shopId).maybeSingle(),
     ]);
 

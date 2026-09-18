@@ -42,12 +42,14 @@
 import {
   known,
   Money,
+  rankMoves,
   readStrip,
   soldByWeek,
   unavailable,
   wantsYou,
   type CashPosition,
   type MarginInput,
+  type MoveRecord,
   type StockInput,
 } from '@ow/domain';
 import { demoCustomers } from './demo-customers.js';
@@ -116,10 +118,67 @@ const demoStock = (): StockInput => ({
   deadLines: 6,
 });
 
-/** How many moves the handoff's own list holds — its "01 of 08". */
-export const DEMO_OPEN_MOVES = 8;
+/**
+ * The handoff's three moves, as `manager_notes` rows.
+ *
+ * Its cards are stamped "01 of 08", "02 of 08", "03 of 08" — and there are
+ * three of them. The sub-heading above says "three moves", so the array and
+ * the heading agree and only the stamps are wrong. They are derived now, so
+ * the count on a card is the count in the list.
+ *
+ * `worthBasis` is the old app's vocabulary rather than the handoff's labels,
+ * because two of those labels change the claim: the handoff calls
+ * `loss_avoided` "Sales at risk", and avoided loss is money kept where
+ * sales at risk is money that might go. Raised for design.
+ */
+const demoMoves = (): readonly MoveRecord[] => [
+  {
+    id: '1',
+    meetingId: 'demo-meeting',
+    title: 'Ask Mulongo Hardware for a deposit before the next delivery',
+    why: 'Five chases since 2 August produced nothing, and they have taken two deliveries on credit since. The debt is 44 days old.',
+    worth: Money.money(3_330_000),
+    worthBasis: 'cash_freed',
+    lever: 'collect',
+    unlocks: 'the 40 boxes of G28 that need ordering before Friday',
+    door: 'chase',
+    after: null,
+    settled: false,
+  },
+  {
+    id: '2',
+    meetingId: 'demo-meeting',
+    title: 'Raise iron sheets G28 by 4% — you are still selling at May’s cost',
+    why: 'Kampala Steel billed 13,000 a sheet on 20 July against 10,000 on 1 May. The shelf price has not moved since April.',
+    worth: Money.money(1_180_000),
+    worthBasis: 'profit_30d',
+    lever: 'price',
+    unlocks: null,
+    door: 'prices',
+    after: null,
+    settled: false,
+  },
+  {
+    id: '3',
+    meetingId: 'demo-meeting',
+    title: 'Order 40 boxes of G28 before Friday',
+    why: 'Six days of cover at the last four weeks’ rate. The order needs 9,600,000 against 8,420,000 held — the Mulongo deposit covers the gap.',
+    worth: Money.money(7_400_000),
+    worthBasis: 'loss_avoided',
+    lever: 'buy',
+    unlocks: null,
+    // The handoff's button says "Open forecasts". `MANAGER_DOORS` has no
+    // forecasts entry — the nearest real door for "order 40 boxes" is What
+    // to buy, and the label is the door's own rather than the handoff's.
+    door: 'buy',
+    // "waits on 01", which is index 0 of this meeting's plan.
+    after: 0,
+    settled: false,
+  },
+];
 
 export function demoToday(): TodayBooks {
+  const moves = rankMoves(demoMoves());
   const strip = readStrip(
     {
       cash: demoCash(),
@@ -139,8 +198,9 @@ export function demoToday(): TodayBooks {
     // sentence written next to them. The handoff's own is wrong four ways
     // over; see `soldByWeek`.
     sold: soldByWeek(demoSalesInvoices(), DEMO_TODAY),
-    openMoves: DEMO_OPEN_MOVES,
-    wantsYou: wantsYou(strip, DEMO_OPEN_MOVES),
+    moves,
+    openMoves: moves.length,
+    wantsYou: wantsYou(strip, moves.length),
     asOf: DEMO_TODAY,
     unreadable: [],
   };

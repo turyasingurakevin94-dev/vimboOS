@@ -179,11 +179,56 @@ describe('assembling the screen', () => {
     expect(assembleToday(base).strip.stock.dead.status).toBe('unavailable');
   });
 
+  /**
+   * The fixture changed, not the assertion.
+   *
+   * It used to be `[{id:1},{id:2},{id:3}]` — three bare ids, which was
+   * enough when this only counted rows. `readMoves` now parses them, and a
+   * row with no title in its body and no 'open' status is not a move the
+   * owner can be shown. So the rows are shaped like real ones; what is
+   * being claimed — the open moves are counted, and the badge reads that
+   * count — is exactly what it was.
+   */
+  const moveRow = (id: number, over: Record<string, unknown> = {}): unknown => ({
+    id,
+    meeting_id: 1,
+    kind: 'move',
+    status: 'open',
+    body: { title: `Move ${id}`, why: 'because', worth: 1_000_000, worthBasis: 'cash_freed' },
+    ...over,
+  });
+
   it('counts the moves that are open, which is what the badge shows', () => {
-    const books = assembleToday({ ...base, moves: [{ id: 1 }, { id: 2 }, { id: 3 }] });
+    const books = assembleToday({
+      ...base,
+      moves: [moveRow(1), moveRow(2), moveRow(3)],
+    });
 
     expect(books.openMoves).toBe(3);
+    expect(books.moves).toHaveLength(3);
     expect(books.wantsYou).toBeGreaterThanOrEqual(3);
+  });
+
+  it('leaves a settled move out of the count but keeps it for dependencies', () => {
+    const books = assembleToday({
+      ...base,
+      moves: [
+        moveRow(1, { status: 'done' }),
+        moveRow(2, { body: { title: 'Order the sheets', after: 0 } }),
+      ],
+    });
+
+    expect(books.openMoves).toBe(1);
+    // Its blocker is done, so it is not waiting on anything — but the
+    // settled row still had to be present for `after: 0` to resolve.
+    expect(books.moves[0]?.waitsOn).toBeNull();
+  });
+
+  it('drops a move with no title and says so rather than drawing a blank card', () => {
+    const books = assembleToday({ ...base, moves: [moveRow(1, { body: { why: 'no title' } })] });
+
+    expect(books.openMoves).toBe(0);
+    expect(books.unreadable.some((u) => u.includes('no title'))).toBe(true);
   });
 
   it('says the moves are unknown rather than reporting none open', () => {

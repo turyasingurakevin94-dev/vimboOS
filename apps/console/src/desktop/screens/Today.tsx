@@ -33,9 +33,10 @@
 import { useState, type ReactElement } from 'react';
 import {
   Money,
+  SOLD_WEEKS,
   type AgingBand,
   type Derived,
-  SOLD_WEEKS,
+  type ManagerMove,
   type SoldByWeek,
   type TodayStrip,
 } from '@ow/domain';
@@ -277,60 +278,47 @@ const clock = (d: Date): string =>
 
 /* --------------------------------- moves ---------------------------------- */
 
-interface Move {
-  readonly pos: string;
-  readonly worthLabel: string;
-  readonly worth: string;
-  readonly gain?: boolean;
-  readonly waitsOn?: string;
-  readonly title: string;
-  readonly why: string;
-  readonly derivation: string;
-  readonly actions: readonly {
-    readonly label: string;
-    readonly kind: 'primary' | 'secondary' | 'dark';
-    readonly icon?: IconName;
-    readonly iconAfter?: boolean;
-  }[];
-}
+/** "01 of 03" — counted, never stamped. The handoff's cards all say "of 08". */
+const movePos = (m: ManagerMove): string =>
+  `${String(m.position).padStart(2, '0')} of ${String(m.of).padStart(2, '0')}`;
 
-const MOVES: readonly Move[] = [
-  {
-    pos: '01 of 08',
-    worthLabel: 'Tied up',
-    worth: '3,330,000',
-    title: 'Ask Mulongo Hardware for a deposit before the next delivery',
-    why: 'Five chases since 2 August produced nothing, and they have taken two deliveries on credit since. The debt is 44 days old.',
-    derivation:
-      '3,330,000 across 4 invoices, oldest 2 August. Five chase messages sent, none answered. Two deliveries released on credit on 19 August and 3 September, worth 1,910,000 together.',
-    actions: [
-      { label: 'Draft the chase', kind: 'primary', icon: 'message-circle' },
-      { label: 'Open Mulongo', kind: 'secondary', icon: 'arrow-right', iconAfter: true },
-    ],
-  },
-  {
-    pos: '02 of 08',
-    worthLabel: 'Margin a month',
-    worth: '+1,180,000',
-    gain: true,
-    title: 'Raise iron sheets G28 by 4% — you are still selling at May’s cost',
-    why: 'Kampala Steel billed 13,000 a sheet on 20 July against 10,000 on 1 May. The shelf price has not moved since April.',
-    derivation:
-      '10,000 on 1 May, 13,000 now · across 9 invoices. At 4% on the current shelf price and last month’s volume of 295 sheets, the recovery is 1,180,000 a month.',
-    actions: [{ label: 'Open prices', kind: 'dark', icon: 'arrow-right', iconAfter: true }],
-  },
-  {
-    pos: '03 of 08',
-    worthLabel: 'Sales at risk',
-    worth: '7,400,000',
-    waitsOn: 'waits on 01',
-    title: 'Order 40 boxes of G28 before Friday',
-    why: 'Six days of cover at the last four weeks’ rate. The order needs 9,600,000 against 8,420,000 held — the Mulongo deposit covers the gap.',
-    derivation:
-      '40 boxes at 240,000 is 9,600,000. Cash on hand 8,420,000, so the gap is 1,180,000 — less than the 3,330,000 Mulongo owes. Cover is 6 days at 6.6 boxes a day.',
-    actions: [{ label: 'Open forecasts', kind: 'secondary', icon: 'arrow-right', iconAfter: true }],
-  },
-];
+/**
+ * What the fold shows: the arithmetic the row actually carries.
+ *
+ * The handoff writes a second, longer paragraph per card — *"3,330,000
+ * across 4 invoices, oldest 2 August. Five chase messages sent, none
+ * answered…"* — and **nothing in `manager_notes` stores it.** A move row
+ * holds a title, the reasoning, a figure, what it unlocks and a door; the
+ * per-invoice workings behind the figure are not written down, so there is
+ * no honest way to render that paragraph.
+ *
+ * So the fold says what the row does know: what the figure is and what it
+ * means, what the move unlocks, what it waits on, and — plainly — that
+ * whether it WORKED is not something this app can yet tell, because
+ * `deriveMoveOutcome` is not ported. Raised for design: either the meeting
+ * should write its workings down, or the fold is a smaller thing than the
+ * handoff draws.
+ */
+function derivation(m: ManagerMove): string {
+  const bits: string[] = [];
+
+  if (m.worth.status !== 'unavailable') {
+    bits.push(`${Money.format(m.worth.value)} ${m.worthLabel}`);
+  } else {
+    bits.push('The meeting put no figure on this one');
+  }
+  if (m.lever !== null) bits.push(`it pulls the ${m.lever} lever`);
+  if (m.unlocks !== null) bits.push(`it unlocks ${m.unlocks}`);
+  if (m.waitsOn !== null) bits.push(`it waits on ${m.waitsOn.title}`);
+
+  // Named rather than left to be assumed. A card that shows a Done chip it
+  // cannot stand behind is the drift 0081 refuses to store state for.
+  bits.push(
+    'whether it worked is read from the books, and that reading is not ported yet',
+  );
+
+  return `${bits.join(' · ')}.`;
+}
 
 /* --------------------------------- watch ---------------------------------- */
 
@@ -546,14 +534,19 @@ function Morning({
           <div className={s.sectionHead}>
             <span className={s.sectionTitle}>What to do today</span>
             <span className={s.sectionNote}>
-              three moves from last night’s reading, in the order they depend on each other
+              {/* Counted. The handoff writes "three moves" beside three
+                  cards each stamped "of 08", and this shop has 39 open. */}
+              {books.moves.length === 1
+                ? 'one move from the last reading'
+                : `${books.moves.length} moves from the last reading`}
+              , in the order they depend on each other
             </span>
           </div>
 
-          {MOVES.map((m) => (
+          {books.moves.map((m) => (
             <article
-              key={m.pos}
-              className={`${s.card} ${s.move} ${m.waitsOn !== undefined ? s.moveWaiting : ''}`}
+              key={m.id}
+              className={`${s.card} ${s.move} ${m.waitsOn !== null ? s.moveWaiting : ''}`}
             >
               <div className={s.moveTop}>
                 <span
@@ -563,20 +556,31 @@ function Morning({
                   <Icon name="message-square" size={12} />
                   Manager
                 </span>
-                <span className={s.movePos}>{m.pos}</span>
-                {m.waitsOn !== undefined && (
+                <span className={s.movePos}>{movePos(m)}</span>
+                {m.waitsOn !== null && (
                   <span
                     className={`${s.chip} ${s.chipSm}`}
                     style={{ background: v('neutral-chip'), color: v('neutral-ink') }}
                   >
-                    {m.waitsOn}
+                    {/* §5's recipe, terse. The blocker's TITLE goes in the
+                        fold, where there is room for it — in the chip it
+                        ran to sixty characters and pushed the figure off
+                        the line. */}
+                    waits on {String(m.waitsOn.position).padStart(2, '0')}
                   </span>
                 )}
                 <span className={s.grow} />
                 <div className={s.moveWorth}>
-                  <div className={s.moveWorthLabel}>{m.worthLabel}</div>
-                  <div className={`${s.moveWorthFig} ${m.gain === true ? s.gain : ''}`}>
-                    {m.worth}
+                  <div className={s.moveWorthLabel}>
+                    {m.worth.status === 'unavailable' ? 'Worth' : m.worthLabel}
+                  </div>
+                  {/* A figure is a size, not a warning — the old app's own
+                      scar. The gain ink is switched on by what the figure
+                      MEANS, never by it existing. */}
+                  <div className={`${s.moveWorthFig} ${m.isGain ? s.gain : ''}`}>
+                    {m.worth.status === 'unavailable'
+                      ? '—'
+                      : `${m.isGain ? '+' : ''}${Money.format(m.worth.value)}`}
                   </div>
                 </div>
               </div>
@@ -585,40 +589,30 @@ function Morning({
               <p className={s.moveWhy}>{m.why}</p>
 
               <div className={s.moveActions}>
-                {m.actions.map((a) => (
-                  <button
-                    key={a.label}
-                    type="button"
-                    className={`${s.btn} ${s.btnMd} ${
-                      a.kind === 'primary'
-                        ? s.btnPrimary
-                        : a.kind === 'dark'
-                          ? s.btnDark
-                          : s.btnSecondary
-                    }`}
-                  >
-                    {a.icon !== undefined && a.iconAfter !== true && (
-                      <Icon name={a.icon} size={15} />
-                    )}
-                    {a.label}
-                    {a.icon !== undefined && a.iconAfter === true && (
-                      <Icon name={a.icon} size={15} />
-                    )}
+                {/* The door the meeting chose, with the door's own label.
+                    The handoff also draws a per-move primary action —
+                    "Draft the chase" — and nothing in `manager_notes`
+                    carries one: a move stores a destination, not a verb.
+                    Raised for design rather than invented. */}
+                {m.door !== null && (
+                  <button type="button" className={`${s.btn} ${s.btnMd} ${s.btnSecondary}`}>
+                    {m.door.label}
+                    <Icon name="arrow-right" size={15} />
                   </button>
-                ))}
+                )}
                 <span className={s.grow} />
                 <button
                   type="button"
                   className={`${s.btn} ${s.btnGhost} ${s.btnMd}`}
-                  aria-expanded={open.has(m.pos)}
-                  onClick={() => toggle(m.pos)}
+                  aria-expanded={open.has(m.id)}
+                  onClick={() => toggle(m.id)}
                 >
-                  <Icon name={open.has(m.pos) ? 'chevron-down' : 'chevron-right'} size={15} />
+                  <Icon name={open.has(m.id) ? 'chevron-down' : 'chevron-right'} size={15} />
                   How this was worked out
                 </button>
               </div>
 
-              {open.has(m.pos) && <p className={s.derivation}>{m.derivation}</p>}
+              {open.has(m.id) && <p className={s.derivation}>{derivation(m)}</p>}
             </article>
           ))}
 
