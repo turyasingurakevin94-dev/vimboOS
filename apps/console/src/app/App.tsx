@@ -33,6 +33,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { resume, type Session } from '@ow/data';
 import { useDesign } from './useDesign.js';
 import { Booting } from './Booting.js';
+import { BooksProvider } from './Books.js';
 import { SignIn } from './SignIn.js';
 
 const Desktop = lazy(async () => import('../desktop/DesktopApp.js'));
@@ -53,24 +54,28 @@ export function App(): React.ReactElement {
 
   useEffect(() => {
     if (wantsDemo()) return;
-    let live = true;
+    // An AbortController rather than a `let cancelled` flag: the flag reads
+    // as always-true to the type checker, which is exactly the shape of bug
+    // it was written to prevent.
+    const gone = new AbortController();
     void (async () => {
       // A missing key throws in `connect()`. The door says so in words —
       // it is the only screen that can, and a white page is not a message.
       const session = await resume(import.meta.env).catch(() => null);
-      if (live) setWho(session === null ? { at: 'out' } : { at: 'in', session });
+      if (gone.signal.aborted) return;
+      setWho(session === null ? { at: 'out' } : { at: 'in', session });
     })();
-    return () => {
-      live = false;
-    };
+    return () => gone.abort();
   }, []);
 
   if (who.at === 'asking') return <Booting />;
   if (who.at === 'out') return <SignIn onIn={(session) => setWho({ at: 'in', session })} />;
 
   return (
-    <Suspense fallback={<Booting />}>
-      {design === 'desktop' ? <Desktop /> : <Phone />}
-    </Suspense>
+    <BooksProvider session={who.at === 'in' ? who.session : null}>
+      <Suspense fallback={<Booting />}>
+        {design === 'desktop' ? <Desktop /> : <Phone />}
+      </Suspense>
+    </BooksProvider>
   );
 }

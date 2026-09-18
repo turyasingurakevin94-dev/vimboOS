@@ -72,10 +72,21 @@ export const size = {
   '20': '20px',
   '22': '22px',
   '24': '24px',
+  /** The price on a post card: 25 on the phone, 26 at the desk. */
+  '25': '25px',
+  '26': '26px',
   '27': '27px',
+  /** The typed link code on the phone, which is read across a yard. */
+  '30': '30px',
 } as const;
 
 export const leading = {
+  /**
+   * A display figure sitting on its own baseline — the price on a post card,
+   * which has a struck-through old price aligned to its foot. Any leading at
+   * all puts a gap under it that the alignment then has to fight.
+   */
+  flat: 1,
   /**
    * A big figure, set solid. §2 of the design system gives 1.1 for exactly
    * this and the Order-tracking dock draws its four tiles at it: a 22px
@@ -86,6 +97,8 @@ export const leading = {
   tight: 1.2,
   /** Titles. */
   title: 1.35,
+  /** A short paragraph inside a card — two or three lines, not a column. */
+  proseTight: 1.5,
   /** Prose. */
   prose: 1.55,
   /**
@@ -124,8 +137,17 @@ export const tracking = {
    * eleven-pixel capitals that were spaced on purpose.
    */
   figureLabel: '0.09em',
-  /** The phone dock's label, at 9.5px — a hair wider again. */
+  /**
+   * The phone dock's label, at 9.5px — a hair wider again. The desktop's
+   * typed link code takes it too: at 19px the eight characters have to be
+   * read back one at a time into another device, which is the same job a
+   * dock label does and the opposite of reading a word.
+   */
   dock: '0.08em',
+  /** That same code on the phone, at 30px, where it opens wider again. */
+  codeWide: '0.1em',
+  /** The shop's name across the head of a post card. */
+  wordmark: '0.14em',
   /** Section heads: 700, uppercase. */
   section: '0.12em',
   normal: '0',

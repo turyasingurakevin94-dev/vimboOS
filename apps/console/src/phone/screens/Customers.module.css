@@ -324,6 +324,28 @@
   color: var(--ow-color-ink-2);
 }
 
+/**
+ * A sentence about the whole screen: why there is no register yet, or what
+ * of it would not read. Not `.note`, which truncates to one line with an
+ * ellipsis because it sits inside a row — a reason for an empty screen that
+ * ends in "…" is not a reason.
+ */
+.saying {
+  margin: 0;
+  padding: var(--ow-space-11);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+}
+
+/* Warn, not bad: the register is readable, some of what it says is not. */
+.sayingWarn {
+  composes: saying;
+  background: var(--ow-color-warn-fill);
+  border-bottom: 1px solid var(--ow-color-warn-edge);
+  color: var(--ow-color-warn-ink);
+}
+
 .note {
   display: block;
   margin-top: var(--ow-space-2);

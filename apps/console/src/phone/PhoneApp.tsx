@@ -11,13 +11,13 @@
  * lives in the More sheet, which is generated from the rail's own index —
  * never a second hand-kept list.
  *
- * **Slot four was Manager, and Manager was a stub.** The board arrived with
- * three phone frames of its own and had to be reachable; the only slot
- * holding nothing was the one showing `Not built yet`, and a tab labelled
- * for a screen that exists beats a tab labelled for one that does not.
- * Manager keeps its rail row and its cards on Today, and it comes back into
- * the tab bar or into the More sheet the day it is built — that is the
- * owner's call, and it is named here rather than left to be discovered.
+ * **Slot four was Manager, and Manager was a stub.** The Order-tracking
+ * board arrived with three phone frames of its own and had to be reachable;
+ * the only slot holding nothing was the one showing `Not built yet`, and a
+ * tab labelled for a screen that exists beats a tab labelled for one that
+ * does not. Manager keeps its rail row and its cards on Today, and it
+ * becomes a row in `More` the day it is built — which is where the other
+ * three destinations that will not fit already live.
  */
 
 import { useState, type ReactElement } from 'react';
@@ -27,6 +27,9 @@ import { Today } from './screens/Today.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
 import { Customers } from './screens/Customers.js';
+import { Messages } from './screens/Messages.js';
+import { Agents } from './screens/Agents.js';
+import { More, type MoreDestination } from './screens/More.js';
 import { OrderTracking } from './screens/OrderTracking.js';
 
 /**
@@ -47,6 +50,8 @@ const TABS: readonly { readonly id: TabIcon; readonly label: string; readonly do
 
 export default function PhoneApp(): ReactElement {
   const [tab, setTab] = useState<TabIcon>('today');
+  /** Which destination the More tab has been opened into, if any. */
+  const [beyond, setBeyond] = useState<MoreDestination | null>(null);
 
   return (
     <div className={s.shell}>
@@ -74,20 +79,27 @@ export default function PhoneApp(): ReactElement {
         <OrderTracking />
       ) : (
         /**
-         * More lands on Customers, which is what frame 1b draws.
+         * Three handoffs now end under this tab: the Customers phone frames
+         * draw the bar with **More** lit, and so do every Messages frame and
+         * the Agents 1b frame. All three screens are built, five tabs cannot
+         * hold seven destinations, and no frame draws the sheet that stands
+         * between them — so `More` is the plainest list that keeps all three
+         * reachable, and it goes the day the real sheet is designed.
          *
-         * When the More sheet is built — generated from the rail's own index,
-         * never a second hand-kept list — Customers becomes a row in it and
-         * this becomes a push. Until then the destination the frame shows
-         * under this tab is the destination this tab reaches, rather than a
-         * sheet nobody has designed standing between them.
-         *
-         * It is the final branch, not a `tab === 'more'` one, because all
-         * five tabs now land on a screen that exists: `NotBuiltYet` was the
-         * fallback while one of them did not, and a branch that can never be
-         * taken is a screen nobody will ever see.
+         * It is the final branch rather than a `tab === 'more'` one because
+         * all five tabs now land on a screen that exists. `NotBuiltYet` was
+         * the fallback while one of them did not, and a branch that can never
+         * be taken is a screen nobody will ever see.
          */
-        <Customers />
+        beyond === null ? (
+          <More onOpen={setBeyond} />
+        ) : beyond === 'customers' ? (
+          <Customers />
+        ) : beyond === 'agents' ? (
+          <Agents />
+        ) : (
+          <Messages />
+        )
       )}
 
       <nav className={s.tabs} aria-label="Sections">
@@ -99,7 +111,16 @@ export default function PhoneApp(): ReactElement {
               type="button"
               className={`${s.tab} ${on ? s.tabOn : ''}`}
               aria-current={on ? 'page' : undefined}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                /**
+                 * Tapping the tab you are already on returns it to its root.
+                 * That is the standard, and here it is also the only way back
+                 * out of a destination the More list opened — a screen you
+                 * can reach and not leave is a trap.
+                 */
+                if (t.id !== 'more' || tab === 'more') setBeyond(null);
+                setTab(t.id);
+              }}
             >
               <span className={s.tabPill}>
                 <TabMark name={t.id} active={on} />

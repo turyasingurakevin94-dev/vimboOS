@@ -1,0 +1,222 @@
+/**
+ * Setup › The shop › WhatsApp, on the phone — frame 3b.
+ *
+ * The same card as the desk's, in the shape a phone reads: the promise first,
+ * the three things linking would turn on next, and the cost of doing it under
+ * the button that starts it. It keeps the tab bar, because it is a
+ * destination and not a step.
+ *
+ * The argument for moving the connection out of Messages is written at the
+ * head of the desktop `Shop.module.css` and holds here unchanged.
+ */
+
+.screen {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  flex: none;
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-10) var(--ow-space-12) var(--ow-space-13);
+  padding-top: calc(var(--ow-space-10) + env(safe-area-inset-top));
+}
+
+.headTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+}
+
+.back {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+  margin: calc(var(--ow-space-13) * -1) 0;
+  box-sizing: content-box;
+  padding: var(--ow-space-13) var(--ow-space-4) var(--ow-space-13) 0;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--ow-space-8);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  flex: none;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--ow-color-on-fill);
+  white-space: nowrap;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--ow-color-surface);
+}
+
+/** The sentence that answers the real fear, read before the decision. */
+.promise {
+  padding: var(--ow-space-13) var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-rule);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-prose);
+  text-wrap: pretty;
+}
+
+.section {
+  padding: var(--ow-space-13) var(--ow-space-12);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.turnsOn {
+  margin-top: var(--ow-space-11);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-12);
+}
+
+.turn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-10);
+  min-height: var(--ow-chrome-tap);
+}
+
+/** Dashed, because these are things that WOULD exist. */
+.turnMark {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ow-radius-icon-chip);
+  border: 1px dashed var(--ow-color-control-edge);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--ow-color-rail-head);
+}
+
+.turnBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.turnTitle {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.turnSay {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.turnFig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+  font-size: var(--ow-size-12);
+}
+
+.locked {
+  padding: var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border-top: 1px solid var(--ow-color-rule);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-9);
+}
+
+.lockIcon {
+  flex: none;
+  margin-top: var(--ow-space-2);
+  color: var(--ow-color-ink-3);
+}
+
+.lockedSay {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+  line-height: var(--ow-leading-prose-tight);
+  text-wrap: pretty;
+}
+
+.foot {
+  flex: none;
+  background: var(--ow-color-surface);
+  border-top: 1px solid var(--ow-color-hairline);
+  padding: var(--ow-space-11) var(--ow-space-12);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ow-space-7);
+  width: 100%;
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  font-family: var(--ow-font-ui);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/** The one accent on this screen, and the cost is stated under it. */
+.primary {
+  composes: btn;
+  height: 48px;
+  font-size: var(--ow-size-14);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+}
+
+.cost {
+  margin-top: var(--ow-space-6);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  text-align: center;
+}
+
+.secondary {
+  composes: btn;
+  margin-top: var(--ow-space-8);
+  height: var(--ow-chrome-tap);
+  font-size: var(--ow-size-13);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-divider);
+  color: var(--ow-color-ink);
+}

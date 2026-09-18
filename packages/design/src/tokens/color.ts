@@ -52,9 +52,14 @@ export const color = {
   /** The trough of a segmented control, and a lens at hover. */
   track: '#f0eeea',
   /**
-   * The lens GROUP's own trough — the warm band the Customers lenses sit in.
+   * The lens GROUP's own trough — the warm band a lens row sits in.
+   *
    * A hair darker than `track` because it holds white pills rather than
-   * being one, and a white pill on `track` does not read as lifted.
+   * being one, and a white pill on `track` does not read as lifted. It is
+   * also, independently, the value every Messages frame draws its lens group
+   * on while `Invoices.dc.html` draws its segmented control on `track`: two
+   * screens arrived at the same #efede9, which is the strongest evidence a
+   * token can have that it is a real one.
    */
   lensTrack: '#efede9',
   /** The one strong rule under a page header. Heavier than a card border. */
@@ -104,12 +109,18 @@ export const color = {
   /** A label on the phone header's margin cell — pale green on the tint. */
   railInkGood: '#b9e6d3',
   /**
+   * A label on the phone header's OWED cell — pale amber on the amber tint
+   * over navy. 12.07:1 on `navy`; it never lands on anything lighter.
+   */
+  railInkWarn: '#f6dfab',
+  /**
    * A 5px disc on navy: some of this lane needs chasing.
    *
    * The caution family's own inks are mixed for a paper ground and go muddy
-   * on #17223c — `warnInk` measures 2.3:1 there. This is the amber that
-   * survives the navy. It is a DOT, never a word: 5.9:1 on navy is ample for
-   * a mark and the phone's header strip says the count in white beside it.
+   * on #17223c — `warnInk` measures 2.3:1 there, and `railInkWarn` above is
+   * a LABEL, pale enough to read as a word and far too pale to read as a
+   * mark. This is the amber that survives the navy as a dot. It is never a
+   * word: the header strip says the count in white beside it.
    */
   chaseDot: '#e0a12a',
 
@@ -165,10 +176,16 @@ export const color = {
    * The caution PANEL — a bordered block of prose inside a card, not a chip.
    * Paler than `warnFill` and with a darker ink, because a chip is read in a
    * glance and a paragraph is read: 7.6:1 rather than the chip's 5.0:1.
+   *
+   * Customers wraps the over-limit sentence in it; Messages wraps the one
+   * that says no invoice stands behind a balance. Both were written against
+   * the same #fff8e8 independently.
    */
   warnPanel: '#fff8e8',
   warnPanelEdge: '#f4e3bd',
   warnPanelInk: '#6b4a0d',
+  /** The amber bar in "which signals actually sell". A bar, never a word. */
+  warnBar: '#f0b323',
 
   goodFill: '#ecf8f2',
   /** The deep green chip. Only `goodInkStrong` clears the floor on it. */
@@ -183,6 +200,13 @@ export const color = {
   goodInkStrong: '#0b5e42',
   /** Ink for captions sitting ON the green panel. 7.58:1 on `goodFill`. */
   goodPanelInk: '#39544b',
+  /**
+   * A sentence inside a green NOTICE — the reconciliation chip's own
+   * paragraph on the commission dialog. Darker than `goodPanelInk` because
+   * it is a claim being checked ("the payout agrees with what this screen
+   * shows"), and a claim is read twice. 7.94:1 on `goodFill`.
+   */
+  goodNoticeInk: '#20544a',
 
   infoFill: '#eef4ff',
   infoChip: '#eaf1ff',
@@ -249,6 +273,17 @@ export const color = {
   payLate: '#f0b323',
   payQuiet: '#dedbd4',
 
+  /**
+   * The part of a waterfall that is not yours: what the goods cost the shop,
+   * under what the shop kept.
+   *
+   * Same value as `payQuiet` and a different name, because the two are
+   * answering different questions — one is "nothing is known here", the
+   * other is "this part is money that was already spent". A future palette
+   * could warm one without warming the other. Bars, never text: 1.38:1.
+   */
+  costBar: '#dedbd4',
+
   /** White, as an ink on a filled accent, navy or state colour. */
   onFill: '#ffffff',
 } as const;
@@ -304,6 +339,7 @@ export const neverCarriesText: readonly {
   { token: 'goodEdgeSoft', why: 'a card border' },
   { token: 'infoEdge', why: 'a card border' },
   { token: 'studyEdge', why: 'a card border' },
+  { token: 'warnBar', why: 'a bar segment' },
   { token: 'cashChip', why: 'an icon chip ground; its glyph is not text' },
   { token: 'badChipSoft', why: 'an icon chip ground; its glyph is not text' },
   { token: 'studyMuted', why: 'the left border of a move that is waiting' },
@@ -312,6 +348,7 @@ export const neverCarriesText: readonly {
   { token: 'debtFresh', why: '1.57:1 on white — a band of the debt bar' },
   { token: 'payLate', why: '1.88:1 on white — the late band of the pays bar' },
   { token: 'payQuiet', why: '1.38:1 on white — a pays bar with no history in it' },
+  { token: 'costBar', why: '1.38:1 on white — the cost band of a waterfall' },
   { token: 'chaseDot', why: '1.98:1 on white — a 5px disc on navy, never a word' },
 ];
 
@@ -333,6 +370,10 @@ export const legalPairings: readonly {
   { ink: 'ink', ground: 'rowHover', floor: 'body', note: 'body on a hovered row' },
   { ink: 'ink', ground: 'rowAlt', floor: 'body', note: 'body on a banded row' },
   { ink: 'ink', ground: 'track', floor: 'body', note: 'the label of a hovered lens' },
+  { ink: 'ink', ground: 'lensTrack', floor: 'body', note: 'a hovered lens on the Messages track' },
+  { ink: 'ink', ground: 'neutralChip', floor: 'body', note: 'a chat bubble they sent' },
+  { ink: 'ink', ground: 'goodChipLight', floor: 'body', note: 'a chat bubble you sent' },
+  { ink: 'ink', ground: 'studyFill', floor: 'body', note: 'the row the draft box is showing' },
   { ink: 'ink', ground: 'field', floor: 'body', note: 'what you type in a field' },
 
   // The reasoning sentence.
@@ -347,6 +388,7 @@ export const legalPairings: readonly {
   { ink: 'ink2', ground: 'surface2', floor: 'body', note: 'secondary prose on a tile' },
   { ink: 'ink2', ground: 'rowAlt', floor: 'body', note: 'secondary prose on a banded row' },
   { ink: 'ink2', ground: 'field', floor: 'body', note: 'a field placeholder' },
+  { ink: 'ink2', ground: 'neutralChip', floor: 'body', note: "a grey avatar's initials" },
 
   // Labels, meta and basis lines — the widest-travelling ink in the app.
   { ink: 'ink3', ground: 'surface', floor: 'body', note: 'a label on a card' },
@@ -355,6 +397,7 @@ export const legalPairings: readonly {
   { ink: 'ink3', ground: 'rowHover', floor: 'body', note: 'a label on a hovered row' },
   { ink: 'ink3', ground: 'rowAlt', floor: 'body', note: 'a label on a banded row' },
   { ink: 'ink3', ground: 'track', floor: 'body', note: 'a lens at rest' },
+  { ink: 'ink3', ground: 'lensTrack', floor: 'body', note: 'a lens at rest on the Messages track' },
   { ink: 'ink3', ground: 'field', floor: 'body', note: 'a field label' },
   { ink: 'ink3', ground: 'cashFill', floor: 'body', note: 'basis on the cash card' },
   { ink: 'ink3', ground: 'badFill', floor: 'body', note: 'basis on the debt card' },
@@ -372,6 +415,7 @@ export const legalPairings: readonly {
   { ink: 'railHead', ground: 'navy', floor: 'body', note: 'a rail section heading' },
   { ink: 'railInkBad', ground: 'navy', floor: 'body', note: 'the debt cell label' },
   { ink: 'railInkGood', ground: 'navy', floor: 'body', note: 'the margin cell label' },
+  { ink: 'railInkWarn', ground: 'navy', floor: 'body', note: 'the owed cell label' },
   { ink: 'onFill', ground: 'navy', floor: 'body', note: 'the active rail row, dark buttons' },
   { ink: 'onFill', ground: 'navyHover', floor: 'body', note: 'a dark button, hovered' },
 
@@ -380,7 +424,12 @@ export const legalPairings: readonly {
   { ink: 'accentInk', ground: 'bg', floor: 'body', note: 'accent text on the ground' },
   { ink: 'accentInk', ground: 'badChip', floor: 'body', note: "the phone's active tab label" },
   { ink: 'onFill', ground: 'accentBtn', floor: 'body', note: 'the primary button' },
-  { ink: 'onFill', ground: 'accentMark', floor: 'body', note: 'the 1st chip on the ask order' },
+  {
+    ink: 'onFill',
+    ground: 'accentMark',
+    floor: 'body',
+    note: 'the 1st chip on the ask order, a draft avatar, a stock chip',
+  },
   { ink: 'onFill', ground: 'accentBtnHover', floor: 'body', note: 'the primary button, pressed' },
 
   // Meaning families: ink on its own fill, its chip, white and the ground.
@@ -403,6 +452,14 @@ export const legalPairings: readonly {
   { ink: 'goodInk', ground: 'bg', floor: 'body', note: 'a gain on the ground' },
   { ink: 'goodInkStrong', ground: 'goodChip', floor: 'body', note: 'text on the deep green chip' },
   { ink: 'goodPanelInk', ground: 'goodFill', floor: 'body', note: 'a caption on the green panel' },
+  { ink: 'goodNoticeInk', ground: 'goodFill', floor: 'body', note: 'the reconciliation notice' },
+  /**
+   * Green as a GROUND. The hand-off button — "Open WhatsApp with this" — is
+   * a door out of the app rather than the screen's next action, so it wears
+   * the green the design files give it and not the accent.
+   */
+  { ink: 'onFill', ground: 'goodInk', floor: 'body', note: 'the WhatsApp hand-off button' },
+  { ink: 'onFill', ground: 'goodInkStrong', floor: 'body', note: 'that button, pressed' },
 
   { ink: 'infoInk', ground: 'infoFill', floor: 'body', note: 'info figure on its tint' },
   { ink: 'infoInk', ground: 'infoChip', floor: 'body', note: 'an info chip' },
@@ -438,11 +495,13 @@ export const legalPairings: readonly {
   { ink: 'ink2', ground: 'studyFill', floor: 'body', note: "a picked row's meta" },
   { ink: 'badInk', ground: 'studyFill', floor: 'body', note: 'a picked row\'s overdue figure' },
   { ink: 'warnInk', ground: 'studyFill', floor: 'body', note: 'a picked row\'s near-due age' },
+  { ink: 'goodInk', ground: 'studyFill', floor: 'body', note: "a picked row's margin" },
 
   // A hovered row carries the same four.
   { ink: 'ink2', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s meta' },
   { ink: 'badInk', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s overdue figure' },
   { ink: 'warnInk', ground: 'rowHover', floor: 'body', note: 'a hovered row\'s near-due age' },
+  { ink: 'goodInk', ground: 'rowHover', floor: 'body', note: "a hovered row's margin" },
 
   // The focus ring, as a control boundary.
   { ink: 'accentBtn', ground: 'surface', floor: 'ui', note: 'the focus ring' },
@@ -475,12 +534,22 @@ export const intentionalAliases: readonly (readonly [ColorToken, ColorToken])[] 
   // "Neutral ink" and "label ink" are the same grey doing two jobs; the
   // names stay separate so a chip and a caption can move independently.
   ['neutralInk', 'ink3'],
+  // The late band of a pays bar and the amber bar under "idle stock" are one
+  // colour, and one meaning: amber is part-done or waiting, and both bars are
+  // drawing the same kind of not-quite. Two names because each is named after
+  // what wears it — `payLate` on a signals bar would be the mistake the
+  // name-after-what-wears-it rule exists to stop.
+  ['warnBar', 'payLate'],
   // The oldest aging segment IS the accent — that is the point of it.
   ['agingOldest', 'accent'],
   // The accent button and the accent mark are one colour, split by job: see
   // the note on `accentMark`. They move together or the screen's one button
-  // and its one ranked row stop matching.
+  // and its one ranked row stop matching. The split is also what lets a test
+  // count filled CONTROLS without counting an avatar.
   ['accentBtn', 'accentMark'],
+  // The inert grey under a bar, twice: an account with no pay history, and
+  // the cost band of the waterfall. One value, two questions — see costBar.
+  ['payQuiet', 'costBar'],
   // Accent type and bad type are one colour. An overdue figure IS bad news,
   // and the design draws it once; two names because a future palette could
   // move "late" without moving "the next action".

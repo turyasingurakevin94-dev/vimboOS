@@ -642,3 +642,10 @@
   letter-spacing: var(--ow-tracking-label);
   color: var(--ow-color-ink-4);
 }
+
+/* Rows that were read but not fully understood. A footnote, never a silence:
+   a total built from four of five lines is partial and has to say so. */
+.footNote {
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-warn-ink);
+}

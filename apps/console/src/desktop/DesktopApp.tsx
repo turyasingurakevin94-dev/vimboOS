@@ -6,17 +6,27 @@
  * that question.
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import { owingBadge, read } from '@ow/domain';
 import { DEMO_TODAY, demoAsks, demoCustomers } from '@ow/data';
 import s from './DesktopApp.module.css';
-import { Rail, SECTIONS, TODAY, resolveTab } from './chrome/Rail.js';
+import { Rail, SECTIONS, TODAY, asksForBonus, resolveTab } from './chrome/Rail.js';
 import { Icon } from './icons.js';
 import { Today } from './screens/Today.js';
 import { NotBuiltYet } from './screens/NotBuiltYet.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
 import { Customers } from './screens/Customers.js';
+import { Agents } from './screens/Agents.js';
+import { Messages } from './screens/Messages.js';
+import { Shop } from './screens/Shop.js';
 import { OrderTracking } from './screens/OrderTracking.js';
 
 /**
@@ -27,15 +37,29 @@ import { OrderTracking } from './screens/OrderTracking.js';
  * `New customer` there and a search that offers to answer "owes over 1m",
  * and a Customers screen advertising three order stages would be the shell
  * talking over it. A screen that says nothing keeps the stage chips.
+ *
+ * `opens` is what the action MAKES, and only an action that makes something
+ * wears the plus. Broadcast does not make a customer — it is one of the two
+ * features WhatsApp had before it became a lens on Messages, and a plus
+ * beside it would promise a new thing rather than a door.
  */
 const CHROME: Readonly<
-  Partial<Record<string, { readonly hint: string; readonly action?: string }>>
+  Partial<
+    Record<string, { readonly hint: string; readonly action?: string; readonly opens?: boolean }>
+  >
 > = {
-  customers: { hint: 'Name, phone, or "owes over 1m"', action: 'New customer' },
+  customers: { hint: 'Name, phone, or "owes over 1m"', action: 'New customer', opens: true },
+  messages: { hint: 'Name, number, or what the message is about', action: 'Broadcast' },
+  agents: {
+    hint: 'Agent, order no., or "owes the shop"',
+    action: 'Invite an agent',
+    opens: true,
+  },
   /**
-   * Order tracking takes the slot and puts nothing in it.
+   * Order tracking takes the slot and puts nothing in it — the first screen
+   * with a hint and no action, which is why `action` is optional.
    *
-   * The stage chips ARE this screen — `quoted 12 · packing 5 · out 3` is the
+   * The stage chips ARE this screen: `quoted 12 · packing 5 · out 3` is the
    * board's own lane heads, said a second time, eighty pixels above them and
    * from a different reckoning. The board's page head carries its own search
    * and its own `New quote`, which is where frame 1a draws them, so the slot
@@ -67,8 +91,40 @@ const PARENTS = new Map<string, string>(
 
 export default function DesktopApp(): ReactElement {
   const [section, setSection] = useState('today');
+  /**
+   * A third crumb, where a screen has somewhere inside it worth naming.
+   *
+   * Only the posting queue uses it — frame 1c draws "Sell › Messages ›
+   * Posting" — because a lens is not a destination and the other three are
+   * not places you say you are going.
+   */
+  const [trail, setTrail] = useState<string | null>(null);
+  /**
+   * The top bar's action belongs to the SCREEN, not the shell.
+   *
+   * The bar is chrome, so the button is drawn here; what it opens is the
+   * screen's — *Invite an agent* raises frame 2g, which reads the same
+   * agents the list reads. The shell holds one flag and hands it down, and
+   * the screen hands back the close. A screen that owned the button would
+   * have to own the bar.
+   */
+  const [topAction, setTopAction] = useState(false);
+  /**
+   * Which part of the screen the search was asking for.
+   *
+   * "payout" resolves to Agents, and a cut screen is only really absorbed if
+   * the word lands on the figures it used to show rather than on the top of
+   * whatever swallowed it. It counts up so that typing it twice scrolls
+   * twice.
+   */
+  const [bonusAsk, setBonusAsk] = useState(0);
   const search = useRef<HTMLInputElement>(null);
   const chrome = CHROME[section];
+
+  const navigate = (id: string): void => {
+    setTopAction(false);
+    setSection(id);
+  };
 
   /**
    * The Customers badge, from the same reckoning the screen reads.
@@ -88,6 +144,8 @@ export default function DesktopApp(): ReactElement {
     [],
   );
 
+  const onTrail = useCallback((next: string | null) => setTrail(next), []);
+
   // Ctrl/Cmd + K focuses the field. Escape gives it up.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -105,7 +163,7 @@ export default function DesktopApp(): ReactElement {
 
   return (
     <div className={s.shell}>
-      <Rail current={section} onNavigate={setSection} badges={badges} />
+      <Rail current={section} onNavigate={navigate} badges={badges} />
 
       <div className={s.work}>
         <header className={s.topbar}>
@@ -113,6 +171,12 @@ export default function DesktopApp(): ReactElement {
             <span className={s.crumbStart}>{PARENTS.get(section) ?? 'Start'}</span>
             <Icon name="chevron-right" size={14} className={s.crumbSep} />
             <span className={s.crumbHere}>{NAMES.get(section) ?? 'Today'}</span>
+            {trail !== null && (
+              <>
+                <Icon name="chevron-right" size={14} className={s.crumbSep} />
+                <span className={s.crumbHere}>{trail}</span>
+              </>
+            )}
           </div>
 
           <div className={s.search}>
@@ -126,9 +190,13 @@ export default function DesktopApp(): ReactElement {
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return;
                 // "debtors" still reaches the list it used to name.
-                const found = resolveTab(e.currentTarget.value);
+                const typed = e.currentTarget.value;
+                const found = resolveTab(typed);
                 if (found !== null) {
-                  setSection(found);
+                  navigate(found);
+                  if (found === 'agents' && asksForBonus(typed)) {
+                    setBonusAsk((n) => n + 1);
+                  }
                   e.currentTarget.blur();
                 }
               }}
@@ -141,8 +209,8 @@ export default function DesktopApp(): ReactElement {
           <div className={s.spacer} />
 
           {chrome?.action !== undefined ? (
-            <button type="button" className={s.topAction}>
-              <Icon name="plus" size={15} />
+            <button type="button" className={s.topAction} onClick={() => setTopAction(true)}>
+              {chrome.opens === true && <Icon name="plus" size={15} />}
               {chrome.action}
             </button>
           ) : chrome === undefined ? (
@@ -176,6 +244,16 @@ export default function DesktopApp(): ReactElement {
             <Invoices />
           ) : section === 'customers' ? (
             <Customers />
+          ) : section === 'agents' ? (
+            <Agents
+              inviting={topAction}
+              bonusAsk={bonusAsk}
+              onInviteClose={() => setTopAction(false)}
+            />
+          ) : section === 'messages' ? (
+            <Messages onTrail={onTrail} />
+          ) : section === 'shop' ? (
+            <Shop onTrail={onTrail} />
           ) : section === 'orders' ? (
             <OrderTracking />
           ) : (

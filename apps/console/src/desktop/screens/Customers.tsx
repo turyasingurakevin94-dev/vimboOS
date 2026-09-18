@@ -66,7 +66,8 @@ import {
   type CustomerInvoice,
   type Standing,
 } from '@ow/domain';
-import { DEMO_SHOP_MARGIN, DEMO_TODAY, demoCustomers } from '@ow/data';
+import { DEMO_SHOP_MARGIN } from '@ow/data';
+import { useRegister } from '../../app/useRegister.js';
 import s from './Customers.module.css';
 import { Icon } from '../icons.js';
 
@@ -79,13 +80,52 @@ type Lens = 'owing' | 'all' | 'best' | 'quiet';
 const BEST = 20;
 
 export function Customers(): ReactElement {
-  const now = DEMO_TODAY;
-  const all = useMemo(() => demoCustomers(), []);
+  // Not `read` — that name belongs to the domain's book reckoning imported
+  // above, which the register below calls.
+  const got = useRegister();
+  if (got.at === 'loading') return <Bare say="Reading the accounts…" />;
+  if (got.at === 'failed') return <Bare say={`The accounts could not be read. ${got.why}`} />;
+  return <Register got={got} />;
+}
+
+/**
+ * The header with no figures under it.
+ *
+ * Reading and refused share a shape because they share a problem: there is
+ * no register yet, and a zero owed would be a claim that nobody owes
+ * anything — the one claim this screen must never make by accident.
+ */
+function Bare({ say }: { readonly say: string }): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <h1>Customers</h1>
+        <p className={s.sub}>{say}</p>
+      </header>
+    </div>
+  );
+}
+
+function Register({
+  got,
+}: {
+  readonly got: Extract<ReturnType<typeof useRegister>, { at: 'ready' }>;
+}): ReactElement {
+  const now = got.today;
+  const all = got.data.customers;
+  const { unreadable } = got.data;
   const book = useMemo(() => read(all, now), [all, now]);
 
   const [lens, setLens] = useState<Lens>('owing');
   const [order, setOrder] = useState<AskOrder>('ask');
-  const [pickedId, setPickedId] = useState<string>('c-mulongo');
+  /**
+   * The frame opens on Mulongo Hardware. Real books open on whoever the
+   * reckoning says to ask first — carrying a mockup's account id into a
+   * shop's own register would pick nobody, or worse, somebody at random.
+   */
+  const [pickedId, setPickedId] = useState<string>(
+    got.live ? (askTheseFirst(book, now).customers[0]?.id ?? '') : 'c-mulongo',
+  );
 
   const picked = all.find((c) => c.id === pickedId) ?? null;
 
@@ -112,6 +152,13 @@ export function Customers(): ReactElement {
           <h1 className={s.title}>Customers</h1>
           <p className={s.sub}>
             {all.length} accounts · ranked by what they owe and how long they have owed it
+            {/* Attached to the count it qualifies, because that is the figure
+                it makes untrue, and said once rather than against a row —
+                a row that would not read is exactly the row that cannot be
+                named. */}
+            {unreadable.length > 0 && (
+              <span className={s.subNote}> · {unreadable.length} not fully readable</span>
+            )}
           </p>
         </div>
 

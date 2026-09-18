@@ -55,7 +55,7 @@ import {
   type PurchaseInvoice,
   type SalesInvoice,
 } from '@ow/domain';
-import { DEMO_TODAY, demoPurchaseInvoices, demoSalesInvoices } from '@ow/data';
+import { useLedgers } from '../../app/useLedgers.js';
 import s from './Invoices.module.css';
 import { ReceivePayment } from './ReceivePayment.js';
 import { Icon } from '../icons.js';
@@ -75,13 +75,68 @@ const TAG = {
 } as const;
 
 export function Invoices(): ReactElement {
-  const now = DEMO_TODAY;
-  const sales = demoSalesInvoices();
-  const purchases = demoPurchaseInvoices();
+  // Not `state` — that name belongs to the domain reckoning imported above,
+  // and shadowing it here is how a row's tone quietly starts reading the
+  // wrong thing.
+  const read = useLedgers();
+  if (read.at === 'loading') return <Waiting />;
+  if (read.at === 'failed') return <Refused why={read.why} />;
+  return <Register read={read} />;
+}
+
+/**
+ * Reading, not empty.
+ *
+ * The distinction is the whole reason `useLedgers` is three-way: PostgREST
+ * answers "still fetching", "refused by RLS" and "this shop has no invoices"
+ * with the same empty array, and only the last is a ledger worth drawing.
+ */
+function Waiting(): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div className={s.titles}>
+          <h1 className={s.title}>Invoices</h1>
+          <p className={s.sub}>Reading the books…</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+function Refused({ why }: { readonly why: string }): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div className={s.titles}>
+          <h1 className={s.title}>Invoices</h1>
+          {/* What failed, in the words the database used. An empty ledger
+              here would be a claim that nothing is owed. */}
+          <p className={s.sub}>The books could not be read. {why}</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+function Register({
+  read,
+}: {
+  readonly read: Extract<ReturnType<typeof useLedgers>, { at: 'ready' }>;
+}): ReactElement {
+  const now = read.today;
+  const { sales, purchases, unreadable } = read.data;
   const band = readBand(sales, purchases, now);
 
-  /** Null is the resting state: no question asked yet, so nothing is dimmed. */
-  const [picked, setPicked] = useState<string | null>('INV-0175');
+  /**
+   * Null is the resting state: no question asked yet, so nothing is dimmed.
+   *
+   * The example books open on the frame's picked row, because that is the
+   * frame. The real books open at rest — an invoice number carried over from
+   * a mockup would either dim a shop's whole register or, worse, silently
+   * match a real invoice and claim a link nobody asked about.
+   */
+  const [picked, setPicked] = useState<string | null>(read.live ? null : 'INV-0175');
   /** Which invoice's Receive dialog is open. Null is closed. */
   const [receiving, setReceiving] = useState<string | null>(null);
   const lit = linkedTo(picked, sales, purchases);
@@ -214,7 +269,12 @@ export function Invoices(): ReactElement {
             ))}
 
             <div className={s.foot}>
-              <span className={s.footSay}>{band.openSales} open invoices</span>
+              <span className={s.footSay}>
+                {band.openSales} open invoices
+                {unreadable.length > 0 && (
+                  <span className={s.footNote}> · {unreadable.length} could not be read in full</span>
+                )}
+              </span>
               <span className={s.footFigIn}>
                 {Money.format(band.owedToUs)} <span className={s.unit}>UGX</span>
               </span>
