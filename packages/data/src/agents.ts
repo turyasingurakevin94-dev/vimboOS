@@ -42,6 +42,7 @@ import {
   type Terms,
 } from '@ow/domain';
 import { readText } from './boundary.js';
+import { chargesTotal } from './savedQuotes.js';
 import { current } from './client.js';
 
 export interface AgentBooks {
@@ -102,10 +103,9 @@ function moneyOf(payload: Record<string, unknown>): {
     cost += qty * paid;
   }
 
-  for (const raw of arr(payload.charges)) {
-    const amount = num(obj(raw)?.amount);
-    if (amount !== null) billed += amount;
-  }
+  // Through the one reader, for the same reason the board is: `amount` is
+  // not a field these books have.
+  billed += chargesTotal(payload, billed);
 
   return { billed: Money.money(Math.round(billed)), cost: Money.money(Math.round(cost)), blind };
 }

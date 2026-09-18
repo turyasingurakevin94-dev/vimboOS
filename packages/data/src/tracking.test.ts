@@ -54,16 +54,37 @@ describe('an order as a card', () => {
     expect(one({ payload: { items: [] } })?.since).toBeNull();
   });
 
+  /**
+   * A charge holds `value` and a `type`, never an `amount` — and this test
+   * asserted the invented shape, so the board's worth silently dropped
+   * every charge on this shop's orders while the test stayed green.
+   */
   it('values the goods and what was charged to move them', () => {
     const order = one({
       payload: {
         stageEnteredAt: 1,
         items: [{ qty: 4, sellPrice: 27_500 }],
-        charges: [{ amount: 50_000 }],
+        charges: [
+          { id: 1, cost: null, type: 'fixed', label: 'Transport', value: 50_000, service: 'Transport' },
+        ],
       },
     });
 
     expect(order?.value).toMatchObject({ status: 'known', value: Money.money(160_000) });
+  });
+
+  it('takes a percent charge off the goods on the order', () => {
+    const order = one({
+      payload: {
+        stageEnteredAt: 1,
+        items: [{ qty: 4, sellPrice: 27_500 }],
+        charges: [
+          { id: 1, cost: null, type: 'percent', label: 'Urgent', value: 5, service: null },
+        ],
+      },
+    });
+
+    expect(order?.value).toMatchObject({ status: 'known', value: Money.money(115_500) });
   });
 
   it('says a line has no price rather than valuing it at nothing', () => {

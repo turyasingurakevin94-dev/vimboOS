@@ -43,7 +43,7 @@ import {
   type Trip,
 } from '@ow/domain';
 import { readText } from './boundary.js';
-import { invoiceDoc } from './savedQuotes.js';
+import { chargesTotal, invoiceDoc } from './savedQuotes.js';
 import { current } from './client.js';
 
 export interface Board {
@@ -100,10 +100,10 @@ function valueOf(payload: Record<string, unknown>, doc: string): Derived<Money.M
     total += qty * sell;
   }
 
-  for (const raw of arr(payload.charges)) {
-    const amount = num(obj(raw)?.amount);
-    if (amount !== null) total += amount;
-  }
+  // Through the one reader: a charge holds `value` and a `type`, never an
+  // `amount`, and this looked for `amount` — so every 5,000 Transport on
+  // this shop's board was missing from what the order is worth.
+  total += chargesTotal(payload, total);
 
   const money = Money.money(Math.round(total));
   const basis = `${counted} ${counted === 1 ? 'line' : 'lines'}`;

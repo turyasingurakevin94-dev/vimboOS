@@ -33,7 +33,10 @@ const invoice = {
   voided: false,
   payload: {
     items: [{ lineId: 1, productName: 'Cement — Tororo', qty: 10, price: 38_000, sellPrice: 44_500 }],
-    charges: [{ id: 'c1', name: 'Transport', kind: 'charge', amount: 20_000 }],
+    // The shape production holds: `value`, not `amount`.
+    charges: [
+      { id: 1, cost: null, type: 'fixed', label: 'Transport', value: 20_000, service: 'Transport' },
+    ],
     payments: [{ date: '2026-08-19', amount: 300_000, method: 'Cash', id: 1 }],
   },
 };

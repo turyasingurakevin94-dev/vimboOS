@@ -52,7 +52,14 @@ const REAL_ROW: SavedQuoteRow = {
         sellPrice: 44_500, // what the CLIENT pays
       },
     ],
-    charges: [{ id: 'c1', name: 'Transport', kind: 'charge', amount: 20_000 }],
+    // The shape production actually holds, checked against this shop's own
+    // rows: `{id, cost, type, label, value, service}`. It was written here
+    // as `{id, name, kind, amount}` — a plausible guess, pinned by the two
+    // tests below, and wrong in the same way `readPayload`'s first version
+    // was. `value`, not `amount`; `label`, not `name`; `type`, not `kind`.
+    charges: [
+      { id: 1, cost: null, type: 'fixed', label: 'Transport', value: 20_000, service: 'Transport' },
+    ],
     credit: null,
     payments: [
       { date: '2026-08-19', amount: 300_000, note: '', cashTxnId: 901, method: 'Cash · shop till', id: 1 },
@@ -80,6 +87,12 @@ describe('the payload keys the old app names', () => {
   });
 });
 
+/** The same goods, with a different charge on them. */
+const withCharge = (charge: Record<string, unknown>): unknown => ({
+  items: (REAL_ROW.payload as { readonly items: unknown }).items,
+  charges: [charge],
+});
+
 describe('reading the lines of a real row', () => {
   it('bills the customer sellPrice, NEVER price', () => {
     // `price` is the buying price. Reading it as the line price would
@@ -96,6 +109,35 @@ describe('reading the lines of a real row', () => {
     expect(lines).toHaveLength(2);
     expect(lines[1]).toMatchObject({ kind: 'charge', name: 'Transport', amount: 20_000 });
     expect(linesTotal(lines)).toBe(465_000);
+  });
+
+  /**
+   * A percent is a percent of the GOODS, worked out when the invoice is
+   * read rather than frozen when somebody tapped it — and charges are read
+   * after items so there are goods to be a percent of.
+   */
+  it('resolves a percent charge against the goods on the invoice', () => {
+    const { lines } = readLines(
+      withCharge({ id: 1, cost: null, type: 'percent', label: 'Credit terms', value: 3, service: null }),
+      'test',
+    );
+
+    expect(lines[1]).toMatchObject({
+      kind: 'charge',
+      name: 'Credit terms',
+      basis: '3% of the goods',
+      amount: 13_350,
+    });
+    expect(linesTotal(lines)).toBe(458_350);
+  });
+
+  /** A charge is money the shop is owed, and a discount is not one. */
+  it('takes nothing off for a charge at zero or less', () => {
+    const { lines } = readLines(
+      withCharge({ id: 1, cost: null, type: 'fixed', label: 'Goodwill', value: -5_000, service: null }),
+      'test',
+    );
+    expect(lines[1]).toMatchObject({ kind: 'charge', amount: 0 });
   });
 
   it('refuses a line with no customer price rather than falling back to cost', () => {

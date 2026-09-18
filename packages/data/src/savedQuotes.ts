@@ -152,6 +152,57 @@ export interface Unread {
 /*  Lines                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------------------------- *
+ * Charges: one reader, because three of them were wrong the same way
+ * -------------------------------------------------------------------------- */
+
+/**
+ * A charge out of a payload, as the books actually hold one.
+ *
+ * `{id, label, type, value, service, cost}` — **`value` and not `amount`**.
+ * This app had three separate readers for it (the invoice register, the
+ * order board's worth, an agent's order value) and all three looked for
+ * `amount`, which the old app has never written. Every one of them silently
+ * dropped every charge: on the shop's own books, seven invoices carrying a
+ * 5,000 Transport were 5,000 light, and the shortfall ran straight into what
+ * is owed and into every customer's balance.
+ *
+ * A percent is resolved against the GOODS and nothing else, so two percents
+ * on one order come to the same total whichever was added first.
+ */
+export function chargeOf(
+  raw: unknown,
+  goods: number,
+  at: number,
+): { readonly name: string; readonly id: string; readonly amount: number; readonly basis: string } | null {
+  const row = obj(raw);
+  if (row === null) return null;
+
+  // `label` is the frozen one the shop agreed to; `name` is what older rows
+  // and other doors wrote.
+  const name = readText(row.label) ?? readText(row.name) ?? `charge ${at + 1}`;
+  const value = Number(row.value);
+  if (!Number.isFinite(value)) return null;
+
+  const percent = readText(row.type) === 'percent';
+  return {
+    id: readId(row.id) ?? `charge-${at + 1}`,
+    name,
+    // A charge is money the shop is owed, and a discount is not one.
+    amount: value <= 0 ? 0 : percent ? Math.round((goods * value) / 100) : Math.round(value),
+    basis: percent ? `${value}% of the goods` : 'charge',
+  };
+}
+
+/** What every charge on a payload comes to, against the goods on it. */
+export function chargesTotal(payload: unknown, goods: number): number {
+  let total = 0;
+  arr(obj(payload)?.charges).forEach((raw, at) => {
+    total += chargeOf(raw, goods, at)?.amount ?? 0;
+  });
+  return total;
+}
+
 /**
  * The lines of a sale: its `items[]` and then its `charges[]`.
  *
@@ -195,24 +246,22 @@ export function readLines(payload: unknown, basis: string): Unread & {
     });
   });
 
+  // The goods, from the item lines just read — which is what a percent
+  // charge is a percent of, and why charges are read after items.
+  const goods = lines.reduce((n, l) => n + (l.kind === 'item' ? l.qty * l.priceEach : 0), 0);
+
   arr(p?.charges).forEach((raw, i) => {
-    const row = obj(raw);
-    if (row === null) {
-      unreadable.push(`charge ${i + 1} is not readable`);
-      return;
-    }
-    const name = readText(row.name) ?? readText(row.label) ?? `charge ${i + 1}`;
-    const amount = readMoney(row.amount, `${name} amount`, basis);
-    if (amount.status === 'unavailable') {
-      unreadable.push(`${name} has no amount`);
+    const charge = chargeOf(raw, goods, i);
+    if (charge === null) {
+      unreadable.push(`charge ${i + 1} on ${basis} has no figure`);
       return;
     }
     lines.push({
       kind: 'charge',
-      id: readId(row.id) ?? `charge-${i + 1}`,
-      name,
-      basis: readText(row.kind) ?? 'charge',
-      amount: amount.value,
+      id: charge.id,
+      name: charge.name,
+      basis: charge.basis,
+      amount: Money.money(charge.amount),
     });
   });
 
