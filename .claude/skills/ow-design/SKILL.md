@@ -5,7 +5,23 @@ description: The design authority for Omni-Ware. Load this BEFORE designing or b
 
 # The design authority
 
-## Read `DESIGN-SYSTEM.md` first. It is the owner's, and it is the authority.
+## Two documents sit beside this one, and both are the owner's
+
+**`DESIGN-SYSTEM.md` says what a screen is made of** — tokens, frames,
+component recipes, copy rules, anti-patterns. It is the authority on every
+value.
+
+**`THE-BRIEF.md` says what a screen is for** — the goal, the eight questions
+to answer before designing, the three levels of hierarchy, the required
+intelligence layer, and the rule that does the most work of any of them:
+**cut duplication, don't just restyle.** It also records where the owner has
+overruled the generic brief the design was started from, so nobody
+reintroduces blue buttons or an 8px grid.
+
+Read both. A screen built to the tokens but not to the brief is a tidy screen
+that does not help anybody decide anything.
+
+## `DESIGN-SYSTEM.md` is the authority on every value.
 
 It sits beside this file. It carries the tokens, the layout frames, the
 component recipes, the copy rules and the anti-patterns. **It is not a

@@ -16,6 +16,10 @@ same Supabase project, same 95 migrations, same live books.
 
 > ### Load `.claude/skills/ow-design/SKILL.md` before designing or building ANY interface.
 >
+> It points at two documents that are both binding: **`DESIGN-SYSTEM.md`**,
+> which says what a screen is made of, and **`THE-BRIEF.md`**, which says what
+> a screen is for.
+>
 > Before writing a screen. Before adding a component. Before touching CSS.
 > Before changing a token. Before reviewing UI work. Every time, in every
 > session — not once and from memory.
@@ -51,8 +55,15 @@ The mockup is not in tension with this: it is the owner's own answer to that
 question. Build it faithfully. Where it would genuinely fail the person using
 it, name the measurement and propose a fix — never deviate quietly.
 
-Every screen surfaces 3–5 actionable insights automatically. See §5 of the
-design skill.
+Every screen surfaces 3–5 actionable insights automatically — the intelligence
+layer, and it is required. An insight this app cannot yet derive is **named,
+not faked**. See `THE-BRIEF.md`.
+
+**Cut duplication, don't just restyle.** A panel or a figure that repeats
+another screen's work should be merged into it, naming what is lost, what
+absorbs it, and how the words somebody searches by still reach the screen that
+took the work. Customers and Debtors were one screen wearing two hats, and the
+morning they were rendered apart they disagreed about the same debt.
 
 ---
 
