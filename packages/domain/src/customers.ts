@@ -292,6 +292,84 @@ export function latestPromise(
 export const promisesBroken = (c: Customer, now: Date): number =>
   promisesOf(c).filter((p) => promiseState(p, c, now) === 'broken').length;
 
+/* ------------------------- making one, not reading -------------------------- */
+
+/**
+ * The most a note will carry, matching the old app's `.slice(0, 200)`.
+ *
+ * The column is unbounded `text`. The limit is the old app's, and it stays
+ * because both apps write this table: a 4,000-character note entered here
+ * would render into a row the shop's own screen truncates, so the two would
+ * show different notes for the same promise.
+ */
+export const PROMISE_NOTE_MAX = 200;
+
+/** A promise as the books want it, once the words have been checked. */
+export interface PromiseRecord {
+  readonly promisedOn: Date;
+  /** The day it was said. Always now — a promise is an observation. */
+  readonly madeOn: Date;
+  /** `null` means THE BALANCE, and the column's own check requires it. */
+  readonly amount: Amount | null;
+  readonly note: string | null;
+}
+
+/** Either a promise the books will accept, or why they will not. */
+export type PromiseDraft =
+  | { readonly ok: true; readonly record: PromiseRecord }
+  | { readonly ok: false; readonly why: string };
+
+/**
+ * What somebody typed, checked against what the table can hold — ported
+ * from the old app's `addPaymentPromise`.
+ *
+ * ## A figure of zero is not a figure
+ *
+ * `payment_promises.amount` carries `check (amount is null or amount > 0)`,
+ * and the old app writes `amt > 0 ? amt : null`. So zero and negative are
+ * not rejected here, they are **read as what they mean**: nobody named a
+ * sum, which the column spells `null` and the screen reads as "the balance".
+ * Rejecting them instead would refuse the commonest promise in the shop —
+ * "I will pay you Friday", no figure — and passing them through would break
+ * the constraint and lose the row.
+ *
+ * ## A day already gone is still a promise
+ *
+ * Not rejected, deliberately, and this is the old app's behaviour too. A
+ * promise recorded for yesterday reads as `broken` the moment it lands,
+ * which is a true record of somebody who named a day and missed it —
+ * exactly the fact {@link promisesBroken} exists to count. It is also what
+ * a typo looks like, so the screen should say which it thinks it is; that
+ * is a question for the dialog, not a rule for the books.
+ */
+export function draftPromise(
+  words: {
+    readonly promisedOn: Date | null;
+    readonly amount: Amount | null;
+    readonly note?: string | null;
+  },
+  now: Date,
+): PromiseDraft {
+  if (words.promisedOn === null || Number.isNaN(words.promisedOn.getTime())) {
+    return { ok: false, why: 'A promise needs the day they said.' };
+  }
+
+  const note = (words.note ?? '').trim().slice(0, PROMISE_NOTE_MAX);
+
+  return {
+    ok: true,
+    record: {
+      promisedOn: words.promisedOn,
+      madeOn: now,
+      amount:
+        words.amount === null || Money.isZero(words.amount) || Money.isNegative(words.amount)
+          ? null
+          : words.amount,
+      note: note === '' ? null : note,
+    },
+  };
+}
+
 /**
  * Whether the shop is owed money it was told it would have by now.
  *

@@ -17,11 +17,14 @@ import {
   boughtMonthly,
   boughtOver,
   byAsk,
+  draftPromise,
+  hasBrokenPromise,
   howTheyPay,
   howTheyPayShort,
   initials,
   inWords,
   isBlocked,
+  latestPromise,
   ledgerAgrees,
   marginPercent,
   marginReading,
@@ -30,11 +33,10 @@ import {
   owedOn,
   payBands,
   paysWithoutChasing,
-  quietReading,
-  hasBrokenPromise,
-  latestPromise,
-  promiseState,
+  PROMISE_NOTE_MAX,
   promisesBroken,
+  promiseState,
+  quietReading,
   read,
   rowNote,
   standing,
@@ -42,6 +44,7 @@ import {
   type Customer,
   type CustomerInvoice,
   type Promised,
+  type PromiseRecord,
 } from './customers.js';
 
 const m = Money.money;
@@ -590,5 +593,81 @@ describe('standing, on books with no terms recorded', () => {
     // Which is the honest answer: the shop has not agreed terms and they
     // have not named a day, so there is nothing they are late against.
     expect(standing(noTerms(), NOW)).toBe('in-time');
+  });
+});
+
+/**
+ * Writing one down, at its edges.
+ *
+ * `draftPromise` is the only thing between what somebody typed and a row in
+ * the shop's books, so what it does with a figure of zero and a day already
+ * gone is the whole of it. Both are ported decisions, not choices made here,
+ * and both are pinned.
+ */
+describe('drafting a promise', () => {
+  const words = (over: Partial<Parameters<typeof draftPromise>[0]> = {}): Parameters<
+    typeof draftPromise
+  >[0] => ({ promisedOn: day(3), amount: null, ...over });
+
+  const accepted = (over: Partial<Parameters<typeof draftPromise>[0]> = {}): PromiseRecord => {
+    const draft = draftPromise(words(over), NOW);
+    if (!draft.ok) throw new Error(`expected a promise, got: ${draft.why}`);
+    return draft.record;
+  };
+
+  it('refuses a promise with no day in it, in the shop’s own words', () => {
+    const draft = draftPromise(words({ promisedOn: null }), NOW);
+
+    expect(draft.ok).toBe(false);
+    expect(draft.ok ? '' : draft.why).toBe('A promise needs the day they said.');
+  });
+
+  it('refuses a day that is not a day', () => {
+    expect(draftPromise(words({ promisedOn: new Date('the 3rd') }), NOW).ok).toBe(false);
+  });
+
+  it('stamps the day it was said, not the day it names', () => {
+    // The distinction promiseState turns on: money that arrived BEFORE the
+    // promise was made never kept it.
+    expect(accepted().madeOn).toEqual(NOW);
+    expect(accepted().promisedOn).toEqual(day(3));
+  });
+
+  // `amount numeric check (amount is null or amount > 0)`. Zero is not a
+  // figure somebody named, and sending it would break the constraint and
+  // lose the row — so it is read as what it means.
+  it.each([0, -50_000])('reads a figure of %i as no figure named', (n) => {
+    expect(accepted({ amount: m(n) }).amount).toBeNull();
+  });
+
+  it('keeps a figure somebody did name', () => {
+    expect(accepted({ amount: m(1_000_000) }).amount).toBe(m(1_000_000));
+  });
+
+  it('trims a note and drops an empty one rather than writing a blank', () => {
+    expect(accepted({ note: '  said at the yard  ' }).note).toBe('said at the yard');
+    expect(accepted({ note: '   ' }).note).toBeNull();
+    expect(accepted().note).toBeNull();
+  });
+
+  it('cuts a note to the length the old app writes, so both apps show the same one', () => {
+    const long = 'x'.repeat(PROMISE_NOTE_MAX + 40);
+
+    expect(accepted({ note: long }).note).toHaveLength(PROMISE_NOTE_MAX);
+  });
+
+  // Deliberate, and the old app's behaviour: somebody who named yesterday
+  // and missed it is a record worth having, and it is the fact
+  // promisesBroken counts. The screen can ask whether it was a typo; the
+  // books do not get to refuse the observation.
+  it('accepts a day already gone, and it reads as broken straight away', () => {
+    const record = accepted({ promisedOn: day(-2) });
+    const c = customer({
+      invoices: [invoice({ doc: 'INV-1', total: m(400_000), received: Money.ZERO, dueOn: null })],
+      promises: [{ id: 'p', ...record }],
+    });
+
+    expect(promiseState({ id: 'p', ...record }, c, NOW)).toBe('broken');
+    expect(promisesBroken(c, NOW)).toBe(1);
   });
 });
