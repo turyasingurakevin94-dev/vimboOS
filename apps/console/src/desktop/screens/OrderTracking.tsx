@@ -213,7 +213,13 @@ function Board({
    * frame `1a` draws it open — stepped back into Buying, with what the step
    * would cost said before it happens.
    */
-  const [acting, setActing] = useState<string | null>(() => openAtRest(read.data.orders, now));
+  // Open at rest only where the panel's own buttons do something. On the
+  // shop's books `Step it back` is refused, and a panel that argues for a
+  // move it will not make is the dialog this screen already decided not to
+  // open.
+  const [acting, setActing] = useState<string | null>(() =>
+    canMove ? openAtRest(read.data.orders, now) : null,
+  );
   const [ask, setAsk] = useState<MoveAsk | null>(null);
   const [served, setServed] = useState(0);
   /** Lanes opened past the window they draw at rest. */

@@ -291,6 +291,10 @@ describe('age, and the tone that comes off the limit', () => {
   it('writes the age the way the shop says it', () => {
     expect(ageLabel(card({ since: ago(21 + 8 / 60) }), NOW)).toBe('21h 08m');
     expect(ageLabel(card({ since: ago(0.35) }), NOW)).toBe('0h 21m');
+    // `965h 07m` is what the shop's own #148 read. Nobody converts that.
+    expect(ageLabel(card({ since: ago(47.5) }), NOW)).toBe('47h 30m');
+    expect(ageLabel(card({ since: ago(48) }), NOW)).toBe('2 days');
+    expect(ageLabel(card({ since: ago(965) }), NOW)).toBe('40 days');
   });
 
   it('gives a delivered order a day on the board, not twelve hours', () => {

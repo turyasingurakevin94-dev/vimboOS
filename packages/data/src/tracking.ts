@@ -205,6 +205,20 @@ export function toTrackedOrder(
  * A line whose buying price was never recorded makes the figure `partial`
  * naming how many. The buyer would be short by exactly that much, and
  * rounding it to zero is how somebody gets to a supplier and cannot pay.
+ *
+ * ## What counts as still to fetch, and why `invoiced` is not consulted
+ *
+ * The rule is the board's own: an order it carries, at a stage it has not
+ * handed over. It used to skip any row flagged `invoiced`, on the reasonable
+ * theory that a billed order is finished — and this shop flags orders
+ * invoiced while they are still in Buying. #148 sat there with two lines
+ * bought in and nothing received, and the dock said `Nothing to fetch · 0
+ * stops · carry 0` beside a card reading `0 of 2 bought-in lines are in`.
+ * Two sentences on one screen, about one order, disagreeing.
+ *
+ * `completed` is the honest exclusion: the goods went out, so there is
+ * nothing to go and get. A flag another application sets for its own
+ * reasons is not a stage.
  */
 export function tripFrom(rows: readonly unknown[]): Trip {
   const stops = new Map<string, number>();
@@ -213,7 +227,9 @@ export function tripFrom(rows: readonly unknown[]): Trip {
 
   for (const raw of rows) {
     const row = obj(raw);
-    if (row === null || row.voided === true || row.invoiced === true) continue;
+    if (row === null || row.voided === true) continue;
+    const status = readText(row.status);
+    if (status === null || !isStage(status) || status === 'completed') continue;
 
     for (const item of arr(obj(row.payload)?.items).map(obj)) {
       const supplier = item === null ? null : readText(item.supplierName);
@@ -242,7 +258,7 @@ export function tripFrom(rows: readonly unknown[]): Trip {
         ? known(Money.ZERO, 'nothing is waiting on a supplier')
         : blind === 0
           ? known(money, basis)
-          : partial(money, basis, `${blind} lines have no buying price`),
+          : partial(money, basis, `${blind} ${blind === 1 ? 'line has' : 'lines have'} no buying price`),
     runs: 0,
     overdue: 0,
   };

@@ -9,8 +9,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { Money } from '@ow/domain';
-import { assembleBoard, toTrackedOrder } from './tracking.js';
+import { Money, match } from '@ow/domain';
+import { assembleBoard, toTrackedOrder, tripFrom } from './tracking.js';
 
 const row = (over: Record<string, unknown> = {}): unknown => ({
   id: 365,
@@ -166,5 +166,81 @@ describe('the board', () => {
 
     expect(board.orders).toHaveLength(1);
     expect(board.unreadable[0]).toContain('#9');
+  });
+});
+
+describe('the trip behind the lanes', () => {
+  const toFetch = (over: Record<string, unknown> = {}): unknown =>
+    row({
+      status: 'awaiting_goods',
+      payload: {
+        stageEnteredAt: 1_786_253_866_337,
+        items: [
+          { qty: 2, price: 45_000, supplierId: 'S094', supplierName: 'Roto Industry' },
+          { qty: 1, price: 30_000, supplierId: 'S012', supplierName: 'Shafik Katwe' },
+        ],
+      },
+      ...over,
+    });
+
+  it('carries the buying price of what is not in yet, and names the stops', () => {
+    const trip = tripFrom([toFetch()]);
+
+    expect(trip.stops).toBe(2);
+    expect(trip.route).toBe('Roto Industry, then Shafik Katwe');
+    expect(match(trip.carry, { known: (m) => m, partial: () => null, unavailable: () => null })).toEqual(
+      Money.money(120_000),
+    );
+  });
+
+  /**
+   * This shop flags orders invoiced while they are still in Buying — #148
+   * is one, and the dock read `Nothing to fetch · 0 stops · carry 0` beside
+   * a card reading `0 of 2 bought-in lines are in`.
+   */
+  it('still fetches for an order the books have flagged invoiced', () => {
+    expect(tripFrom([toFetch({ invoiced: true })]).stops).toBe(2);
+  });
+
+  it('fetches nothing for an order already handed over, or cancelled', () => {
+    expect(tripFrom([toFetch({ status: 'completed' })]).stops).toBe(0);
+    expect(tripFrom([toFetch({ voided: true })]).stops).toBe(0);
+    expect(tripFrom([toFetch({ status: 'who_knows' })]).stops).toBe(0);
+    expect(tripFrom([toFetch({ status: 'completed' })]).route).toBe('Nothing to fetch');
+  });
+
+  it('skips a line already received — it needs no stop and costs nothing', () => {
+    const arrived = toFetch({
+      payload: {
+        stageEnteredAt: 1_786_253_866_337,
+        items: [
+          { qty: 2, price: 45_000, receivedQty: 2, supplierId: 'S094', supplierName: 'Roto' },
+          { qty: 1, price: 30_000, supplierId: 'S012', supplierName: 'Shafik Katwe' },
+        ],
+      },
+    });
+    const trip = tripFrom([arrived]);
+
+    expect(trip.stops).toBe(1);
+    expect(match(trip.carry, { known: (m) => m, partial: () => null, unavailable: () => null })).toEqual(
+      Money.money(30_000),
+    );
+  });
+
+  it('says how many lines it is blind to rather than rounding them to nothing', () => {
+    const blind = toFetch({
+      payload: {
+        stageEnteredAt: 1_786_253_866_337,
+        items: [{ qty: 2, supplierId: 'S094', supplierName: 'Roto Industry' }],
+      },
+    });
+
+    expect(
+      match(tripFrom([blind]).carry, {
+        known: () => 'known',
+        partial: (_m, _b, gap) => gap,
+        unavailable: () => 'unavailable',
+      }),
+    ).toBe('1 line has no buying price');
   });
 });

@@ -137,10 +137,25 @@ export function ageTone(order: TrackedOrder, now: Date): AgeTone {
 export function ageLabel(order: TrackedOrder, now: Date): string {
   const hours = hoursWaiting(order, now);
   if (hours === null) return '—';
+
+  // Past two days the minutes stop meaning anything and the hours stop
+  // being readable: the shop's own board carries an order that has sat in
+  // Buying since August, and it read `965h 07m`. Nobody converts that. The
+  // limit every lane is judged against is in hours, so hours are what a card
+  // inside the first two days says; after that the only useful question is
+  // how many days, and the card says that instead.
+  if (hours >= LONG_WAIT_HOURS) {
+    const days = Math.floor(hours / 24);
+    return `${days} ${days === 1 ? 'day' : 'days'}`;
+  }
+
   const minutes = Math.round(hours * 60);
   const rest = minutes % 60;
   return `${Math.floor(minutes / 60)}h ${rest < 10 ? '0' : ''}${rest}m`;
 }
+
+/** Where an age stops being told in hours and starts being told in days. */
+export const LONG_WAIT_HOURS = 48;
 
 /* -------------------------------------------------------------------------- *
  * The one control
