@@ -1,6 +1,7 @@
 export * from './boundary.js';
 export * from './savedQuotes.js';
 export * from './invoices.js';
+export * from './catalogue.js';
 export * from './customers.js';
 export * from './promises.js';
 export * from './quotes.js';

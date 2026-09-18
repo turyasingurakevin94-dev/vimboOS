@@ -232,9 +232,7 @@ function toAgent(
         'the books record no cluster for him — no membership, and no supplier funding one',
       ),
       payouts: [],
-      lines: linesOf(
-        his.map((q) => ({ payload: obj(obj(q)?.payload) ?? {} })).filter(() => true),
-      ),
+      lines: linesOf(his.map((q) => ({ payload: obj(obj(q)?.payload) ?? {} }))),
     },
   };
 }
