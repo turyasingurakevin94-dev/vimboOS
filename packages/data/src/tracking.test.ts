@@ -1,0 +1,170 @@
+/**
+ * The board, off rows shaped like the shop's real ones.
+ *
+ * Every field on a card but the stage comes out of `payload` — a jsonb blob
+ * another application has been writing for years — so this is where the
+ * reading can be wrong. The rows below carry the keys production actually
+ * holds: `stageEnteredAt` in epoch milliseconds, `pickingStatus`,
+ * `assignedWorkerId`, `assignedDeliveryId`, `pickShortfallAckAt`.
+ */
+
+import { describe, expect, it } from 'vitest';
+import { Money } from '@ow/domain';
+import { assembleBoard, toTrackedOrder } from './tracking.js';
+
+const row = (over: Record<string, unknown> = {}): unknown => ({
+  id: 365,
+  client_name: 'A99 Trade Center',
+  date: '2026-09-15',
+  status: 'preparing',
+  invoiced: false,
+  voided: false,
+  payload: {
+    client: { name: 'A99 Trade Center', phone: '0753572332' },
+    stageEnteredAt: 1_789_684_911_260,
+    items: [{ qty: 4, sellPrice: 27_500, productName: 'Iron sheets G28' }],
+  },
+  ...over,
+});
+
+const one = (over: Record<string, unknown> = {}) => toTrackedOrder(row(over), false).order;
+
+describe('an order as a card', () => {
+  it('reads the shop’s own stage word without translating it', () => {
+    // `saved_quotes.status` already holds the lane names the domain uses. A
+    // mapping layer here would be a lane nobody can name.
+    expect(one()?.stage).toBe('preparing');
+    expect(one({ status: 'awaiting_goods' })?.stage).toBe('awaiting_goods');
+  });
+
+  it('leaves an order off the board rather than putting it in the wrong lane', () => {
+    const { order, why } = toTrackedOrder(row({ status: 'on_hold_maybe' }), false);
+
+    // A card in the wrong lane is worse than one missing from the board:
+    // somebody would work it.
+    expect(order).toBeNull();
+    expect(why).toContain('is not a lane');
+  });
+
+  it('ages the card from when it entered the lane, in epoch milliseconds', () => {
+    // The one field in this payload that is not a date string. Falling back
+    // to the order's own date would show a card that moved this morning as
+    // three weeks old, so a missing one is null.
+    expect(one()?.since).toEqual(new Date(1_789_684_911_260));
+    expect(one({ payload: { items: [] } })?.since).toBeNull();
+  });
+
+  it('values the goods and what was charged to move them', () => {
+    const order = one({
+      payload: {
+        stageEnteredAt: 1,
+        items: [{ qty: 4, sellPrice: 27_500 }],
+        charges: [{ amount: 50_000 }],
+      },
+    });
+
+    expect(order?.value).toMatchObject({ status: 'known', value: Money.money(160_000) });
+  });
+
+  it('says a line has no price rather than valuing it at nothing', () => {
+    const order = one({
+      payload: { stageEnteredAt: 1, items: [{ qty: 4, sellPrice: 27_500 }, { qty: 2 }] },
+    });
+
+    expect(order?.value.status).toBe('partial');
+  });
+
+  it('counts a short pick, and calls it settled only once acknowledged', () => {
+    const short = { stageEnteredAt: 1, items: [{ qty: 10, pickedQty: 6, sellPrice: 1 }] };
+
+    // Noticing a short pick is not deciding about it.
+    expect(one({ payload: short })?.shortPick).toEqual({ asked: 10, found: 6, settled: false });
+    expect(
+      one({ payload: { ...short, pickShortfallAckAt: 1_789_000_000_000 } })?.shortPick?.settled,
+    ).toBe(true);
+  });
+
+  it('finds nothing short when the pick found everything', () => {
+    expect(one({ payload: { stageEnteredAt: 1, items: [{ qty: 4, pickedQty: 4 }] } })?.shortPick)
+      .toBeNull();
+  });
+
+  it('counts bought-in lines and the ones checked in', () => {
+    const order = one({
+      payload: {
+        stageEnteredAt: 1,
+        items: [
+          { qty: 1, supplierId: 'S1', supplierName: 'Kampala Steel', receivedQty: 1 },
+          { qty: 1, supplierId: 'S2', supplierName: 'Tororo', receivedQty: 0 },
+          { qty: 1 },
+        ],
+      },
+    });
+
+    expect(order?.lines).toBe(3);
+    expect(order?.toBuy).toBe(2);
+    expect(order?.checkedIn).toBe(1);
+  });
+
+  it('marks a supplier answered once, for the order and not per line', () => {
+    const order = one({
+      payload: {
+        stageEnteredAt: 1,
+        supplierConfirms: { S1: { at: 1 } },
+        items: [
+          { qty: 1, supplierId: 'S1', supplierName: 'Kampala Steel' },
+          { qty: 1, supplierId: 'S2', supplierName: 'Tororo' },
+        ],
+      },
+    });
+
+    expect(order?.suppliers).toEqual([
+      { name: 'Kampala Steel', answered: true },
+      { name: 'Tororo', answered: false },
+    ]);
+  });
+
+  it('carries the picker, the run and the invoice number', () => {
+    const order = toTrackedOrder(
+      row({
+        invoiced: true,
+        payload: {
+          stageEnteredAt: 1,
+          items: [{ qty: 1, sellPrice: 1 }],
+          pickingStatus: 'done',
+          assignedWorkerId: 'W3',
+          assignedDeliveryId: 'ST047',
+        },
+      }),
+      true,
+    ).order;
+
+    expect(order?.packed).toBe(true);
+    expect(order?.picker).toBe('W3');
+    expect(order?.run).toBe('ST047');
+    expect(order?.invoice).toBe('INV-0365');
+  });
+
+  it('names a counter sale rather than leaving the card nameless', () => {
+    expect(one({ client_name: null, payload: { stageEnteredAt: 1, items: [] } })?.customer).toBe(
+      'Counter sale',
+    );
+  });
+});
+
+describe('the board', () => {
+  it('leaves a cancelled order off it entirely, and says nothing about it', () => {
+    // A cancelled order sitting in a lane is somebody's wasted morning.
+    const board = assembleBoard([row(), row({ id: 9, voided: true })]);
+
+    expect(board.orders).toHaveLength(1);
+    expect(board.unreadable).toEqual([]);
+  });
+
+  it('names the ones it could not place', () => {
+    const board = assembleBoard([row(), row({ id: 9, status: 'who_knows' })]);
+
+    expect(board.orders).toHaveLength(1);
+    expect(board.unreadable[0]).toContain('#9');
+  });
+});
