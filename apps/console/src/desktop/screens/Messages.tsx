@@ -59,6 +59,7 @@ import {
   match,
   Money,
   moneyDesk,
+  monthGrid,
   type Owed,
   paidShare,
   type Post,
@@ -68,12 +69,14 @@ import {
   ridingOnIt,
   type Signal,
   signalShare,
+  stepMonth,
   type Telling,
   tellingDesk,
   type TellingKind,
   type Tone,
   unspokenFor,
   waitedDays,
+  WEEK_HEADINGS,
 } from '@ow/domain';
 import { PICKED_LIST_CANDIDATES } from '@ow/data';
 import { useDesk } from '../../app/useDesk.js';
@@ -1628,6 +1631,95 @@ function Bubble({ line }: { readonly line: Chat['lines'][number] }): ReactElemen
 /*  What the register opens — 5c, 5e, 5g                                      */
 /* ========================================================================== */
 
+/**
+ * Picking a day the words do not cover — frame 6e's grid.
+ *
+ * The month opens on Monday and **the blanks before the 1st are the whole
+ * point**: without them every date sits under the wrong weekday heading for
+ * a month, which is the one mistake a calendar cannot make.
+ *
+ * A day already gone is drawn and disabled rather than hidden. The books
+ * accept a promise for a past day — somebody who named yesterday and missed
+ * it is a record worth keeping — but offering one as a fresh choice here
+ * would almost always be catching a mis-tap rather than an intention.
+ */
+function DayPicker({
+  month,
+  chosen,
+  today,
+  onMonth,
+  onPick,
+  onDone,
+}: {
+  readonly month: Date;
+  readonly chosen: Date | null;
+  readonly today: Date;
+  readonly onMonth: (d: Date) => void;
+  readonly onPick: (d: Date) => void;
+  readonly onDone: () => void;
+}): ReactElement {
+  const grid = monthGrid(month, today);
+
+  return (
+    <div className={s.picker}>
+      <div className={s.pickerHead}>
+        <span className={s.pickerMonth}>{grid.label}</span>
+        <button
+          type="button"
+          className={`${s.secondary} ${s.pickerStep}`}
+          onClick={() => onMonth(stepMonth(grid.firstOfMonth, -1))}
+          aria-label="The month before"
+        >
+          <Icon name="chevron-left" size={16} />
+        </button>
+        <button
+          type="button"
+          className={`${s.secondary} ${s.pickerStep}`}
+          onClick={() => onMonth(stepMonth(grid.firstOfMonth, 1))}
+          aria-label="The month after"
+        >
+          <Icon name="chevron-right" size={16} />
+        </button>
+      </div>
+
+      <div className={s.pickerGrid}>
+        {WEEK_HEADINGS.map((h, i) => (
+          <div key={i} className={s.pickerHeading}>
+            {h}
+          </div>
+        ))}
+        {Array.from({ length: grid.blanks }, (_, i) => (
+          <div key={`blank-${i}`} />
+        ))}
+        {grid.days.map((d) => (
+          <button
+            key={d.on.toISOString()}
+            type="button"
+            disabled={d.past}
+            className={`${s.pickerDay} ${chosen?.getTime() === d.on.getTime() ? s.pickerDayOn : ''}`}
+            onClick={() => onPick(d.on)}
+          >
+            {d.on.getUTCDate()}
+          </button>
+        ))}
+      </div>
+
+      {/* 6e's order: the grid, then the day in words, then the control that
+          accepts it. The line has to sit where it is read before the tap. */}
+      <div className={s.promiseResolved}>
+        {chosen === null ? 'No day named yet.' : describeDay(chosen, today)}
+      </div>
+      {/* Secondary, not navy: "Write it down" is this dialog's one commit,
+          and a second filled control above it competes to be the thing the
+          owner presses. On the phone sheet this is the bottom button and
+          carries the weight; here it only folds the grid away. */}
+      <button type="button" className={`${s.secondary} ${s.pickerDone}`} onClick={onDone}>
+        Use this day
+      </button>
+    </div>
+  );
+}
+
 /** "Saturday" — the weekday alone, for the sentence that names the day. */
 const weekdayOf = (d: Date): string =>
   d.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
@@ -1662,6 +1754,8 @@ function PromiseDialog({
 }): ReactElement {
   const chips = promiseDayChips(today);
   const [on, setOn] = useState<Date | null>(chips[1]?.on ?? chips[0]?.on ?? null);
+  /** The month the picker is showing, or none while the chips are up. */
+  const [picking, setPicking] = useState<Date | null>(null);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const promise = useRecordPromise();
@@ -1693,24 +1787,48 @@ function PromiseDialog({
 
         <div className={s.promiseBody}>
           <div className={s.promiseLabel}>They will pay on</div>
-          <div className={s.promiseChips}>
-            {chips.map((c) => (
+          {picking === null ? (
+            <div className={s.promiseChips}>
+              {chips.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`${on?.getTime() === c.on.getTime() ? s.secondaryOn : s.secondary} ${s.sizeWord}`}
+                  onClick={() => setOn(c.on)}
+                >
+                  {c.label} {c.detail !== '' && <span className={s.chipDate}>{c.detail}</span>}
+                </button>
+              ))}
+              {/* Anything the four words do not cover. Opened here rather
+                  than in a second window: the balance and the sentence
+                  below stay on screen while the day is chosen. */}
               <button
-                key={c.id}
                 type="button"
-                className={`${on?.getTime() === c.on.getTime() ? s.secondaryOn : s.secondary} ${s.sizeWord}`}
-                onClick={() => setOn(c.on)}
+                className={`${s.secondary} ${s.sizeWord}`}
+                onClick={() => setPicking(on ?? today)}
               >
-                {c.label} {c.detail !== '' && <span className={s.chipDate}>{c.detail}</span>}
+                <Icon name="calendar" size={14} />
+                Pick a day
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <DayPicker
+              month={picking}
+              chosen={on}
+              today={today}
+              onMonth={setPicking}
+              onPick={setOn}
+              onDone={() => setPicking(null)}
+            />
+          )}
           {/* Generated from the date, never written beside it: the weekday
               and the date have to agree, or this line manufactures the very
               mis-tap it exists to catch. */}
-          <div className={s.promiseResolved}>
-            {on === null ? 'No day named yet.' : describeDay(on, today)}
-          </div>
+          {picking === null && (
+            <div className={s.promiseResolved}>
+              {on === null ? 'No day named yet.' : describeDay(on, today)}
+            </div>
+          )}
         </div>
 
         <div className={s.promiseFields}>

@@ -39,6 +39,7 @@ export type IconName =
   | 'clock'
   | 'calendar'
   | 'message-square'
+  | 'chevron-left'
   | 'chevron-right'
   | 'chevron-down'
   | 'arrow-right'
@@ -204,6 +205,7 @@ const P: Record<IconName, ReactElement> = {
     </>
   ),
   'message-square': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+  'chevron-left': <path d="m15 18-6-6 6-6" />,
   'chevron-right': <path d="m9 18 6-6-6-6" />,
   'chevron-down': <path d="m6 9 6 6 6-6" />,
   'arrow-right': <path d="M5 12h14M12 5l7 7-7 7" />,

@@ -2125,3 +2125,91 @@
 .promiseWords::placeholder {
   color: var(--ow-color-ink-3);
 }
+
+/* The month grid — frame 6e, inside the dialog rather than in a second
+   window, so the balance and the sentence stay on screen while a day is
+   chosen. */
+
+.picker {
+  margin-top: var(--ow-space-7);
+}
+
+.pickerHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.pickerMonth {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-ink);
+}
+
+.pickerStep {
+  width: 34px;
+  height: 34px;
+  justify-content: center;
+  padding: 0;
+}
+
+.pickerGrid {
+  margin-top: var(--ow-space-12);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--ow-space-4);
+}
+
+.pickerHeading {
+  font-size: var(--ow-size-10);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: 0.03em;
+  color: var(--ow-color-ink-3);
+  text-align: center;
+}
+
+.pickerDay {
+  composes: fig from './Messages.fig.css';
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ow-radius-field);
+  background: none;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink);
+  cursor: pointer;
+}
+
+.pickerDay:hover:not(:disabled) {
+  background: var(--ow-color-row-hover);
+}
+
+/* Drawn and refused, not hidden: a day that has gone is almost always a
+   mis-tap here, and a gap in the grid would be a puzzle instead of an
+   answer. */
+.pickerDay:disabled {
+  color: var(--ow-color-ink-4);
+  cursor: default;
+}
+
+.pickerDayOn {
+  background: var(--ow-color-navy);
+  color: var(--ow-color-surface);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.pickerDayOn:hover:not(:disabled) {
+  background: var(--ow-color-navy-hover);
+}
+
+.pickerDone {
+  margin-top: var(--ow-space-10);
+  height: 34px;
+  padding: 0 var(--ow-space-12);
+  font-size: var(--ow-size-13);
+}

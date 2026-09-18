@@ -356,6 +356,14 @@ export interface DayChip {
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+const MONTHS_LONG = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/** The seven headings, opening on Monday as the shop's week does. */
+export const WEEK_HEADINGS: readonly string[] = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
 /** Midnight UTC on the day `d` falls in. Every date here is a calendar day. */
 export const dayOf = (d: Date): Date =>
   new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -417,6 +425,57 @@ export function promiseDayChips(now: Date): readonly DayChip[] {
 
   return out.sort((a, b) => a.on.getTime() - b.on.getTime());
 }
+
+/** A month as a grid: the blanks before the 1st, then every day in it. */
+export interface MonthGrid {
+  /** "September 2026". */
+  readonly label: string;
+  /** Midnight on the 1st, for stepping a month either way. */
+  readonly firstOfMonth: Date;
+  /**
+   * How many empty cells come before the 1st.
+   *
+   * The week opens on Monday, so this is the 1st's weekday counted from
+   * there. Without it every date sits under the wrong weekday heading for
+   * the whole month, which is the one thing a calendar must not do.
+   */
+  readonly blanks: number;
+  readonly days: readonly { readonly on: Date; readonly past: boolean }[];
+}
+
+/**
+ * The month `anchor` falls in, ready to draw.
+ *
+ * A day already gone is marked rather than left out. The books accept a
+ * promise for a past day — somebody who named yesterday and missed it is a
+ * record worth keeping — but a calendar offering one as a fresh choice is
+ * almost always a mis-tap, so the screen shows it and does not let it be
+ * picked.
+ */
+export function monthGrid(anchor: Date, now: Date): MonthGrid {
+  const firstOfMonth = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1));
+  const lastDate = new Date(
+    Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  const today = dayOf(now).getTime();
+
+  return {
+    label: `${MONTHS_LONG[firstOfMonth.getUTCMonth()] ?? ''} ${firstOfMonth.getUTCFullYear()}`,
+    firstOfMonth,
+    // getUTCDay is 0 on Sunday; the grid opens on Monday.
+    blanks: (firstOfMonth.getUTCDay() + 6) % 7,
+    days: Array.from({ length: lastDate }, (_, i) => {
+      const on = new Date(
+        Date.UTC(firstOfMonth.getUTCFullYear(), firstOfMonth.getUTCMonth(), i + 1),
+      );
+      return { on, past: on.getTime() < today };
+    }),
+  };
+}
+
+/** One month either way, keeping to the 1st so a short month cannot skip one. */
+export const stepMonth = (anchor: Date, by: -1 | 1): Date =>
+  new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + by, 1));
 
 /**
  * The chosen day, written out so a mis-tap cannot pass unseen.

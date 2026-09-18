@@ -30,6 +30,7 @@ import {
   ledgerAgrees,
   marginPercent,
   marginReading,
+  monthGrid,
   oldestDebtDays,
   overLimitBy,
   owedOn,
@@ -43,6 +44,7 @@ import {
   read,
   rowNote,
   standing,
+  stepMonth,
   totalOwed,
   type Customer,
   type CustomerInvoice,
@@ -752,5 +754,57 @@ describe('naming the day they said', () => {
     expect(unspokenFor(m(3_000_000), m(2_410_000))).toBeNull();
     // And naming no figure at all IS the whole balance.
     expect(unspokenFor(null, m(2_410_000))).toBeNull();
+  });
+});
+
+describe('the month grid', () => {
+  const THURSDAY = new Date('2026-09-17T09:00:00Z');
+
+  it('puts the right number of blanks before the 1st', () => {
+    // 1 September 2026 is a Tuesday, and the week opens on Monday — so one
+    // blank. Without it every date sits under the wrong weekday heading for
+    // the whole month, which is the one thing a calendar must not do.
+    const grid = monthGrid(THURSDAY, THURSDAY);
+
+    expect(grid.label).toBe('September 2026');
+    expect(grid.blanks).toBe(1);
+    expect(grid.days).toHaveLength(30);
+  });
+
+  it('opens the week on Monday, so a Monday 1st needs no blank at all', () => {
+    // 1 June 2026 is a Monday.
+    expect(monthGrid(new Date('2026-06-10T00:00:00Z'), THURSDAY).blanks).toBe(0);
+    // 1 November 2026 is a Sunday — six blanks, the most there can be.
+    expect(monthGrid(new Date('2026-11-10T00:00:00Z'), THURSDAY).blanks).toBe(6);
+  });
+
+  it('marks the days already gone rather than leaving them out', () => {
+    const grid = monthGrid(THURSDAY, THURSDAY);
+
+    // The books accept a promise for a past day, but a calendar offering
+    // one as a fresh choice is almost always a mis-tap. Shown, not hidden.
+    expect(grid.days.filter((d) => d.past)).toHaveLength(16);
+    expect(grid.days[16]?.past).toBe(false);
+  });
+
+  it('counts February right in a leap year and out of one', () => {
+    expect(monthGrid(new Date('2028-02-05T00:00:00Z'), THURSDAY).days).toHaveLength(29);
+    expect(monthGrid(new Date('2026-02-05T00:00:00Z'), THURSDAY).days).toHaveLength(28);
+  });
+
+  it('steps a month either way without a short month swallowing one', () => {
+    // From the 31st of a month, naive date arithmetic lands in the month
+    // after next. Keeping to the 1st is why this exists.
+    const oct31 = new Date('2026-10-31T00:00:00Z');
+
+    expect(monthGrid(stepMonth(oct31, 1), THURSDAY).label).toBe('November 2026');
+    expect(monthGrid(stepMonth(oct31, -1), THURSDAY).label).toBe('September 2026');
+    // And across a year's end in both directions.
+    expect(monthGrid(stepMonth(new Date('2026-12-15T00:00:00Z'), 1), THURSDAY).label).toBe(
+      'January 2027',
+    );
+    expect(monthGrid(stepMonth(new Date('2026-01-15T00:00:00Z'), -1), THURSDAY).label).toBe(
+      'December 2025',
+    );
   });
 });
