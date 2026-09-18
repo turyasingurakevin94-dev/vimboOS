@@ -297,13 +297,22 @@ const unsettled = (inv: SalesInvoice): boolean =>
 const sameDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
+/** How far back the band's RANGE cells look. The header says so. */
+export const RANGE_DAYS = 30;
+
 /**
  * One reckoning for the band across the top of both ledgers.
  *
- * `sales` is everything in the chosen range; the open figures count only
- * what is genuinely unsettled, and the range figures count all of it. Those
- * are different questions and the band asks both, which is why they are
- * computed together rather than by two callers who might disagree.
+ * **The band asks two different kinds of question and only one of them has
+ * a range.** What is owed to us, what we owe suppliers and the net position
+ * are POSITIONS: money that is out is out, however long ago it went, and a
+ * month's window on a debt hides exactly the oldest part of it — the part
+ * worth chasing. `This range` is a FLOW, and it is scoped, which is what
+ * the header's `Last 30 days` describes.
+ *
+ * Both were scoped once, off one floored query, and on the shop's own books
+ * that reported `owed to us 5,324,000 · oldest 25 days` where the truth was
+ * 6,414,000 and forty-two days — with Customers saying 6,414,000 beside it.
  */
 export function readBand(
   sales: readonly SalesInvoice[],
@@ -316,7 +325,8 @@ export function readBand(
   const owing = purchases.filter((p) => p.voided === undefined && !Money.isZero(stillToPay(p)));
   const weOweSuppliers = Money.add(...owing.map(stillToPay));
 
-  const live = sales.filter((s) => s.voided === undefined);
+  const from = new Date(now.getTime() - RANGE_DAYS * DAY);
+  const live = sales.filter((s) => s.voided === undefined && s.issued >= from);
   const rangeInvoiced = Money.add(...live.map((s) => s.total));
   const rangeReceived = Money.add(...live.map(receivedSoFar));
 

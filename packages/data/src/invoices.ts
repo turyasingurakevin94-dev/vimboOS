@@ -53,22 +53,43 @@ export interface Ledgers {
   readonly unreadable: readonly string[];
 }
 
-/** How far back the register looks. The page header says "Last 30 days". */
+/**
+ * How far back the register's RANGE cells look. The page header says
+ * "Last 30 days", and that is the only thing it governs.
+ *
+ * It used to be the query's floor, so it governed everything — including
+ * what is owed, which is not a flow. See {@link readLedgers}.
+ */
 export const RANGE_DAYS = 30;
 
-const isoDay = (d: Date): string => d.toISOString().slice(0, 10);
-
 /**
- * The register, for one shop, over one range.
+ * The register, for one shop — all of it, with no date floor.
+ *
+ * **A debt is a position, not a flow.** This query floored both tables at
+ * thirty days, so every figure on the screen was scoped to a month —
+ * including what is owed, which is the one figure on it that must not be.
+ * On the shop's own books that hid **1,090,000 across two invoices**, and
+ * they were the two OLDEST: the band read `owed to us 5,324,000 · oldest 25
+ * days` where the truth is 6,414,000 and forty-two days, and Customers
+ * reading the same debt unwindowed said 6,414,000 beside it. Two screens,
+ * one shop, two answers.
+ *
+ * Worse than the gap is the `oldest 25 days`: money older than the window
+ * cannot be the oldest thing in it, so the figure most worth chasing is
+ * exactly the one the window removes. `agents.ts` had already written the
+ * rule down — *"looking at last month does not make this month's unpaid
+ * goods stop being unpaid"* — and this screen was breaking it.
+ *
+ * `readBand` scopes its own RANGE cells. There is no floor here because
+ * there is no question here that has one.
  *
  * `shopId` is passed rather than inferred. RLS would scope the query anyway,
  * but a query that relies on the policy to pick the shop is a query that
  * returns a different answer when someone belongs to two — and the schema
  * allows that.
  */
-export async function readLedgers(shopId: string, now: Date): Promise<Derived<Ledgers>> {
+export async function readLedgers(shopId: string): Promise<Derived<Ledgers>> {
   const { sb } = current();
-  const since = isoDay(new Date(now.getTime() - RANGE_DAYS * 86_400_000));
 
   const [salesRes, purchasesRes, customersRes] = await Promise.all([
     sb
@@ -76,13 +97,11 @@ export async function readLedgers(shopId: string, now: Date): Promise<Derived<Le
       .select('id, client_name, client_phone, date, status, invoiced, invoiced_at, amount_paid, voided, payload')
       .eq('shop_id', shopId)
       .eq('invoiced', true)
-      .gte('date', since)
       .order('date', { ascending: false }),
     sb
       .from('purchase_invoices')
       .select('id, quote_id, date, payload')
       .eq('shop_id', shopId)
-      .gte('date', since)
       .order('date', { ascending: false }),
     sb.from('customers').select('id, name, terms_days').eq('shop_id', shopId),
   ]);
@@ -123,7 +142,7 @@ export async function readLedgers(shopId: string, now: Date): Promise<Derived<Le
 
   return known(
     ledgers,
-    `${ledgers.sales.length} sales and ${ledgers.purchases.length} purchase invoices since ${since}`,
+    `${ledgers.sales.length} sales and ${ledgers.purchases.length} purchase invoices, all of them`,
   );
 }
 

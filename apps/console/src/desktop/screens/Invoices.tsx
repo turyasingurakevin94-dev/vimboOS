@@ -49,6 +49,7 @@ import {
   linkedTo,
   match,
   paidOffShare,
+  RANGE_DAYS,
   readBand,
   state,
   stillToPay,
@@ -174,10 +175,11 @@ function Register({
           <Icon name="search" size={15} />
           <span className={s.searchText}>Doc no. / customer / item</span>
         </button>
-        <button type="button" className={s.control}>
-          Last 30 days
-          <Icon name="chevron-down" size={14} />
-        </button>
+        {/* Not a button: there is one range and nothing to choose. It also
+            governs less than a page-level control looks like it governs —
+            `This range` and the lists, and NOT what is owed, which is a
+            position and has no window. The chevron said otherwise. */}
+        <span className={s.range}>Last {RANGE_DAYS} days</span>
         <button type="button" className={s.control}>
           <Icon name="file-text" size={15} />
           Print list

@@ -39,15 +39,45 @@ describe('the demo ledgers derive frame 1b’s band', () => {
     expect(band.netPosition).toBe(3_509_700);
   });
 
-  it('covers 159 invoices worth 90,417,995, 93% received', () => {
-    expect(band.rangeCount).toBe(159);
-    expect(band.rangeInvoiced).toBe(90_417_995);
+  /**
+   * `This range` is the only cell on the band with a range, and these
+   * figures are what thirty days of it come to. It read 159 and 90,417,995
+   * when the whole register was floored at thirty days and the range was
+   * therefore everything — four of the demo invoices are older, and they
+   * are in the register and not in the range, which is the point.
+   */
+  it('covers 155 invoices worth 88,258,250 in the last thirty days', () => {
+    expect(band.rangeCount).toBe(155);
+    expect(band.rangeInvoiced).toBe(88_258_250);
     expect(band.rangeReceivedShare).toMatchObject({ value: 93 });
   });
 
-  it('is internally consistent: invoiced less received IS what is owed', () => {
-    // The check that makes the other four more than a coincidence.
-    expect(band.rangeInvoiced - 83_803_995).toBe(band.owedToUs);
+  /**
+   * **And this is why the bug lived.**
+   *
+   * Four demo invoices are older than the range, and every one of them is
+   * settled — so scoping what is owed to thirty days took nothing off the
+   * figure HERE, and the two screens agreed. On the shop's own books two
+   * older invoices are still open for 1,090,000, and they are the two
+   * oldest, so the band read `5,324,000 · oldest 25 days` against
+   * Customers' 6,414,000 and a real oldest of forty-two days.
+   *
+   * It replaces a test asserting `rangeInvoiced − received === owedToUs`,
+   * which held only because both sides were the same window. A position and
+   * a flow coming to the same figure is not consistency; it is the bug,
+   * pinned.
+   */
+  it('holds invoices the range does not, settled or not', () => {
+    const all = demoSalesInvoices().filter((s) => s.voided === undefined);
+    const older = all.filter((s) => s.issued < new Date(DEMO_TODAY.getTime() - 30 * 86_400_000));
+
+    expect(all).toHaveLength(159);
+    expect(older).toHaveLength(4);
+    expect(band.rangeCount).toBe(all.length - older.length);
+
+    // Every one of them settled — which is exactly the reason the example
+    // books could not have caught this.
+    expect(Money.add(...older.map(balanceDue))).toBe(0);
   });
 });
 
