@@ -1,0 +1,13 @@
+/**
+ * The figure face, in its own file so the picker can `composes` it too.
+ *
+ * The picker's foot draws the same four figures as the quote's own dock, in
+ * the same order, and two copies of this rule is how they start disagreeing
+ * about a weight.
+ */
+.fig {
+  font-family: var(--ow-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure);
+}

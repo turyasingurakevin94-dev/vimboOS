@@ -1,0 +1,443 @@
+/**
+ * The item picker — the old app's two stages, in this app's measurements.
+ *
+ * A dialog rather than a page because it is a decision taken inside another
+ * one: the quote is still there behind it, and coming back to a quote you
+ * had left is how a call gets lost.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ow-layer-scrim);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--ow-space-30) var(--ow-space-22);
+  background: var(--ow-scrim);
+}
+
+.sheet {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 2 * var(--ow-space-30));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-sheet);
+  box-shadow: var(--ow-elevation-floating);
+}
+
+/* ---------------------------------- head ---------------------------------- */
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-14) var(--ow-space-16);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.title {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.back,
+.close {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  flex: none;
+  height: 28px;
+  padding: 0 var(--ow-space-8);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-2);
+  white-space: nowrap;
+}
+
+.back:hover,
+.close:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.close {
+  width: 28px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* --------------------------------- search --------------------------------- */
+
+.searchRow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-12) var(--ow-space-16);
+}
+
+.searchMark {
+  flex: none;
+  color: var(--ow-color-ink-3);
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13-5);
+  color: var(--ow-color-ink);
+}
+
+.search::placeholder {
+  color: var(--ow-color-ink-3);
+}
+
+.count {
+  flex: none;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--ow-space-16) var(--ow-space-16);
+}
+
+/* A result is two lines: the name with the shelf beside it, then one line
+   of everything else. Five wrapping lines with the code first read as a
+   table that had fallen over. */
+.result {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--ow-space-2) var(--ow-space-10);
+  width: 100%;
+  padding: var(--ow-space-9) var(--ow-space-10);
+  border: 0;
+  border-radius: var(--ow-radius-block);
+  background: none;
+  text-align: left;
+  font-family: var(--ow-font-ui);
+}
+
+.result:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.resultName {
+  font-size: var(--ow-size-13-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultMeta {
+  grid-column: 1 / -1;
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.shelf {
+  flex: none;
+  align-self: start;
+  padding: var(--ow-space-1) var(--ow-space-7);
+  border-radius: var(--ow-radius-pill);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.shelfSome {
+  background: var(--ow-color-good-chip-light);
+  color: var(--ow-color-good-ink);
+}
+
+.shelfNone {
+  background: var(--ow-color-neutral-chip);
+  color: var(--ow-color-ink-3);
+}
+
+.empty,
+.note {
+  max-width: var(--ow-measure);
+  padding: var(--ow-space-10);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-3);
+  text-wrap: pretty;
+}
+
+/* --------------------------------- stage ---------------------------------- */
+
+.stage {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ow-space-14) var(--ow-space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-14);
+}
+
+/* Nobody has it at all, against the cheapest being out. Two different
+   sentences, and the first one changes what you promise. */
+.hard,
+.soft {
+  max-width: var(--ow-measure);
+  padding: var(--ow-space-10) var(--ow-space-12);
+  border: 1px solid var(--ow-color-warn-panel-edge);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-warn-panel);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-warn-panel-ink);
+  text-wrap: pretty;
+}
+
+.hard {
+  border-color: var(--ow-color-bad-edge);
+  background: var(--ow-color-bad-fill);
+  color: var(--ow-color-bad-ink);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-6);
+}
+
+.label {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.input {
+  composes: fig from './Quote.fig.css';
+  height: 38px;
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-field-edge);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-surface);
+  font-size: var(--ow-size-14);
+  color: var(--ow-color-ink);
+}
+
+.input::placeholder {
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-3);
+}
+
+.qtyRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.qtyRow .input {
+  width: 120px;
+  flex: none;
+}
+
+/* The unit the rep chose is the unit the screen speaks. */
+.units {
+  display: flex;
+  gap: var(--ow-space-4);
+  padding: var(--ow-space-3);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-lens-track);
+}
+
+.unitBtn {
+  height: 28px;
+  padding: 0 var(--ow-space-11);
+  border: 0;
+  border-radius: var(--ow-radius-icon-chip);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+  white-space: nowrap;
+}
+
+.unitOn {
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  box-shadow: var(--ow-elevation-lens);
+}
+
+.qtyReads {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
+}
+
+/* ------------------------------- the sources ------------------------------ */
+
+.sources {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  gap: var(--ow-space-8);
+}
+
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-2);
+  padding: var(--ow-space-10) var(--ow-space-11);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  text-align: left;
+  font-family: var(--ow-font-ui);
+}
+
+.source:hover {
+  background: var(--ow-color-row-hover);
+}
+
+/* The one being used, in the studied violet — "the thing you are looking
+   at", not a meaning tint. */
+.sourceOn {
+  border-color: var(--ow-color-study-fill);
+  background: var(--ow-color-study-fill);
+}
+
+.sourceName {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  min-width: 0;
+}
+
+.bestChip {
+  flex: none;
+  padding: 0 var(--ow-space-6);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-good-chip-light);
+  color: var(--ow-color-good-ink);
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.sourceAt {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+}
+
+.sourceMeta {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.why {
+  max-width: var(--ow-measure);
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-3);
+  text-wrap: pretty;
+}
+
+/* --------------------------------- the foot ------------------------------- */
+
+/* The same four figures, in the same order, as the quote's own dock. */
+.foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-20);
+  padding: var(--ow-space-12) var(--ow-space-16);
+  border-top: 1px solid var(--ow-color-rule);
+  background: var(--ow-color-surface-2);
+}
+
+.foots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-1);
+}
+
+.footLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.footFig {
+  composes: fig from './Quote.fig.css';
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-ink);
+}
+
+.footUnit {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-3);
+}
+
+.add {
+  flex: none;
+  height: 36px;
+  padding: 0 var(--ow-space-16);
+  border: 1px solid var(--ow-color-accent-btn);
+  border-radius: var(--ow-radius-button);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-bold);
+  white-space: nowrap;
+}
+
+.add:hover:not(:disabled) {
+  background: var(--ow-color-accent-btn-hover);
+  border-color: var(--ow-color-accent-btn-hover);
+}
+
+/* Nothing yet says what to charge, so there is nothing to add. It keeps
+   its words and loses the fill. */
+.add:disabled {
+  background: var(--ow-color-surface);
+  border-color: var(--ow-color-divider);
+  color: var(--ow-color-ink-3);
+  cursor: default;
+}

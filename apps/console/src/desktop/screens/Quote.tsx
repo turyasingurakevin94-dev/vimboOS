@@ -29,22 +29,40 @@
  * instead of becoming folklore.
  */
 
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import {
   Money,
+  asId,
+  askedFor,
   clientPays,
   costsYou,
   keepPercent,
   keepTone,
+  known,
   lineKeepPercent,
   lineTotal,
   match,
+  onShelf,
+  shortOf,
+  unavailable,
   youKeep,
   type ChargeLine,
+  type Client,
   type ItemLine,
   type QuoteLine,
 } from '@ow/domain';
-import { commonCharges, demoQuote, goesWithIt, lastOrder, usuallyBuys } from '@ow/data';
+import {
+  commonCharges,
+  goesWithIt,
+  lastOrder,
+  raiseQuote,
+  usuallyBuys,
+  whyNotSaveable,
+  writeQuote,
+} from '@ow/data';
+import { useCatalogue } from '../../app/useCatalogue.js';
+import { useBooks } from '../../app/Books.js';
+import { Picker, type Picked } from './QuotePicker.js';
 import s from './Quote.module.css';
 import { Icon } from '../icons.js';
 
@@ -85,52 +103,200 @@ function DerivedFigure({
   });
 }
 
+/* -------------------------------------------------------------------------- *
+ * The quote, and what it is made of
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Nobody, until somebody is named.
+ *
+ * A counter sale is a real thing and `client_name` may be null — but the
+ * order still has to say who it is for before it can be saved, which is
+ * `whyNotSaveable`'s job and not this one's.
+ */
+const NOBODY: Client = {
+  id: asId(''),
+  name: '',
+  phone: '',
+  orders: 0,
+  owesNow: Money.ZERO,
+  lastOrder: null,
+};
+
+/** A day, as the quote's own strip says it: `18 Sep 2026`. */
+const dayReads = (on: Date): string =>
+  `${on.getUTCDate()} ${MONTHS[on.getUTCMonth()] ?? ''} ${on.getUTCFullYear()}`;
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export function Quote(): ReactElement {
-  const quote = demoQuote();
-  const { lines, client } = quote;
+  const read = useCatalogue();
+  if (read.at === 'loading') return <Waiting />;
+  if (read.at === 'failed') return <Refused why={read.why} />;
+  return <Desk read={read} />;
+}
+
+/**
+ * Reading, not an empty catalogue.
+ *
+ * A picker with nothing in it and a picker that could not be filled look
+ * identical, and only one of them means the shop sells nothing.
+ */
+function Waiting(): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1 className={s.title}>Quote</h1>
+          <p className={s.sub}>Reading what the shop sells&#8230;</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+function Refused({ why }: { readonly why: string }): ReactElement {
+  return (
+    <div className={s.page}>
+      <header className={s.head}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1 className={s.title}>Quote</h1>
+          <p className={s.sub}>The catalogue could not be read. {why}</p>
+        </div>
+      </header>
+    </div>
+  );
+}
+
+function Desk({
+  read,
+}: {
+  readonly read: Extract<ReturnType<typeof useCatalogue>, { at: 'ready' }>;
+}): ReactElement {
+  const books = useBooks();
+  const [lines, setLines] = useState<readonly QuoteLine[]>([]);
+  const [client, setClient] = useState<Client>(NOBODY);
+  const [picking, setPicking] = useState(false);
+  /** What came of the last press of Save, in words. */
+  const [said, setSaid] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
   const pays = clientPays(lines);
   const cost = costsYou(lines);
   const keep = youKeep(lines);
   const share = keepPercent(lines);
   const items = lines.filter((l): l is ItemLine => l.kind === 'item');
 
+  const add = (picked: Picked): void => {
+    setPicking(false);
+    setLines((prior) => [...prior, lineFrom(picked)]);
+    setSaid(null);
+  };
+
+  const drop = (id: string): void => {
+    setLines((prior) => prior.filter((l) => l.id !== id));
+    setSaid(null);
+  };
+
+  /**
+   * Quantity and price are edited where they are read, and a figure that
+   * cannot be read as a number is left alone rather than snapped to zero —
+   * somebody halfway through typing `1` in `12` has an empty box for one
+   * keystroke, and a line that jumped to 0 there would be a line they have
+   * to fix afterwards.
+   */
+  const retype = (id: string, what: 'qty' | 'priceEach', typed: string): void => {
+    // A figure is read aloud grouped, so it is typed back grouped too.
+    const value = Number(typed.replace(/[\s,]/g, ''));
+    if (!Number.isFinite(value) || value < 0) return;
+    setLines((prior) =>
+      prior.map((l) =>
+        l.id !== id || l.kind !== 'item'
+          ? l
+          : what === 'qty'
+            ? { ...l, qty: value }
+            : { ...l, priceEach: Money.roundDown(value) },
+      ),
+    );
+    setSaid(null);
+  };
+
+  const save = async (): Promise<void> => {
+    // The example books are an array in this app's own memory. There is
+    // nowhere to write them, and a quote that said it had been saved to
+    // them would be the only lie on the screen.
+    if (books.from !== 'live') {
+      setSaid('These are example books, so nothing is written. Sign in to raise a real order.');
+      return;
+    }
+
+    setSaving(true);
+    setSaid(null);
+    const written = await raiseQuote(
+      books.shopId,
+      writeQuote({ client, date: dayReads(read.today), lines }, client.id === '' ? null : client.id),
+      read.today,
+    );
+    setSaving(false);
+
+    if (!written.ok) {
+      setSaid(written.why);
+      return;
+    }
+    setSaid(`Saved as #${written.id}. It waits in Taken until every supplier on it has answered.`);
+    setLines([]);
+    setClient(NOBODY);
+  };
+
   return (
     <div className={s.page}>
+      {picking && (
+        <Picker
+          catalogue={read.data.sellables}
+          onPick={add}
+          onClose={() => setPicking(false)}
+        />
+      )}
+
       <header className={s.head}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 className={s.title}>Quote</h1>
           <p className={s.sub}>
-            Build the order live, on the call · say the price, move to the next item
+            Build the order live, on the call &#183; say the price, move to the next item
           </p>
         </div>
       </header>
 
       <div className={s.work}>
         <div className={s.lines}>
-          <ClientStrip client={client} date={quote.date} />
+          <ClientStrip client={client} date={dayReads(read.today)} onClient={setClient} />
 
           <section className={`${s.card} ${s.clip}`}>
             <div className={s.addRow}>
-              <div className={s.addField}>
+              <button type="button" className={s.addField} onClick={() => setPicking(true)}>
                 <Icon name="search" size={16} style={{ color: v('ink-3'), flex: 'none' }} />
-                <span className={s.addFieldText}>Add item — name, SKU or supplier code</span>
+                <span className={s.addFieldText}>
+                  Add item &#8212; name, code or supplier code
+                </span>
                 <span className={s.key} aria-hidden="true">
                   /
                 </span>
-              </div>
-            </div>
-
-            <div className={s.suggests}>
-              <span className={s.suggestLabel}>Usually buys</span>
-              {usuallyBuys.map((u) => (
-                <button key={u.name} type="button" className={s.pill}>
-                  {u.name} <span className={s.pillFig}>{u.rate}</span>
-                </button>
-              ))}
-              <button type="button" className={`${s.pill} ${s.pillOpen}`}>
-                +3 more
               </button>
             </div>
+
+            {client.id !== '' && (
+              <div className={s.suggests}>
+                <span className={s.suggestLabel}>Usually buys</span>
+                {usuallyBuys.map((u) => (
+                  <button key={u.name} type="button" className={s.pill}>
+                    {u.name} <span className={s.pillFig}>{u.rate}</span>
+                  </button>
+                ))}
+                <button type="button" className={`${s.pill} ${s.pillOpen}`}>
+                  +3 more
+                </button>
+              </div>
+            )}
 
             <div className={s.headRow}>
               <span />
@@ -146,12 +312,18 @@ export function Quote(): ReactElement {
               <span className={`${s.colLabel} ${s.right}`}>Keep</span>
             </div>
 
-            {lines.map((line, i) =>
-              line.kind === 'item' ? (
-                <ItemRow key={line.id} line={line} at={i + 1} />
-              ) : (
-                <ChargeRow key={line.id} line={line} />
-              ),
+            {lines.length === 0 ? (
+              <p className={s.nothing}>
+                Nothing on it yet. Add the first item and the figures below start counting.
+              </p>
+            ) : (
+              lines.map((line, i) =>
+                line.kind === 'item' ? (
+                  <ItemRow key={line.id} line={line} at={i + 1} onQty={retype} onDrop={drop} />
+                ) : (
+                  <ChargeRow key={line.id} line={line} />
+                ),
+              )
             )}
 
             <div className={s.nextLine}>
@@ -175,35 +347,46 @@ export function Quote(): ReactElement {
           <CheaperElsewhere lines={lines} />
           <StockToCover items={items} />
 
-          <section className={`${s.card} ${s.cardPad}`}>
-            <div className={s.asideTitle}>Goes with it</div>
-            <div className={s.pillWrap}>
-              {goesWithIt.map((g) => (
-                <button key={g.name} type="button" className={s.pill}>
-                  {g.name} <span className={s.pillFig}>{g.rate}</span>
-                </button>
-              ))}
-            </div>
-          </section>
+          {/* Both of these are about a customer the books know, and both
+              are still the frame's own figures. `Goes with it` needs what
+              this shop's orders actually carry together, and `Last order`
+              needs the client picked rather than typed — neither is read
+              yet, so neither is drawn about nobody. */}
+          {client.id !== '' && (
+            <>
+              <section className={`${s.card} ${s.cardPad}`}>
+                <div className={s.asideTitle}>Goes with it</div>
+                <div className={s.pillWrap}>
+                  {goesWithIt.map((g) => (
+                    <button key={g.name} type="button" className={s.pill}>
+                      {g.name} <span className={s.pillFig}>{g.rate}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
 
-          <section className={`${s.card} ${s.cardPad}`}>
-            <div className={s.asideHead}>
-              <span className={s.asideTitle}>Last order</span>
-              <span className={s.asideWhen}>{lastOrder.when}</span>
-            </div>
-            {lastOrder.lines.map((l) => (
-              <div key={l.name} className={s.pastRow}>
-                <span className={s.stockName}>{l.name}</span>
-                <span className={s.stockFig}>{Money.format(l.total)}</span>
-              </div>
-            ))}
-          </section>
+              <section className={`${s.card} ${s.cardPad}`}>
+                <div className={s.asideHead}>
+                  <span className={s.asideTitle}>Last order</span>
+                  <span className={s.asideWhen}>{lastOrder.when}</span>
+                </div>
+                {lastOrder.lines.map((l) => (
+                  <div key={l.name} className={s.pastRow}>
+                    <span className={s.stockName}>{l.name}</span>
+                    <span className={s.stockFig}>{Money.format(l.total)}</span>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
         </aside>
       </div>
 
       <footer className={s.dock}>
         <div className={s.dockFirst}>
-          <div className={s.dockLabel}>Client pays · {lines.length} lines</div>
+          <div className={s.dockLabel}>
+            Client pays &#183; {lines.length} {lines.length === 1 ? 'line' : 'lines'}
+          </div>
           <div className={s.dockPays}>
             {Money.format(pays)} <span className={s.dockPaysUnit}>UGX</span>
           </div>
@@ -217,14 +400,18 @@ export function Quote(): ReactElement {
             <div className={s.dockLabel}>You keep</div>
             <DerivedFigure value={keep} className={s.dockFig} />
           </div>
-          {match(share, {
-            known: (pc) => <ShareChip percent={pc} />,
-            partial: (pc, _b, missing) => <ShareChip percent={pc} title={missing} />,
-            unavailable: () => <span />,
-          })}
+          {lines.length === 0
+            ? null
+            : match(share, {
+                known: (pc) => <ShareChip percent={pc} />,
+                partial: (pc, _b, missing) => <ShareChip percent={pc} title={missing} />,
+                unavailable: () => <span />,
+              })}
         </div>
 
         <div className={s.spacer} />
+
+        {said !== null && <p className={s.said}>{said}</p>}
 
         <div className={s.dockActions}>
           <button type="button" className={`${s.btn} ${s.btnSecondary} ${s.btnDock}`}>
@@ -238,14 +425,62 @@ export function Quote(): ReactElement {
           >
             <Icon name="more-horizontal" size={18} />
           </button>
-          {/* The one accent-filled control on the screen. */}
-          <button type="button" className={`${s.btn} ${s.btnPrimary} ${s.btnDockPrimary}`}>
-            Save quote
+          {/* The one accent-filled control on the screen.
+              Disabled AS WELL AS guarded: the guard in `raiseQuote` is what
+              makes a second press harmless, and the greyed button is what
+              tells the person why nothing happened. Without it the fix
+              looks exactly like the app ignoring them. */}
+          <button
+            type="button"
+            className={`${s.btn} ${s.btnPrimary} ${s.btnDockPrimary}`}
+            disabled={saving || whyNotSaveable(writeQuote({ client, date: '', lines }, null)) !== null}
+            title={whyNotSaveable(writeQuote({ client, date: '', lines }, null)) ?? undefined}
+            onClick={() => {
+              void save();
+            }}
+          >
+            {saving ? 'Saving\u2026' : 'Save quote'}
           </button>
         </div>
       </footer>
     </div>
   );
+}
+
+/**
+ * A pick, as a line on the quote.
+ *
+ * The id has to be unique on the document rather than on the catalogue: the
+ * same thing can go on twice, at two quantities, from two suppliers — a
+ * carton from Roto and three loose off the shelf is one order and two
+ * lines, and keying them both by the product would draw one.
+ */
+function lineFrom(picked: Picked): ItemLine {
+  const { thing, source, qty, countedIn, sellEach, buyEach } = picked;
+
+  return {
+    kind: 'item',
+    id: asId(`${thing.productId}:${thing.variantIdx ?? ''}:${source.id}:${Date.now()}`),
+    name: thing.name,
+    unit: countedIn === 'pack' ? source.packUnit : source.unit,
+    qty,
+    priceEach: Money.roundDown(sellEach),
+    // In base units, always. See `ItemLine.inStock`.
+    inStock: onShelf(thing.lots),
+    buyFrom: source.name,
+    buyAt:
+      buyEach === null
+        ? unavailable(`nothing on file says what ${source.name} charges for this`)
+        : known(Money.roundDown(buyEach), `${source.name}, ${qty} at a time`),
+    source: {
+      productId: thing.productId,
+      variantIdx: thing.variantIdx,
+      supplierId: source.id,
+      packUnit: source.packUnit,
+      packQty: source.packQty,
+      countedIn,
+    },
+  };
 }
 
 function ShareChip({
@@ -272,18 +507,34 @@ function ShareChip({
 function ClientStrip({
   client,
   date,
+  onClient,
 }: {
-  readonly client: ReturnType<typeof demoQuote>['client'];
+  readonly client: Client;
   readonly date: string;
+  readonly onClient: (client: Client) => void;
 }): ReactElement {
   const owesNothing = Money.isZero(client.owesNow);
+  const known = client.id !== '';
+
   return (
     <section className={`${s.card} ${s.clip} ${s.strip}`}>
       <div className={s.cellClient}>
         <div className={s.cellLabel}>Client</div>
         <div className={s.cellValue}>
-          <span className={s.clientName}>{client.name}</span>
-          <span className={s.clientPhone}>{client.phone}</span>
+          <input
+            className={`${s.clientName} ${s.clientField}`}
+            value={client.name}
+            placeholder="Who it is for"
+            aria-label="Who the order is for"
+            onChange={(e) => onClient({ ...client, name: e.target.value })}
+          />
+          <input
+            className={`${s.clientPhone} ${s.clientField}`}
+            value={client.phone}
+            placeholder="Phone"
+            aria-label="Their phone number"
+            onChange={(e) => onClient({ ...client, phone: e.target.value })}
+          />
         </div>
       </div>
       <div className={s.cell} style={{ flex: 0.9 }}>
@@ -292,32 +543,40 @@ function ClientStrip({
           <span className={s.cellFigLight}>{date}</span>
         </div>
       </div>
+      {/* Three cells that only mean something about somebody the books know.
+          Typed into the field above, this is a counter sale — and `0 orders,
+          owes nothing` about a name the shop has never seen is three
+          confident figures about nobody. */}
       <div className={s.cell} style={{ flex: 0.7 }}>
         <div className={s.cellLabel}>Orders</div>
         <div className={s.cellValue}>
-          <span className={s.cellFig}>{client.orders}</span>
+          <span className={s.cellFig}>{known ? client.orders : '\u2014'}</span>
         </div>
       </div>
       {/* Owing nothing is good news and the strip says so with a tint. */}
       <div
-        className={`${s.cell} ${owesNothing ? s.cellGood : ''}`}
+        className={`${s.cell} ${known && owesNothing ? s.cellGood : ''}`}
         style={{ flex: 0.9 }}
       >
         <div className={s.cellLabel}>Owes now</div>
         <div className={s.cellValue}>
-          <span
-            className={s.cellFig}
-            style={{ color: owesNothing ? v('good-ink') : v('bad-ink') }}
-          >
-            {Money.format(client.owesNow)} <span className={s.unit}>UGX</span>
-          </span>
+          {known ? (
+            <span
+              className={s.cellFig}
+              style={{ color: owesNothing ? v('good-ink') : v('bad-ink') }}
+            >
+              {Money.format(client.owesNow)} <span className={s.unit}>UGX</span>
+            </span>
+          ) : (
+            <span className={s.cellFig}>&#8212;</span>
+          )}
         </div>
       </div>
       <div className={s.cell} style={{ flex: 1.3 }}>
         <div className={s.cellLabel}>Last order</div>
         <div className={s.cellValue}>
           {client.lastOrder === null ? (
-            <span className={s.when}>nothing yet</span>
+            <span className={s.when}>{known ? 'nothing yet' : 'not a recorded customer'}</span>
           ) : (
             <>
               <span className={s.cellFig}>{Money.format(client.lastOrder.total)}</span>
@@ -332,10 +591,52 @@ function ClientStrip({
 
 /* ------------------------------- line rows -------------------------------- */
 
-function ItemRow({ line, at }: { readonly line: ItemLine; readonly at: number }): ReactElement {
+function ItemRow({
+  line,
+  at,
+  onQty,
+  onDrop,
+}: {
+  readonly line: ItemLine;
+  readonly at: number;
+  readonly onQty: (id: string, what: 'qty' | 'priceEach', typed: string) => void;
+  readonly onDrop: (id: string) => void;
+}): ReactElement {
+  /**
+   * What is in the box while somebody is typing in it.
+   *
+   * The price is read aloud on a call, so it is grouped like every other
+   * figure on the screen — and a box that reformats under the caret moves
+   * it, so the raw keystrokes stand until the field is left. `null` means
+   * nobody is typing and the line's own figure is what shows.
+   */
+  const [typing, setTyping] = useState<{ readonly what: string; readonly text: string } | null>(
+    null,
+  );
+  const box = (what: 'qty' | 'priceEach', shown: string): string =>
+    typing?.what === what ? typing.text : shown;
+
+  const type = (what: 'qty' | 'priceEach', text: string): void => {
+    setTyping({ what, text });
+    onQty(line.id, what, text);
+  };
+
   return (
     <div className={s.row}>
-      <span className={s.num}>{at}</span>
+      {/* The line number is the handle: hovering it offers to take the line
+          off, so a row that is wrong does not need a control of its own
+          sitting in every row that is right. */}
+      <button
+        type="button"
+        className={s.num}
+        aria-label={`Take ${line.name} off the quote`}
+        onClick={() => onDrop(line.id)}
+      >
+        <span className={s.numAt}>{at}</span>
+        <span className={s.numDrop} aria-hidden="true">
+          <Icon name="x" size={12} strokeWidth={2.2} />
+        </span>
+      </button>
 
       <div style={{ minWidth: 0 }}>
         <div className={s.itemName}>{line.name}</div>
@@ -354,15 +655,25 @@ function ItemRow({ line, at }: { readonly line: ItemLine; readonly at: number })
       </div>
 
       <div className={s.qtyCell}>
-        <input className={s.editable} defaultValue={line.qty} aria-label={`Quantity, ${line.name}`} />
+        <input
+          className={s.editable}
+          value={box('qty', String(line.qty))}
+          inputMode="decimal"
+          aria-label={`Quantity, ${line.name}`}
+          onChange={(e) => type('qty', e.target.value)}
+          onBlur={() => setTyping(null)}
+        />
         <span className={s.qtyUnit}>{line.unit}</span>
       </div>
 
       <div className={s.right}>
         <input
           className={s.editable}
-          defaultValue={Money.format(line.priceEach)}
+          value={box('priceEach', Money.format(line.priceEach))}
+          inputMode="decimal"
           aria-label={`Price each, ${line.name}`}
+          onChange={(e) => type('priceEach', e.target.value)}
+          onBlur={() => setTyping(null)}
         />
       </div>
 
@@ -378,24 +689,17 @@ function ItemRow({ line, at }: { readonly line: ItemLine; readonly at: number })
 
       <div className={s.right}>
         {match(line.buyAt, {
-          known: (at2) => (
-            <input
-              className={`${s.editable} ${s.editableBuy}`}
-              defaultValue={Money.format(at2)}
-              aria-label={`Bought at, ${line.name}`}
-            />
-          ),
-          partial: (at2) => (
-            <input
-              className={`${s.editable} ${s.editableBuy}`}
-              defaultValue={Money.format(at2)}
-              aria-label={`Bought at, ${line.name}`}
-            />
+          known: (at2) => <span className={s.buyAt}>{Money.format(at2)}</span>,
+          partial: (at2, _b, missing) => (
+            <span className={s.buyAt} title={missing}>
+              {Money.format(at2)}
+              <span className={s.unit}> +</span>
+            </span>
           ),
           // Never a zero: nobody has bought this, so there is no cost to show
           // and no margin to claim.
           unavailable: (reason) => (
-            <span className={`${s.editable} ${s.editableBuy}`} title={reason}>
+            <span className={s.buyAt} title={reason}>
               &#8212;
             </span>
           ),
@@ -417,10 +721,25 @@ function ItemRow({ line, at }: { readonly line: ItemLine; readonly at: number })
   );
 }
 
-/** What the shelf can do for this line, in the words the line uses. */
+/**
+ * What the shelf can do for this line, in the units the shelf counts in.
+ *
+ * Both figures are base units. A line quoted as 1 Ctn of 100 against eight
+ * pieces on the shelf read `0 in stock`, which is true about cartons and
+ * hides the eight — and the eight are what somebody would go and look at.
+ */
 function StockNote({ line }: { readonly line: ItemLine }): ReactElement {
-  if (line.inStock >= line.qty) return <>{line.inStock} in stock</>;
-  const short = line.qty - line.inStock;
+  const short = shortOf(line);
+  const unit = line.source.countedIn === 'pack' ? '' : ` ${line.unit}`;
+
+  if (short === 0) {
+    return (
+      <>
+        {line.inStock}
+        {unit} in stock
+      </>
+    );
+  }
   return (
     <span className={s.metaBad}>
       {line.inStock} in stock · {short} to order in
@@ -491,8 +810,11 @@ function CheaperElsewhere({ lines }: { readonly lines: readonly QuoteLine[] }): 
   );
 }
 
-function StockToCover({ items }: { readonly items: readonly ItemLine[] }): ReactElement {
-  const short = items.filter((l) => l.qty > l.inStock).length;
+function StockToCover({ items }: { readonly items: readonly ItemLine[] }): ReactElement | null {
+  // Nothing on the quote is not "all covered". It is nothing to cover.
+  if (items.length === 0) return null;
+
+  const short = items.filter((l) => shortOf(l) > 0).length;
   return (
     <section className={`${s.card} ${s.cardPad}`}>
       <div className={s.asideHead}>
@@ -510,18 +832,19 @@ function StockToCover({ items }: { readonly items: readonly ItemLine[] }): React
       </div>
       <div className={s.stockList}>
         {items.map((line) => {
-          const covered = line.inStock >= line.qty;
+          const short = shortOf(line);
           return (
             <div key={line.id} className={s.stockRow}>
-              <span className={`${s.stockName} ${covered ? '' : s.stockShort}`}>{line.name}</span>
-              {covered ? (
+              <span className={`${s.stockName} ${short === 0 ? '' : s.stockShort}`}>
+                {line.name}
+              </span>
+              {short === 0 ? (
                 <span className={s.stockFig}>
-                  {line.qty} / {line.inStock}
+                  {askedFor(line)} / {line.inStock}
                 </span>
               ) : (
                 <span className={s.stockFig} style={{ color: v('bad-ink') }}>
-                  {line.inStock} / {line.qty - line.inStock}{' '}
-                  <span className={s.stockOrderIn}>order in</span>
+                  {line.inStock} / {short} <span className={s.stockOrderIn}>order in</span>
                 </span>
               )}
             </div>

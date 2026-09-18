@@ -44,7 +44,15 @@ export interface ItemLine {
   readonly unit: string;
   readonly qty: number;
   readonly priceEach: Amount;
-  /** What the shelf holds, in the line's own unit. */
+  /**
+   * What the shelf holds, in BASE units — never in the line's own.
+   *
+   * A line quoted as 1 Ctn of 100 against 8 pieces on the shelf read
+   * `0 in stock`, which is true about cartons and hides the eight. The
+   * count is the shop's, the unit is the line's, and converting the count
+   * to the unit is how the eight disappeared. {@link shortOf} does the
+   * comparison instead, in base units, where both sides mean the same thing.
+   */
   readonly inStock: number;
   /** The shop's side. Both of these are hidden from the client. */
   readonly buyFrom: string;
@@ -271,3 +279,16 @@ export const qtyInBaseUnits = (
 /** How many base units one of the chosen unit is. The pack size, or one. */
 export const perChosen = (countedIn: 'unit' | 'pack', packQty: number): number =>
   countedIn === 'pack' && packQty > 0 ? packQty : 1;
+
+/** What this line asks for, in base units — whatever unit it is counted in. */
+export const askedFor = (line: ItemLine): number =>
+  qtyInBaseUnits(line.qty, line.source.countedIn, line.source.packQty);
+
+/**
+ * How many base units of this line the shelf cannot cover.
+ *
+ * Both sides in base units, because that is the only unit the shelf and the
+ * line agree on. Comparing a quantity in cartons against a count in pieces
+ * is how a shop with eight on the shelf was told it had none.
+ */
+export const shortOf = (line: ItemLine): number => Math.max(0, askedFor(line) - line.inStock);

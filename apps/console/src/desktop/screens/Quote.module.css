@@ -788,8 +788,18 @@
   font-weight: var(--ow-weight-bold);
 }
 
-.btnPrimary:hover {
+.btnPrimary:hover:not(:disabled) {
   background: var(--ow-color-accent-btn-hover);
+}
+
+/* An empty quote, or one for nobody. It keeps its words and loses the fill,
+   because the fill is this screen's promise that pressing does something —
+   and the `title` says which of the two it is waiting for. */
+.btnPrimary:disabled {
+  background: var(--ow-color-surface);
+  border-color: var(--ow-color-divider);
+  color: var(--ow-color-ink-3);
+  cursor: default;
 }
 
 .btnDock {
@@ -809,4 +819,105 @@
   height: 42px;
   padding: 0;
   justify-content: center;
+}
+
+/* --------------------------- a document being built ------------------------ */
+
+/* An empty quote, said once where the lines will be. */
+.nothing {
+  max-width: var(--ow-measure);
+  padding: var(--ow-space-16) var(--ow-space-14);
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-3);
+  text-wrap: pretty;
+}
+
+/* What came of the last press of Save, beside the button that did it. */
+.said {
+  max-width: 44ch;
+  margin-right: var(--ow-space-12);
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-prose);
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+/* The client's name and phone are typed, so they are fields — and they wear
+   the same face they had when they were only read, because the strip is the
+   head of a document and not a form. */
+.clientField {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: var(--ow-radius-chip-square);
+  background: none;
+  padding: var(--ow-space-1) var(--ow-space-2);
+  font-family: inherit;
+}
+
+.clientField:hover {
+  background: var(--ow-color-field);
+}
+
+.clientField:focus {
+  background: var(--ow-color-field);
+  outline: 2px solid var(--ow-color-accent-btn);
+  outline-offset: -1px;
+}
+
+.clientField::placeholder {
+  color: var(--ow-color-ink-3);
+  font-weight: var(--ow-weight-regular);
+}
+
+/* The line number IS the handle. A row that is wrong does not need a
+   control of its own sitting in every row that is right, so the number
+   becomes a cross under the pointer. */
+.num {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--ow-radius-glyph);
+  background: none;
+  font-family: var(--ow-font-mono);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+}
+
+.numAt,
+.numDrop {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+}
+
+.numDrop {
+  opacity: 0;
+  color: var(--ow-color-bad-ink);
+}
+
+.num:hover {
+  background: var(--ow-color-bad-chip);
+}
+
+.num:hover .numAt {
+  opacity: 0;
+}
+
+.num:hover .numDrop {
+  opacity: 1;
+}
+
+/* Buy @ is read, never typed. It is a fact about a purchase that already
+   happened, and a box around it invites somebody to rewrite the past. */
+.buyAt {
+  composes: fig;
+  display: block;
+  text-align: right;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink-2);
 }

@@ -525,25 +525,50 @@ export function demoCatalogue(): Catalogue {
     ...over,
   });
 
+  // This shop prices by the carton: a fixed amount on the pack, with no
+  // retail rule at all, which is the shape 311 of its 485 lines are in.
+  const byThePack = (value: number): Markups => ({
+    wholesale: { kind: 'fixed', value, from: 'product' },
+    retail: null,
+    stockWholesale: { kind: 'fixed', value, from: 'product' },
+    stockRetail: null,
+  });
+
   return {
     unreadable: [],
     sellables: [
       thing('P044', 0, 'Soft Close Mulper — Flat', 'FLAT', 'Furniture', {
+        markups: byThePack(15_000),
         prices: [
           price({ retail: 2_500, packQty: 100, packUnit: 'Ctn', tiers: [{ minQty: 100, price: 2_350 }] }),
           price({ supplierId: 'S012', supplierName: 'Shafik Katwe', retail: 2_600 }),
         ],
       }),
       thing('P044', 1, 'Soft Close Mulper — Half Bend', 'HALFBEND', 'Furniture', {
-        prices: [price({ retail: 2_500, wholesale: 2_300, packQty: 100, packUnit: 'Ctn' })],
+        markups: byThePack(15_000),
+        // Carton-only, like most of this shop: a wholesale rate and no
+        // retail figure at all, so even one unit prices off wholesale.
+        prices: [price({ retail: null, wholesale: 2_300, packQty: 100, packUnit: 'Ctn' })],
         counted: 8,
         lots: [{ qty: 8, cost: 1_900, consign: null }],
       }),
       thing('P101', null, 'Wheelbarrow 90L', 'P101', 'Site', {
+        markups: {
+          wholesale: null,
+          retail: { kind: 'percent', value: 25, from: 'product' },
+          stockWholesale: null,
+          stockRetail: { kind: 'percent', value: 25, from: 'product' },
+        },
         findBy: 'wheelbarrow 90l p101 site the heavy duty barrow',
         prices: [price({ supplierId: 'S012', supplierName: 'Shafik Katwe', retail: 240_000 })],
       }),
       thing('P202', null, 'Sofa Legs — Silver 4"', 'P202', 'Furniture', {
+        markups: {
+          wholesale: null,
+          retail: { kind: 'percent', value: 30, from: 'product' },
+          stockWholesale: null,
+          stockRetail: { kind: 'percent', value: 30, from: 'product' },
+        },
         prices: [price({ retail: 12_000, supplierSku: '10 CP' })],
         findBy: 'sofa legs silver 4" p202 furniture 10 cp',
       }),
