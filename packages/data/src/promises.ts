@@ -84,6 +84,22 @@ interface Writer {
   ): PromiseLike<{ readonly data: unknown; readonly error: Refusal | null }>;
   from(table: string): {
     insert(row: PromiseRow): PromiseLike<{ readonly error: Refusal | null }>;
+    select(columns: string): {
+      eq(
+        column: string,
+        value: string,
+      ): {
+        order(
+          column: string,
+          opts: { readonly ascending: boolean },
+        ): {
+          limit(n: number): PromiseLike<{
+            readonly data: readonly { readonly id: unknown }[] | null;
+            readonly error: Refusal | null;
+          }>;
+        };
+      };
+    };
   };
 }
 
@@ -121,23 +137,66 @@ export const promiseRow = (
 });
 
 /**
+ * The highest promise id already on disk for this shop, or 0.
+ *
+ * This is the FLOOR for the counter, not the id. `next_row_id_blocks` does
+ * `greatest(last_issued, floor) + n`, so a floor can only ever push the
+ * shared sequence forward — it can never hand back an id the table already
+ * holds, and it never reuses one. That is the old app's own `rowIdFloor`,
+ * for the same reason.
+ *
+ * It matters because `entity_id_counters` has **RLS on with no policies at
+ * all** (migration 0032: "nothing may read or write these rows"), so no
+ * client can check whether the counter is level with the table. It is
+ * unverifiable by construction. If it were ever behind — a row inserted by
+ * hand in the SQL editor, a counter reset, a half-applied 0089 — an
+ * unfloored call would issue an id that already exists and the insert would
+ * die on the primary key. This shop holds promise id 1 today, so that is not
+ * a hypothetical shape.
+ *
+ * A read that fails floors at 0, which is the RPC's own default: the counter
+ * is still the authority and is almost certainly correct. The floor is the
+ * belt, not the trousers.
+ */
+async function idFloor(shopId: string): Promise<number> {
+  const { data, error } = await writer()
+    .from('payment_promises')
+    .select('id')
+    .eq('shop_id', shopId)
+    .order('id', { ascending: false })
+    .limit(1);
+
+  return error !== null ? 0 : topPromiseId(data);
+}
+
+/**
+ * The highest id in a one-row answer — the part of the floor that can be
+ * wrong without a database to prove it.
+ *
+ * `bigint` comes back from PostgREST as a JSON number or a string depending
+ * on its size, and anything unparseable floors at 0 rather than at `NaN`,
+ * which the RPC would reject as a bad jsonb value and turn a safety margin
+ * into a failed write.
+ */
+export function topPromiseId(rows: readonly { readonly id: unknown }[] | null): number {
+  const top = Number(rows?.[0]?.id);
+  return Number.isInteger(top) && top > 0 ? top : 0;
+}
+
+/**
  * One id, issued now.
  *
  * `p_count: 1` rather than the old app's block of ten. A block is what lets
  * that app hand out ids from synchronous code mid-loop; nothing here is
  * synchronous, and a part-used block would advance the shared counter past
  * ids nobody claims.
- *
- * No floor is sent. The old app floors the counter at its own local one so
- * ids handed out during an outage are never reissued — this app has no local
- * counter to protect, and a floor it invented could push the shared sequence
- * past what the old app expects.
  */
 async function issueId(shopId: string): Promise<Written> {
   const { data, error } = await writer().rpc('next_row_id_blocks', {
     p_shop_id: shopId,
     p_kinds: [PROMISE_ID_KIND],
     p_count: 1,
+    p_floors: { [PROMISE_ID_KIND]: await idFloor(shopId) },
   });
 
   if (error !== null) {

@@ -13,7 +13,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { Money } from '@ow/domain';
-import { promiseRow, PROMISE_ID_KIND } from './promises.js';
+import { promiseRow, PROMISE_ID_KIND, topPromiseId } from './promises.js';
 
 const SHOP = 'e8d8beaf-8c2f-4734-bf55-4c206d117037';
 
@@ -70,5 +70,27 @@ describe('a promise as a row', () => {
     // no counter row would silently start its own sequence at 1 — straight
     // onto ids the old app has already written.
     expect(PROMISE_ID_KIND).toBe('row:payment_promise');
+  });
+});
+
+describe('the id floor', () => {
+  // `entity_id_counters` is unreadable by any client (0032: RLS on, no
+  // policies), so the floor is the only defence against a counter that has
+  // fallen behind the table it numbers. This shop holds promise id 1.
+  it('floors at the highest id already on disk', () => {
+    expect(topPromiseId([{ id: 1 }])).toBe(1);
+    expect(topPromiseId([{ id: 4_291 }])).toBe(4_291);
+  });
+
+  it('reads a bigint that arrived as a string, as PostgREST sends large ones', () => {
+    expect(topPromiseId([{ id: '90071992547409' }])).toBe(90_071_992_547_409);
+  });
+
+  it('floors at nothing rather than at NaN, which the RPC would reject', () => {
+    // A NaN in `p_floors` is a bad jsonb value, which would turn a safety
+    // margin into a failed write.
+    for (const bad of [null, [], [{ id: null }], [{ id: 'nonsense' }], [{ id: -5 }], [{ id: 1.5 }]]) {
+      expect(topPromiseId(bad as never)).toBe(0);
+    }
   });
 });
