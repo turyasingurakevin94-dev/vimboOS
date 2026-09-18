@@ -40,6 +40,8 @@ export interface Product {
   readonly category: string;
   readonly subcategory: string;
   readonly notes: string;
+  /** The words nobody thinks to put in a name: `the 90 litre one`. */
+  readonly description: string;
   /** Empty for a simple product; one entry per variant otherwise. */
   readonly variants: readonly Variant[];
   readonly image: string | null;
@@ -63,6 +65,8 @@ export interface Sellable {
   readonly name: string;
   readonly category: string;
   readonly subcategory: string;
+  /** Everything else a person might type to find it, lower case. */
+  readonly findBy: string;
   /** `P044`, or the variant's sku, or `P044-2`. */
   readonly code: string;
   readonly image: string | null;
@@ -143,6 +147,7 @@ export function toProduct(raw: unknown): {
       category: readText(row.category) ?? '',
       subcategory: readText(row.subcategory) ?? '',
       notes: readText(row.notes) ?? '',
+      description: readText(row.short_description) ?? '',
       variants,
       image: readText(row.image),
     },
@@ -175,6 +180,11 @@ export function toPriceRow(raw: unknown, supplierNames: ReadonlyMap<string, stri
     outOfStock: row.out_of_stock === true,
     outOfStockSince: readText(row.out_of_stock_since),
     on: readText(row.date),
+    // The code the supplier's own quote uses. It lives on the price row
+    // rather than on the product, so a search that only walked products
+    // could not see it — and a code is written down precisely so it can be
+    // typed back in.
+    supplierSku: readText(row.supplier_sku),
   };
 }
 
@@ -238,17 +248,46 @@ export function assembleCatalogue(
       continue;
     }
 
+    /**
+     * Everything a person might type to find this line, in one string.
+     *
+     * The name, the category and the id were the whole of it once, so the
+     * short description and the notes — the two fields that exist precisely
+     * to hold the words nobody thinks to put in a name — were searchable in
+     * the Products tab and not in the picker. Somebody typing here has a
+     * customer in front of them repeating what they were told: *the 90
+     * litre one*, *the heavy duty barrow*. Those words are in the
+     * description and nowhere else, and a search that cannot see them
+     * answers "no matching products" about something the shop is holding.
+     */
     const one = (variantIdx: number | null, name: string, code: string, image: string | null): void => {
       const key = stockKey(product.id, variantIdx);
+      const prices = pricesAt.get(key) ?? [];
+
       sellables.push({
         productId: product.id,
         variantIdx,
         name,
         category: product.category,
         subcategory: product.subcategory,
+        findBy: [
+          name,
+          product.name,
+          product.category,
+          product.subcategory,
+          product.description,
+          product.notes,
+          product.id,
+          code,
+          // A variant is found by the code its own supplier gave it, never
+          // by one belonging to its neighbour.
+          ...prices.map((p) => p.supplierSku ?? ''),
+        ]
+          .join(' ')
+          .toLowerCase(),
         code,
         image,
-        prices: pricesAt.get(key) ?? [],
+        prices,
         lots: lotsAt.get(key) ?? [],
         counted: countAt.get(key) ?? 0,
       });
@@ -303,10 +342,10 @@ async function all(table: string, columns: string, shopId: string): Promise<read
 export async function readCatalogue(shopId: string): Promise<Derived<Catalogue>> {
   try {
     const [products, prices, stock, lots, suppliers] = await Promise.all([
-      all('products', 'id, name, category, subcategory, notes, image, variants', shopId),
+      all('products', 'id, name, category, subcategory, notes, short_description, image, variants', shopId),
       all(
         'prices',
-        'product_id, supplier_id, variant_idx, wholesale, retail, date, unit, pack_unit, pack_qty, tiers, out_of_stock, out_of_stock_since',
+        'product_id, supplier_id, variant_idx, wholesale, retail, date, unit, pack_unit, pack_qty, tiers, out_of_stock, out_of_stock_since, supplier_sku',
         shopId,
       ),
       all('stock', 'key, qty', shopId),

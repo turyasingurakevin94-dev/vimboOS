@@ -55,6 +55,8 @@ export interface PriceRow {
   readonly outOfStockSince: string | null;
   /** When the price was recorded. */
   readonly on: string | null;
+  /** The supplier's own code for it — `CP-25H` on the quote in your hand. */
+  readonly supplierSku: string | null;
 }
 
 /** The key stock, its FIFO lots and its log are all held under. */
@@ -227,3 +229,61 @@ export function costOfLine(
  * is the one place a figure stops being arithmetic and becomes a shilling.
  */
 export const asShillings = (amount: number): Money.Money => Money.roundDown(amount);
+
+/* -------------------------------------------------------------------------- *
+ * Finding it
+ * -------------------------------------------------------------------------- */
+
+/**
+ * The words in a query, in any order.
+ *
+ * Split on whitespace so `black plug` finds anything whose text holds BOTH
+ * `black` AND `plug`, rather than only the exact phrase. That is how
+ * somebody types when a customer is telling them what they want.
+ */
+export const searchWords = (query: string): readonly string[] =>
+  query.trim().toLowerCase().split(/\s+/).filter((w) => w !== '');
+
+/** Anything that can be looked for: a line, and everything it answers to. */
+export interface Findable {
+  /** Everything a person might type to find it, lower case. */
+  readonly findBy: string;
+}
+
+/** Every word, or it is not a match. */
+export const matchesAll = (findBy: string, words: readonly string[]): boolean =>
+  words.every((w) => findBy.includes(w));
+
+/**
+ * What a query finds, in the order the list should draw them.
+ *
+ * An empty query finds everything — the picker opens on the whole
+ * catalogue, which is how somebody browses when they do not know the word.
+ *
+ * Ordered by where the match landed, because a person typing `mulper` means
+ * the thing called Mulper and not the one whose notes mention one. A name
+ * match comes first, then a code match, then everything else, and within
+ * each the shop's own order is kept so the list does not reshuffle under
+ * the eye on every keystroke.
+ */
+export function find<T extends Findable & { readonly name: string; readonly code: string }>(
+  everything: readonly T[],
+  query: string,
+): readonly T[] {
+  const words = searchWords(query);
+  if (words.length === 0) return everything;
+
+  const hit = everything.filter((it) => matchesAll(it.findBy, words));
+  const rank = (it: T): number => {
+    const name = it.name.toLowerCase();
+    if (words.every((w) => name.includes(w))) return 0;
+    const code = it.code.toLowerCase();
+    if (words.every((w) => code.includes(w))) return 1;
+    return 2;
+  };
+
+  return hit
+    .map((it, at) => ({ it, at, rank: rank(it) }))
+    .sort((a, b) => a.rank - b.rank || a.at - b.at)
+    .map(({ it }) => it);
+}

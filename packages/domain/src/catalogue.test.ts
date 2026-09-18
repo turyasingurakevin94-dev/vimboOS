@@ -12,6 +12,7 @@ import {
   OWN_SHELF,
   consigned,
   costOfLine,
+  find,
   onShelf,
   purchasePriceAtQty,
   rankedAtQty,
@@ -37,6 +38,7 @@ const row = (over: Partial<PriceRow> = {}): PriceRow => ({
   outOfStock: false,
   outOfStockSince: null,
   on: '2026-08-08',
+  supplierSku: null,
   ...over,
 });
 
@@ -222,5 +224,62 @@ describe('what a line costs the shop', () => {
       1,
     );
     expect(costOfLine('S9', blind, 1, shelfCost([])).status).toBe('unavailable');
+  });
+});
+
+describe('finding it', () => {
+  const thing = (name: string, code: string, findBy = ''): {
+    readonly name: string;
+    readonly code: string;
+    readonly findBy: string;
+  } => ({ name, code, findBy: `${name} ${code} ${findBy}`.toLowerCase() });
+
+  const shelf = [
+    thing('Soft Close Mulper — Flat', 'FLAT', 'Furniture Mulper Hinges P044'),
+    thing('Wheelbarrow 90L', 'P101', 'the heavy duty barrow, comes on Kadde’s van'),
+    thing('Black Plug 13A', 'CP-25H', 'Electrical'),
+    thing('Plug Top Black', 'P202', 'Electrical'),
+  ];
+
+  /**
+   * Split on whitespace so both words must be there, in any order — which
+   * is how somebody types when a customer is telling them what they want.
+   */
+  it('wants every word, and does not care about their order', () => {
+    expect(find(shelf, 'black plug').map((t) => t.code)).toEqual(['CP-25H', 'P202']);
+    expect(find(shelf, 'plug black').map((t) => t.code)).toEqual(['CP-25H', 'P202']);
+    expect(find(shelf, 'black mulper')).toEqual([]);
+  });
+
+  /**
+   * The short description and the notes are the two fields that exist to
+   * hold the words nobody thinks to put in a name. A search that cannot see
+   * them says "no matching products" about something the shop is holding.
+   */
+  it('finds it by what somebody would call it, not only by its name', () => {
+    expect(find(shelf, 'heavy duty').map((t) => t.code)).toEqual(['P101']);
+    expect(find(shelf, 'kadde').map((t) => t.code)).toEqual(['P101']);
+  });
+
+  /** A code is written down precisely so it can be typed back in. */
+  it('finds it by the supplier’s own code', () => {
+    expect(find(shelf, 'cp-25h').map((t) => t.name)).toEqual(['Black Plug 13A']);
+  });
+
+  it('puts a name match above a note that merely mentions it', () => {
+    const mentions = [
+      thing('Hinge Screws', 'P300', 'use with the mulper'),
+      thing('Mulper Bracket', 'P301', ''),
+    ];
+    expect(find(mentions, 'mulper').map((t) => t.code)).toEqual(['P301', 'P300']);
+  });
+
+  it('opens on everything, because browsing is how you look without a word', () => {
+    expect(find(shelf, '')).toHaveLength(4);
+    expect(find(shelf, '   ')).toHaveLength(4);
+  });
+
+  it('is not case sensitive about anything', () => {
+    expect(find(shelf, 'SOFT CLOSE').map((t) => t.code)).toEqual(['FLAT']);
   });
 });
