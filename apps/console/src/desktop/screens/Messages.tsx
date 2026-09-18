@@ -43,35 +43,41 @@
 
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import {
-  DAILY_POST_CAP,
-  HOLD_REASONS,
-  Money,
   bestKind,
+  type Chat,
   coverDays,
+  DAILY_POST_CAP,
+  describeDay,
+  type Desk,
+  draftPromise,
   goodUntilLabel,
+  HOLD_REASONS,
   keepShare,
   kindShare,
+  type Lens,
   lensCounts,
   match,
+  Money,
   moneyDesk,
-  paidShare,
-  postingDesk,
-  ridingOnIt,
-  signalShare,
-  tellingDesk,
-  waitedDays,
-  type Chat,
-  type Desk,
-  type Lens,
   type Owed,
+  paidShare,
   type Post,
+  postingDesk,
+  PROMISE_NOTE_MAX,
+  promiseDayChips,
+  ridingOnIt,
   type Signal,
+  signalShare,
   type Telling,
+  tellingDesk,
   type TellingKind,
   type Tone,
+  unspokenFor,
+  waitedDays,
 } from '@ow/domain';
 import { PICKED_LIST_CANDIDATES } from '@ow/data';
 import { useDesk } from '../../app/useDesk.js';
+import { useRecordPromise } from '../../app/useRecordPromise.js';
 import s from './Messages.module.css';
 import { LinkWhatsApp } from './LinkWhatsApp.js';
 import { Icon, type IconName } from '../icons.js';
@@ -196,6 +202,8 @@ function Deck({
   const [tellPicked, setTellPicked] = useState<string | null>('tell-okello');
   const [chatPicked, setChatPicked] = useState<string | null>('chat-nakawa');
   const [extraPick, setExtraPick] = useState<string | null>(null);
+  /** The account a promise is being written against, or none. */
+  const [promiseFor, setPromiseFor] = useState<Owed | null>(null);
 
   const counts = lensCounts(desk, now);
   const here = counts.some((c) => c.lens === lens) ? lens : 'money';
@@ -250,6 +258,7 @@ function Deck({
           onPick={setPicked}
           onHold={() => setDialog('hold')}
           onLink={() => setDialog('link')}
+          onPromise={setPromiseFor}
         />
       )}
       {here === 'telling' && (
@@ -283,6 +292,15 @@ function Deck({
         <HoldDialog name="Nakawa Traders" onClose={() => setDialog(null)} />
       )}
       {dialog === 'list' && <PickedListDialog onClose={() => setDialog(null)} />}
+      {promiseFor !== null && (
+        <PromiseDialog
+          who={promiseFor}
+          owes={promiseFor.atStake}
+          oldestDays={promiseFor.oldestDays}
+          today={now}
+          onClose={() => setPromiseFor(null)}
+        />
+      )}
     </div>
   );
 }
@@ -331,6 +349,7 @@ function MoneyLens({
   onPick,
   onHold,
   onLink,
+  onPromise,
 }: {
   readonly desk: Desk;
   readonly now: Date;
@@ -338,6 +357,8 @@ function MoneyLens({
   readonly onPick: (id: string | null) => void;
   readonly onHold: () => void;
   readonly onLink: () => void;
+  /** The row itself, because the dialog's header is about that account. */
+  readonly onPromise: (row: Owed) => void;
 }): ReactElement {
   const money = moneyDesk(desk.owed, now);
   const riding = ridingOnIt(desk.owed, now);
@@ -503,7 +524,7 @@ function MoneyLens({
           </div>
         </section>
 
-        {open !== undefined && <DraftPanel row={open} desk={desk} />}
+        {open !== undefined && <DraftPanel row={open} desk={desk} onPromise={onPromise} />}
       </div>
     </>
   );
@@ -559,9 +580,11 @@ function OwedRow({
 function DraftPanel({
   row,
   desk,
+  onPromise,
 }: {
   readonly row: Owed;
   readonly desk: Desk;
+  readonly onPromise: (row: Owed) => void;
 }): ReactElement {
   return (
     <aside className={s.panel} aria-label={`The message for ${row.name}`}>
@@ -602,7 +625,11 @@ function DraftPanel({
             <button type="button" className={`${s.secondary} ${s.sizePanel}`}>
               Receive a payment
             </button>
-            <button type="button" className={`${s.secondary} ${s.sizePanel}`}>
+            <button
+              type="button"
+              className={`${s.secondary} ${s.sizePanel}`}
+              onClick={() => onPromise(row)}
+            >
               They promised a date
             </button>
           </div>
@@ -1600,6 +1627,181 @@ function Bubble({ line }: { readonly line: Chat['lines'][number] }): ReactElemen
 /* ========================================================================== */
 /*  What the register opens — 5c, 5e, 5g                                      */
 /* ========================================================================== */
+
+/** "Saturday" — the weekday alone, for the sentence that names the day. */
+const weekdayOf = (d: Date): string =>
+  d.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
+
+/**
+ * Writing down what they said — frame 6a.
+ *
+ * The popup behind *They promised a date*. It writes one row into
+ * `payment_promises` and nothing else. **It is not a payment**: *Receive a
+ * payment* sits beside it and stays the only control that touches money,
+ * and nothing is sent to the customer either — writing down an answer is
+ * not a reply. The grey band says so in prose before the commit, because
+ * that is the one thing a clerk could get wrong.
+ *
+ * The day is the only required field. Everything else is optional, and the
+ * amount being empty is not an unfinished form — it MEANS the whole
+ * balance, which the line under the field says out loud rather than hiding
+ * in a tooltip.
+ */
+function PromiseDialog({
+  who,
+  owes,
+  oldestDays,
+  today,
+  onClose,
+}: {
+  readonly who: { readonly id: string; readonly name: string };
+  readonly owes: Money.Money;
+  readonly oldestDays: number;
+  readonly today: Date;
+  readonly onClose: () => void;
+}): ReactElement {
+  const chips = promiseDayChips(today);
+  const [on, setOn] = useState<Date | null>(chips[1]?.on ?? chips[0]?.on ?? null);
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const promise = useRecordPromise();
+
+  const named = Money.parse(amount);
+  const short = on === null ? null : unspokenFor(named, owes);
+  const draft = draftPromise({ promisedOn: on, amount: named, note }, today);
+
+  const commit = (): void => {
+    if (draft.ok) promise.write(who.id, draft.record);
+  };
+
+  return (
+    <div className={s.scrim} role="dialog" aria-modal="true" aria-label={`What did ${who.name} say?`}>
+      <div className={s.dialogPromise}>
+        <div className={s.promiseHead}>
+          <div className={s.cell}>
+            <div className={s.promiseTitle}>What did they say?</div>
+            {/* One reckoning: the same balance the register shows. */}
+            <div className={s.promiseWho}>
+              {who.name} · owes <span className={s.fig}>{Money.format(owes)}</span> · oldest{' '}
+              <span className={s.fig}>{oldestDays}</span> days
+            </div>
+          </div>
+          <button type="button" className={s.promiseClose} onClick={onClose} aria-label="Close">
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className={s.promiseBody}>
+          <div className={s.promiseLabel}>They will pay on</div>
+          <div className={s.promiseChips}>
+            {chips.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`${on?.getTime() === c.on.getTime() ? s.secondaryOn : s.secondary} ${s.sizeWord}`}
+                onClick={() => setOn(c.on)}
+              >
+                {c.label} {c.detail !== '' && <span className={s.chipDate}>{c.detail}</span>}
+              </button>
+            ))}
+          </div>
+          {/* Generated from the date, never written beside it: the weekday
+              and the date have to agree, or this line manufactures the very
+              mis-tap it exists to catch. */}
+          <div className={s.promiseResolved}>
+            {on === null ? 'No day named yet.' : describeDay(on, today)}
+          </div>
+        </div>
+
+        <div className={s.promiseFields}>
+          <div className={s.promiseAmount}>
+            <div className={s.promiseLabel}>
+              How much <span className={s.promiseOptional}>optional</span>
+            </div>
+            <div className={s.promiseInputRow}>
+              <input
+                className={s.promiseInput}
+                inputMode="numeric"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder={Money.format(owes)}
+                aria-label="How much they promised"
+              />
+              <span className={s.promiseUnit}>UGX</span>
+            </div>
+            <div className={s.promiseHint}>Empty means the whole balance</div>
+            {/* A promise for part of a debt is not a promise about the debt,
+                and the screen must not let that pass quietly. */}
+            {short !== null && (
+              <div className={s.promisePart}>
+                Part of {Money.format(owes)} — {Money.format(short)} unspoken for
+              </div>
+            )}
+          </div>
+
+          <div className={s.promiseNote}>
+            <div className={s.promiseLabel}>
+              In their words <span className={s.promiseOptional}>optional</span>
+            </div>
+            <div className={s.promiseInputRow}>
+              <input
+                className={s.promiseWords}
+                value={note}
+                maxLength={PROMISE_NOTE_MAX}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="“after the Nateete job pays us”"
+                aria-label="What they said, in their words"
+              />
+            </div>
+            <div className={s.promiseCount}>
+              <span className={s.fig}>{note.length}</span> / {PROMISE_NOTE_MAX}
+            </div>
+          </div>
+        </div>
+
+        <div className={s.promiseSays}>
+          <Icon name="alert-circle" size={14} className={s.promiseSaysIcon} />
+          <div className={s.cell}>
+            No money is received and nothing is charged. The{' '}
+            <span className={s.fig}>{Money.format(owes)}</span> still stands.
+            {on !== null && (
+              <>
+                {' '}
+                If {weekdayOf(on)} passes unpaid, this becomes a <strong>broken promise</strong> —
+                which is the evidence the shop chases on.
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className={s.promiseFoot}>
+          <span className={s.promiseFootNote}>
+            {promise.state.at === 'refused'
+              ? promise.state.why
+              : promise.state.at === 'written'
+                ? 'Written down. It sits on top of the last one.'
+                : draft.ok
+                  ? 'Kept as said, on top of the last one. Nothing is overwritten.'
+                  : draft.why}
+          </span>
+          <button type="button" className={`${s.secondary} ${s.sizeFooter}`} onClick={onClose}>
+            {promise.state.at === 'written' ? 'Close' : 'Cancel'}
+          </button>
+          {promise.state.at !== 'written' && (
+            <button
+              type="button"
+              className={`${s.commit} ${s.sizeFooterCommit}`}
+              disabled={!draft.ok || promise.state.at === 'writing'}
+              onClick={commit}
+            >
+              {promise.state.at === 'writing' ? 'Writing…' : 'Write it down'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Holding someone — frame 5e.

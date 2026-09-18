@@ -1899,3 +1899,229 @@
   font-size: var(--ow-size-11-5);
   color: var(--ow-color-ink-2);
 }
+
+/* ---------------------------------------------------------------------------
+   The promise dialog — frame 6a. 460 wide, banded rather than padded: the
+   header, the fields and the sentence are three different kinds of thing and
+   the rules between them say so.
+   ------------------------------------------------------------------------ */
+
+.dialogPromise {
+  composes: dialog;
+  width: 460px;
+  overflow: hidden;
+}
+
+.promiseHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-13) var(--ow-space-15);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.promiseTitle {
+  font-size: var(--ow-size-15);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-ink);
+}
+
+.promiseWho {
+  margin-top: var(--ow-space-2);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.promiseClose {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ow-radius-button);
+  background: none;
+  color: var(--ow-color-ink-3);
+  cursor: pointer;
+}
+
+.promiseClose:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.promiseBody {
+  padding: var(--ow-space-13) var(--ow-space-15) 0;
+}
+
+.promiseLabel {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: 0.03em;
+  color: var(--ow-color-ink-3);
+}
+
+.promiseOptional {
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-4);
+}
+
+.promiseChips {
+  margin-top: var(--ow-space-7);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ow-space-7);
+}
+
+/* The date beside the word, quieter than it: the word is what somebody
+   said, the date is the check on it. */
+.chipDate {
+  composes: fig from './Messages.fig.css';
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+}
+
+.promiseResolved {
+  margin-top: var(--ow-space-8);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+.promiseFields {
+  padding: var(--ow-space-14) var(--ow-space-15) 0;
+  display: flex;
+  gap: var(--ow-space-12);
+}
+
+.promiseAmount {
+  width: 180px;
+  flex: none;
+}
+
+.promiseNote {
+  flex: 1;
+  min-width: 0;
+}
+
+.promiseInputRow {
+  margin-top: var(--ow-space-6);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-field);
+  background: var(--ow-color-surface);
+}
+
+.promiseInputRow:focus-within {
+  border-color: var(--ow-color-navy);
+}
+
+.promiseInput {
+  composes: fig from './Messages.fig.css';
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  font-size: var(--ow-size-15);
+  color: var(--ow-color-ink);
+}
+
+.promiseInput::placeholder {
+  color: var(--ow-color-ink-4);
+}
+
+.promiseUnit {
+  font-size: var(--ow-size-10-5);
+  color: var(--ow-color-ink-2);
+}
+
+.promiseHint,
+.promiseCount {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.promiseCount {
+  text-align: right;
+}
+
+/* A promise for part of a debt is not a promise about the debt. Caution
+   ink, because it is neither wrong nor fine. */
+.promisePart {
+  margin-top: var(--ow-space-5);
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-warn-ink);
+}
+
+/* The one thing a clerk could get wrong, so the one place prose is allowed. */
+.promiseSays {
+  margin-top: var(--ow-space-14);
+  padding: var(--ow-space-11) var(--ow-space-15);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-8);
+  background: var(--ow-color-surface-2);
+  border-top: 1px solid var(--ow-color-rule);
+  border-bottom: 1px solid var(--ow-color-rule);
+  font-size: var(--ow-size-12);
+  line-height: 1.5;
+  color: var(--ow-color-ink-2);
+  text-wrap: pretty;
+}
+
+.promiseSaysIcon {
+  flex: none;
+  margin-top: var(--ow-space-2);
+  color: var(--ow-color-ink-3);
+}
+
+.promiseFoot {
+  padding: var(--ow-space-12) var(--ow-space-15);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+.promiseFootNote {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+/* The frame's own sizes. Not `sizeCommit`, which is `flex: 1` because it was
+   drawn for a row holding nothing but two buttons — beside a footer note it
+   splits the width three ways and wraps the sentence to four lines. */
+.sizeFooter {
+  height: 34px;
+  padding: 0 var(--ow-space-12);
+  font-size: var(--ow-size-13);
+}
+
+.sizeFooterCommit {
+  height: 36px;
+  padding: 0 var(--ow-space-14);
+  font-size: var(--ow-size-13);
+}
+
+/* What somebody said is prose, not a figure. Only the amount beside it
+   wears the figure face — §2 keeps that face for numbers. */
+.promiseWords {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-ink);
+}
+
+.promiseWords::placeholder {
+  color: var(--ow-color-ink-3);
+}
