@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import * as Money from './money.js';
 import { known, unavailable } from './derived.js';
-import { agingBands, read as readBook, totalOwed, type Customer } from './customers.js';
+import { agingBands, dayOf, read as readBook, totalOwed, type Customer } from './customers.js';
 import type { PurchaseInvoice } from './invoices.js';
 import type { CashPosition, CashTxn } from './cash.js';
 import {
@@ -656,5 +656,62 @@ describe('what the books flagged', () => {
     // rows need books this app does not read, and three rows under that
     // caption would be a quieter lie than the hard-coded sentences were.
     expect(watch(quiet, NOW).notYet).toHaveLength(3);
+  });
+});
+
+/**
+ * What the deployed site showed, pinned.
+ *
+ * Both of these were invisible until the app was opened against the real
+ * books: a total that quietly left out a fifth of the debt, and a window
+ * whose edge moved through the morning.
+ */
+describe('the strip, against what production showed', () => {
+  it('counts everyone who owes, not just the accounts still buying', () => {
+    // `Book.owing` is pastDue + inTime — the register's lens for accounts
+    // worth working through. A quiet account still owes the money, and the
+    // cell that says "Owed to you" is a total, not a lens. On the real books
+    // this read 6,414,000 across 10 where 13 owed 8,210,000.
+    const buying = customer('buying', [{ total: 400_000, received: 0, age: 10 }]);
+    // Last bought 400 days ago, so the register calls this one quiet — and
+    // it still owes 600,000.
+    const gone = customer('quiet', [{ total: 600_000, received: 0, age: 400 }]);
+    // Gone away and settled up: quiet too, because `standing` tests quiet
+    // before clear — and owed nothing, so it belongs in neither figure.
+    const settled = customer('settled', [{ total: 500_000, received: 500_000, age: 400 }]);
+
+    const strip = readStrip(inputs({ customers: [buying, gone, settled] }), NOW);
+
+    expect(strip.owedToYou.total).toMatchObject({ value: Money.money(1_000_000) });
+    expect(strip.owedToYou.customers).toBe(2);
+  });
+
+  it('says nothing rather than "0 over 60 days" when nothing is that old', () => {
+    // §7 forbids a badge for zero, and this one was shouting a good fact in
+    // bad-news ink. The real books' oldest debt is 59 days.
+    const fresh = customer('fresh', [{ total: 400_000, received: 0, age: 12 }]);
+
+    expect(readStrip(inputs({ customers: [fresh] }), NOW).owedToYou.overSixty.status).toBe(
+      'unavailable',
+    );
+  });
+
+  it('measures the profit window in whole days, so it does not slide', () => {
+    // `SoldLine.on` is a calendar day at midnight. Measured from an instant,
+    // the oldest day fell out of the window as soon as the clock passed it —
+    // the figure moved through the morning with no sale having changed.
+    const line = (back: number): SoldLine => ({
+      on: new Date(dayOf(NOW).getTime() - back * 86_400_000),
+      name: 'G28',
+      qty: 1,
+      sell: Money.money(1_000),
+      buy: Money.money(500),
+    });
+
+    const atOpening = profitByProduct([line(29)], new Date('2026-09-15T00:00:00Z'), 30);
+    const atClosing = profitByProduct([line(29)], new Date('2026-09-15T23:59:00Z'), 30);
+
+    expect(atOpening.lines).toHaveLength(1);
+    expect(atClosing.lines).toHaveLength(1);
   });
 });

@@ -37,6 +37,7 @@
 import {
   cashOnHand,
   DEAD_STOCK_DAYS,
+  dayOf,
   known,
   MARGIN_DAYS,
   profitByProduct,
@@ -441,7 +442,11 @@ export function assembleToday(rows: {
   }
 
   const soldLines = readSoldLines(rows.sales);
-  const marginFrom = rows.now.getTime() - MARGIN_DAYS * DAY;
+  // Whole days. `SoldLine.on` is a calendar day at midnight, so comparing it
+  // against an instant dropped the oldest day of the window as soon as the
+  // clock passed midnight — the margin drifted through the morning without
+  // a single sale changing.
+  const marginFrom = dayOf(rows.now).getTime() - (MARGIN_DAYS - 1) * DAY;
   const marginLines = soldLines.filter((l) => l.on.getTime() >= marginFrom);
 
   const sales = [];

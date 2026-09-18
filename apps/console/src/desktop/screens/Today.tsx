@@ -184,8 +184,19 @@ function metricsOf(strip: TodayStrip): readonly Metric[] {
       aging: agingSegments(strip.owedToYou.aging),
       basis: (
         <>
-          {strip.owedToYou.customers} customers ·{' '}
-          <span className={s.metricBad}>{fig(strip.owedToYou.overSixty)} over 60 days</span>
+          {strip.owedToYou.customers} customers
+          {/* Dropped entirely when nothing is that old, rather than drawn as
+              "0 over 60 days" in bad ink. §7: never a badge for zero, and
+              this one was shouting a good fact. The bar above still shows
+              the shape of the debt. */}
+          {strip.owedToYou.overSixty.status !== 'unavailable' && (
+            <>
+              {' · '}
+              <span className={s.metricBad}>
+                {Money.format(strip.owedToYou.overSixty.value)} over 60 days
+              </span>
+            </>
+          )}
         </>
       ),
     },

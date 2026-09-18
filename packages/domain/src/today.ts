@@ -30,6 +30,8 @@ import type { CashPosition, CashTxn } from './cash.js';
 import { ACCOUNTS, isMoneyIn, isMoneyOut, monthsOfCover } from './cash.js';
 import {
   agingBands,
+  balance,
+  dayOf,
   oldestDebtDays,
   read as readBook,
   totalOwed,
@@ -278,18 +280,43 @@ const cashCell = (cash: CashPosition, burn: Derived<Amount>): CashCell => ({
  */
 function owedCell(customers: readonly Customer[], now: Date): OwedToYouCell {
   const book = readBook(customers, now);
-  const bands = agingBands(book.owing, now);
-  const total = totalOwed(book.owing);
+
+  /**
+   * Everyone with a balance, which is not the same as `book.owing`.
+   *
+   * Caught on the deployed site against the real books: the strip read
+   * "10 customers · 6,414,000" where 13 accounts owe 8,210,000. `owing` is
+   * pastDue + inTime — the Customers register's **lens** for accounts that
+   * are still buying — and it leaves out the quiet ones. On this shop that
+   * is Dad, Innocent and Ssendawula, and 1,796,000 of real debt: 22% of the
+   * book, missing from the cell that says "Owed to you".
+   *
+   * A lens is the right thing for a list somebody is going to work through.
+   * It is the wrong thing for a total, and this cell is a total. The ask
+   * order already learned this — `askTheseFirst` ranks EVERYONE who owes —
+   * and the strip was still making the older mistake.
+   */
+  // `standing` tests quiet BEFORE clear, so `book.quiet` also holds accounts
+  // that have gone away owing nothing. They belong in neither the count nor
+  // the total, so the balance decides rather than the lens.
+  const everyone = [...book.owing, ...book.quiet.filter((c) => !Money.isZero(balance(c)))];
+  const bands = agingBands(everyone, now);
+  const total = totalOwed(everyone);
 
   const oldest = bands.find((b) => b.from === OLD_DEBT_DAYS);
 
   return {
-    total: known(total, `across ${book.owing.length} accounts`),
-    customers: book.owing.length,
+    total: known(total, `across ${everyone.length} accounts`),
+    customers: everyone.length,
     overSixty:
       oldest === undefined
         ? unavailable(`no band starts at ${OLD_DEBT_DAYS} days`)
-        : known(oldest.amount, `${oldest.share}% of what is owed`),
+        : Money.isZero(oldest.amount)
+          ? // Nothing is that old, and §7 forbids a badge for zero — "0 over
+            // 60 days" in bad ink is the screen shouting a good fact. The
+            // cell says nothing, and the aging bar already shows the shape.
+            unavailable(`nothing is over ${OLD_DEBT_DAYS} days old`)
+          : known(oldest.amount, `${oldest.share}% of what is owed`),
     aging: bands,
   };
 }
@@ -590,7 +617,11 @@ export function profitByProduct(
   days: number = PROFIT_DAYS,
   top: number = PROFIT_LINES,
 ): ProfitByProduct {
-  const since = now.getTime() - days * DAY;
+  // Whole days, not an instant against a midnight. `SoldLine.on` is a
+  // calendar day at 00:00, so measuring from `now` excluded the oldest day
+  // in the window from the moment the shop opened — the figure slid as the
+  // morning went on, with no sale having changed.
+  const since = dayOf(now).getTime() - (days - 1) * DAY;
   const inWindow = lines.filter((l) => l.on.getTime() >= since);
 
   const byName = new Map<string, { kept: number; sold: number; blind: number; count: number }>();
