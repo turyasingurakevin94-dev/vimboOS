@@ -156,8 +156,15 @@ export function hoursOverdue(order: Order, now: Date): number | null {
   return hours === null ? null : hours - PATIENCE_HOURS[order.stage];
 }
 
-/** Hours an order has sat in its current stage, or null if unknown. */
-export function hoursWaiting(order: Order, now: Date): number | null {
+/**
+ * Hours an order has sat in its current stage, or null if unknown.
+ *
+ * Takes anything that carries a `since`, not an `Order`. Age is a property
+ * of a timestamp and nothing else, and the board's own card type wants the
+ * same arithmetic — a second copy of it there is how two screens start
+ * disagreeing about how old something is.
+ */
+export function hoursWaiting(order: { readonly since: Date | null }, now: Date): number | null {
   if (order.since === null) return null;
   return (now.getTime() - order.since.getTime()) / 3_600_000;
 }

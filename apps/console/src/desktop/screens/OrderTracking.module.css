@@ -1,0 +1,1103 @@
+/**
+ * Order tracking — the desktop console. Frame `1a` of the handoff.
+ *
+ * A stage board on a busy day: five lanes, a dock above them, one card per
+ * order. Every measurement here is the frame's: the 44px lane head, the
+ * 24px card control, the 20px quiet chevron beside it, the 8 × 4px meter
+ * segments, the 440px trip block and the 300px peek column.
+ *
+ * ## Where the frame and this app's chrome disagree
+ *
+ * The frame draws the whole 1680 × 1000 window, including a 54px navy top
+ * bar. This app's top bar is 58px and white, from `Rail.dc.html` — which the
+ * design system calls the authority on navigation — and it is the shell's,
+ * not this screen's. So what is built here is the work area: the page head
+ * down, at the frame's own measurements.
+ *
+ * ## Where the accent is
+ *
+ * Once, on the queue's primary. The board's solid coral document is not a
+ * second one: it is a MARK in the four-glyph vocabulary the page head
+ * teaches — chevron, padlock, van, document — and wears `accentMark`, which
+ * exists for exactly that distinction. `Step it back` wears `badInk`, the
+ * same fill this app's other destructive confirm already uses.
+ */
+
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-14);
+  padding: var(--ow-space-22) var(--ow-space-24) var(--ow-space-24);
+  overflow: hidden;
+}
+
+/* ------------------------------- page head -------------------------------- */
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ow-space-12);
+  padding-bottom: var(--ow-space-12);
+  border-bottom: 1px solid var(--ow-color-divider);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ow-size-22);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-heading);
+  line-height: var(--ow-leading-figure);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+/* The circled i. A door to what the board counts, not decoration. */
+.about {
+  align-self: center;
+  flex: none;
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-pill);
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-ink-3);
+}
+
+.position {
+  margin: 0 0 var(--ow-space-1);
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+  white-space: nowrap;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-14);
+  margin: 0 0 var(--ow-space-2);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+}
+
+.legendGlyph {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid;
+  border-radius: var(--ow-radius-glyph);
+}
+
+.legendLabel {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+  white-space: nowrap;
+}
+
+/**
+ * The desktop reflowing within itself, which the design system allows and
+ * describes: the top bar's stage chips shed their labels at 1400px and never
+ * their counts. The legend does the same thing for the same reason — the
+ * frame is drawn at 1680 and the four words are the first thing that stops
+ * fitting. The glyphs stay, and each keeps its word as a `title`.
+ */
+@media (max-width: 1520px) {
+  .legendLabel {
+    display: none;
+  }
+}
+
+@media (max-width: 1320px) {
+  .search {
+    width: 200px;
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  width: 280px;
+  height: 28px;
+  padding: 0 var(--ow-space-8);
+  box-sizing: border-box;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-3);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  text-align: left;
+}
+
+.control {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+  height: 28px;
+  padding: 0 var(--ow-space-10);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.control:hover {
+  background: var(--ow-color-row-hover);
+}
+
+/* ---------------------------------- dock ---------------------------------- */
+
+.dock {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  overflow: hidden;
+}
+
+.tiles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-26);
+  padding: var(--ow-space-10) var(--ow-space-16);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-3);
+}
+
+.tileLabel {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-2);
+}
+
+.tileFigure {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-22);
+  font-weight: var(--ow-weight-medium);
+  letter-spacing: var(--ow-tracking-display);
+  line-height: var(--ow-leading-figure);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+/* The one figure on this board that is a count of trouble. */
+.tileFigureBad {
+  composes: tileFigure;
+  color: var(--ow-color-bad-ink);
+}
+
+/* Currency is never baked into the figure — 12px/600 beside it, per §6. */
+.unit {
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-normal);
+  color: var(--ow-color-ink-3);
+}
+
+.tileRule {
+  width: 1px;
+  align-self: stretch;
+  background: var(--ow-color-hairline);
+}
+
+.dockRule {
+  width: 1px;
+  flex: none;
+  background: var(--ow-color-hairline);
+}
+
+.trip {
+  width: 440px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-4);
+  padding: var(--ow-space-10) var(--ow-space-16);
+}
+
+.tripHead {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+}
+
+.tripSmall {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 var(--ow-space-10);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.tripSmall:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.tripRoute {
+  font-size: var(--ow-size-12);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink);
+}
+
+.tripCarry {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-12);
+}
+
+.tripUnit {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.tripRuns {
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-2);
+}
+
+/* -------------------------------- needs you ------------------------------- */
+
+.queue {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-11) var(--ow-space-14) var(--ow-space-13);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+}
+
+.queueHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-10);
+}
+
+.queueName {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.queueCount {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-accent-ink);
+}
+
+.queueNote {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink-3);
+}
+
+.queueNav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-6);
+}
+
+.queuePos {
+  composes: fig from './OrderTracking.fig.css';
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+  white-space: nowrap;
+}
+
+.queuePrev {
+  width: 26px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+}
+
+.queuePrev:hover,
+.queueNext:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.queueNext {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ow-space-5);
+  height: 24px;
+  padding: 0 var(--ow-space-9);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.queueBody {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ow-space-10);
+}
+
+/**
+ * The oxide edge. One card in the queue is the one being served, and the
+ * frame marks it with a coral border rather than a coral fill — a filled
+ * card at this size reads as a warning about the card, not as "this is your
+ * turn".
+ */
+.ask {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-16);
+  padding: var(--ow-space-12) var(--ow-space-14);
+  border: 1px solid var(--ow-color-accent-btn);
+  border-radius: var(--ow-radius-block);
+}
+
+.askText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-4);
+}
+
+.askTop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+  min-width: 0;
+}
+
+.askClient {
+  flex: none;
+  font-size: var(--ow-size-16);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.askMeta {
+  composes: fig from './OrderTracking.fig.css';
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.askWhy {
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-2);
+  max-width: 76ch;
+}
+
+.askSide {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--ow-space-7);
+}
+
+.askAmount {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-14);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.askActs {
+  display: flex;
+  gap: var(--ow-space-6);
+}
+
+.askSecondary {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--ow-space-10);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.askSecondary:hover {
+  background: var(--ow-color-row-hover);
+}
+
+/* The screen's ONE accent-filled control: the decision it is serving. */
+.askPrimary {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--ow-space-14);
+  border: 1px solid var(--ow-color-accent-btn);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-bold);
+  white-space: nowrap;
+}
+
+.askPrimary:hover {
+  background: var(--ow-color-accent-btn-hover);
+  border-color: var(--ow-color-accent-btn-hover);
+}
+
+.peek {
+  width: 300px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-5);
+  padding: var(--ow-space-8) var(--ow-space-10);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+}
+
+.peekLabel {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.peekRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-6);
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+}
+
+.peekClient {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peekRef {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+}
+
+.peekAge {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11);
+  white-space: nowrap;
+}
+
+.peekFoot {
+  margin-top: auto;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+}
+
+/* --------------------------------- the board ------------------------------ */
+
+.board {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  overflow: hidden;
+}
+
+.lane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--ow-color-hairline);
+}
+
+/**
+ * Delivered is muted, and that is a statement rather than a style: an order
+ * that has been handed over is finished work, and the four live lanes are
+ * what the day is about. It stays legible — 0.7, not the frame's 0.55, which
+ * puts body ink at about 3:1 on white and these cards are still clickable.
+ */
+.laneDone {
+  opacity: 0.7;
+}
+
+/**
+ * The frame fixes this at 44px, and its own rule line then spills out of the
+ * grey band onto the cards below — at 1680 by a couple of pixels, and at
+ * 1280 by a whole wrapped line, which the first card then covers. A header
+ * that cannot hold its own text is not a 44px header. It is 44px wherever
+ * the rule fits on one line, which is everywhere the frame is drawn.
+ */
+.laneHead {
+  flex: none;
+  min-height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-5);
+  padding: var(--ow-space-10) var(--ow-space-12);
+  background: var(--ow-color-row-hover);
+  border-bottom: 1px solid var(--ow-color-hairline);
+}
+
+.laneTop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+  min-width: 0;
+}
+
+.laneName {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+.laneCount {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-14);
+  color: var(--ow-color-ink);
+}
+
+.laneAct {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--ow-space-8);
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.laneAct:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.laneRule {
+  font-size: var(--ow-size-11);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-3);
+}
+
+.laneBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-10);
+  overflow: hidden auto;
+}
+
+/* A lane with nothing in it still says what would put something there. */
+.laneEmpty {
+  font-size: var(--ow-size-11);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-3);
+}
+
+/**
+ * How many the lane is holding back, and the way to them.
+ *
+ * A BUTTON, not a caption. The frame draws `+12 earlier today` as a line at
+ * the foot of Delivered, and a line is a dead end — twelve orders that are
+ * on the board, not invoiced, and unreachable. Pressing it opens the lane.
+ */
+.laneMore {
+  flex: none;
+  align-self: flex-start;
+  padding: var(--ow-space-4) var(--ow-space-6) var(--ow-space-4) var(--ow-space-2);
+  border: 0;
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-2);
+  text-align: left;
+}
+
+.laneMore:hover {
+  color: var(--ow-color-ink);
+}
+
+/* ---------------------------------- a card -------------------------------- */
+
+.card {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-5);
+  min-width: 0;
+  padding: var(--ow-space-9) var(--ow-space-10);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  text-align: left;
+}
+
+.card:hover {
+  background: var(--ow-color-row-hover);
+}
+
+/** The oxide edge again: this card is the one the queue is serving. */
+.cardNeeds {
+  border-color: var(--ow-color-accent-btn);
+}
+
+/**
+ * The card being acted on. A navy border plus a `0 0 0 1px` navy ring, which
+ * is the repo's own `.cd.now` treatment — a second pixel of the same colour,
+ * so the card thickens without moving anything beside it.
+ */
+.cardActing {
+  border-color: var(--ow-color-ink);
+  box-shadow: 0 0 0 1px var(--ow-color-ink);
+}
+
+.cardActing:hover {
+  background: var(--ow-color-surface);
+}
+
+.cardTop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+  min-width: 0;
+}
+
+.client {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/**
+ * `Needs you`, on the card the queue is serving.
+ *
+ * It sheds below 1400px, where the oxide edge says the same thing and a
+ * 62px chip in a 179px card leaves the customer's name no room at all. The
+ * desktop's top bar already drops its stage-chip labels at this width for
+ * the same reason; what is dropped is never the thing only the label says.
+ */
+.flag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--ow-space-6);
+  border-radius: var(--ow-radius-chip-square);
+  background: var(--ow-color-bad-chip);
+  color: var(--ow-color-accent-btn-hover);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+@media (max-width: 1399px) {
+  .flag {
+    display: none;
+  }
+
+  /* And the second half of the card's sub-line: at this width `6 lines,
+     4 to buy` truncates to `6 ...`, which says less than `6 lines`. */
+  .toBuy {
+    display: none;
+  }
+}
+
+.amount {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink);
+  white-space: nowrap;
+}
+
+/* A figure the books could not read. Never a zero, and never blank. */
+.amountUnread {
+  composes: amount;
+  color: var(--ow-color-ink-3);
+  font-weight: var(--ow-weight-medium);
+}
+
+.cardMeta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-6);
+  min-width: 0;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-3);
+}
+
+.ref {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.where {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.age {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11);
+  white-space: nowrap;
+}
+
+/**
+ * The age tones. Quiet is the DIVIDER grey, not an ink — an age inside its
+ * limit is chrome, and the frame draws it as a rule rather than as a word.
+ */
+.ageQuiet {
+  composes: age;
+  color: var(--ow-color-divider);
+}
+
+.ageClosing {
+  composes: age;
+  color: var(--ow-color-warn-ink);
+}
+
+.agePast {
+  composes: age;
+  color: var(--ow-color-bad-ink);
+}
+
+/**
+ * The two words beside the meter, in the ink of their meaning.
+ *
+ * On the desktop this line sits ABOVE the control row, so a supplier name is
+ * never truncated by a pair of buttons — the handoff says so in words.
+ */
+.mark {
+  font-size: var(--ow-size-11);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markWaiting {
+  composes: mark;
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.markDone {
+  composes: mark;
+  color: var(--ow-color-good-ink);
+}
+
+.markQuiet {
+  composes: mark;
+  color: var(--ow-color-ink-2);
+}
+
+/* ------------------------------- the controls ----------------------------- */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  min-width: 0;
+}
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+}
+
+.seg {
+  width: 8px;
+  height: 4px;
+  flex: none;
+  border-radius: var(--ow-radius-meter-seg);
+}
+
+/** Grey while partial, green when full. Nothing between those two states. */
+.segPart {
+  composes: seg;
+  background: var(--ow-color-ink-2);
+}
+
+.segFull {
+  composes: seg;
+  background: var(--ow-color-good-ink);
+}
+
+.segEmpty {
+  composes: seg;
+  background: var(--ow-color-field-edge);
+}
+
+/** The quiet chevron. Half-strength at rest, whole on hover. */
+.back {
+  width: 20px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--ow-color-ink-2);
+  opacity: 0.5;
+}
+
+.back:hover {
+  opacity: 1;
+}
+
+.move {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid;
+  border-radius: var(--ow-radius-icon-chip);
+}
+
+.move:hover {
+  filter: brightness(0.97);
+}
+
+.moveChevron {
+  composes: move;
+  border-color: var(--ow-color-divider);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+}
+
+.moveLock {
+  composes: move;
+  border-color: var(--ow-color-warn-panel-edge);
+  background: var(--ow-color-warn-panel);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.moveVan {
+  composes: move;
+  border-color: var(--ow-color-divider);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-accent-btn);
+}
+
+/* The accent as a MARK — see the note at the head of this file. */
+.moveDoc {
+  composes: move;
+  border-color: var(--ow-color-accent-mark);
+  background: var(--ow-color-accent-mark);
+  color: var(--ow-color-on-fill);
+}
+
+.moveTick {
+  composes: move;
+  border-color: var(--ow-color-good-edge-soft);
+  background: var(--ow-color-good-chip-light);
+  color: var(--ow-color-good-ink);
+}
+
+/* ----------------------------- the step back ------------------------------ */
+
+/**
+ * It opens IN the card, in its own lane. Nothing floats over the board,
+ * because the question "step which one back" is answered by where the panel
+ * is and by nothing else.
+ */
+.stepBack {
+  margin-top: var(--ow-space-2);
+  padding-top: var(--ow-space-7);
+  border-top: 1px solid var(--ow-color-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-6);
+}
+
+.stepFromTo {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.stepArrow {
+  flex: none;
+  color: var(--ow-color-ink-2);
+}
+
+.stepCost {
+  font-size: var(--ow-size-11);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-2);
+}
+
+.stepActs {
+  display: flex;
+  gap: var(--ow-space-6);
+}
+
+.stepLeave {
+  flex: 1;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.stepLeave:hover {
+  background: var(--ow-color-row-hover);
+}
+
+/**
+ * Stepping an order back undoes somebody's work, so the control that ends
+ * the asking wears the colour of what it does — `badInk`, the same fill the
+ * payment-delete confirm already uses, and not the accent, which belongs to
+ * the one thing the OWNER should do next.
+ */
+.stepBackBtn {
+  flex: 1;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-bad-ink);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-bad-ink);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+}
+
+.stepBackBtn:hover {
+  background: var(--ow-color-accent-btn-hover);
+  border-color: var(--ow-color-accent-btn-hover);
+}
+
+/* The whole board, empty. It still says what would put an order on it. */
+.boardEmpty {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  padding: var(--ow-space-24);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink-3);
+}

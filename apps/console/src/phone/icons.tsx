@@ -9,7 +9,7 @@
 
 import type { ReactElement } from 'react';
 
-export type TabIcon = 'today' | 'sell' | 'money' | 'manager' | 'more';
+export type TabIcon = 'today' | 'sell' | 'money' | 'orders' | 'more';
 
 const STROKED: Record<TabIcon, ReactElement> = {
   today: (
@@ -30,7 +30,14 @@ const STROKED: Record<TabIcon, ReactElement> = {
       <path d="M2 10h20" />
     </>
   ),
-  manager: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+  orders: (
+    <>
+      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9" />
+      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+      <circle cx="17" cy="18" r="2" />
+      <circle cx="7" cy="18" r="2" />
+    </>
+  ),
   more: <path d="M3 12h.01M3 18h.01M3 6h.01M8 12h13M8 18h13M8 6h13" />,
 };
 
@@ -58,12 +65,16 @@ const FILLED: Record<TabIcon, ReactElement> = {
       <path d="M2 10h20" stroke="var(--ow-color-bad-chip)" />
     </>
   ),
-  manager: (
-    <path
-      d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-      fill="currentColor"
-      stroke="none"
-    />
+  orders: (
+    <>
+      <path
+        d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9"
+        fill="currentColor"
+      />
+      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+      <circle cx="17" cy="18" r="2" fill="var(--ow-color-bad-chip)" />
+      <circle cx="7" cy="18" r="2" fill="var(--ow-color-bad-chip)" />
+    </>
   ),
   more: (
     <>
@@ -122,6 +133,82 @@ export function Mark({
       focusable="false"
     >
       <path d={d} />
+    </svg>
+  );
+}
+
+/**
+ * The board's five moves, plus the two chevrons and the from→to arrow.
+ *
+ * Its own copy, and not the desktop's. The two trees share `@ow/domain` and
+ * nothing else — a shared glyph table is a shared component wearing a
+ * different name, and these are drawn at 17px inside a 44px target rather
+ * than at 13px inside a 24px one.
+ */
+export type MoveGlyph =
+  | 'chevron'
+  | 'lock'
+  | 'van'
+  | 'doc'
+  | 'tick'
+  | 'back'
+  | 'stepArrow';
+
+const MOVE: Record<MoveGlyph, ReactElement> = {
+  chevron: <path d="M10 6l6 6-6 6" />,
+  back: <path d="M14 6l-6 6 6 6" />,
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="1.6" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  van: (
+    <>
+      <path d="M3 7h11v9H3z" />
+      <path d="M14 10h4l2 3v3h-6" />
+      <circle cx="7" cy="18" r="1.6" />
+      <circle cx="17" cy="18" r="1.6" />
+    </>
+  ),
+  doc: (
+    <>
+      <path d="M14 3H7a1.6 1.6 0 0 0-1.6 1.6v14.8A1.6 1.6 0 0 0 7 21h10a1.6 1.6 0 0 0 1.6-1.6V8z" />
+      <path d="M14 3v5h4.6" />
+    </>
+  ),
+  tick: <path d="M20 6.5 9.5 17 4 11.5" />,
+  stepArrow: (
+    <>
+      <path d="M5 12h13" />
+      <path d="m13 7 5 5-5 5" />
+    </>
+  ),
+};
+
+export function MoveMark({
+  name,
+  size = 17,
+  strokeWidth = 2,
+}: {
+  readonly name: MoveGlyph;
+  readonly size?: number;
+  readonly strokeWidth?: number;
+}): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {MOVE[name]}
     </svg>
   );
 }

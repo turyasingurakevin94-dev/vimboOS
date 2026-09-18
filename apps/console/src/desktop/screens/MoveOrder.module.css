@@ -1,0 +1,294 @@
+/**
+ * The four asks a card's control can raise, in this app's dialog idiom.
+ *
+ * None of them is drawn in the frame, and three are commissioned by the
+ * handoff in words: *"Invoicing does four things, and the confirm should say
+ * them before it acts"*, *"the tick reverses all four (plus the Cash Book
+ * entries)"*, and *"say who carries it, then Loaded"*. The fourth is the one
+ * padlock on this board the owner can actually clear — a short pick, which
+ * the handoff settles by *"amend the order or confirm the full quantity went
+ * out"*.
+ *
+ * They are four states of one component because they are one conversation
+ * about one order, and because all four read the same order — which is what
+ * stops the dialog and the card behind it disagreeing about what is owed.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ow-layer-scrim);
+  background: var(--ow-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ow-space-24);
+}
+
+.panel {
+  width: 420px;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ow-color-surface);
+  border-radius: var(--ow-radius-sheet);
+  box-shadow: var(--ow-elevation-floating);
+  overflow: hidden;
+}
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-14) var(--ow-space-16);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.headTitle {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.ref {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-12-5);
+  color: var(--ow-color-accent-ink);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.close {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+}
+
+.close:hover {
+  background: var(--ow-color-surface-2);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-12);
+  padding: var(--ow-space-16);
+}
+
+.who {
+  font-size: var(--ow-size-13);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-2);
+}
+
+.amount {
+  composes: fig from './OrderTracking.fig.css';
+  color: var(--ow-color-ink);
+}
+
+/* ---------------------------- what it will do ----------------------------- */
+
+/**
+ * The four things, listed rather than summarised.
+ *
+ * Three of the four happen somewhere the owner is not looking — the shelf,
+ * the supplier's ledger and the customer's account — and the old app did all
+ * four silently. A sentence saying "this will post the invoice" would be
+ * true and would not have prevented that.
+ */
+.does {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+  margin: 0;
+  padding: var(--ow-space-12) var(--ow-space-14);
+  list-style: none;
+  background: var(--ow-color-surface-2);
+  border-radius: var(--ow-radius-tile);
+}
+
+.doesLabel {
+  font-size: var(--ow-size-11);
+  font-weight: var(--ow-weight-semibold);
+  letter-spacing: var(--ow-tracking-figure-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.doesItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-8);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-2);
+}
+
+.doesMark {
+  flex: none;
+  margin-top: var(--ow-space-2);
+  color: var(--ow-color-good-ink);
+}
+
+.doesMarkUndo {
+  composes: doesMark;
+  color: var(--ow-color-bad-ink);
+}
+
+/* -------------------------------- choosing -------------------------------- */
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-10) var(--ow-space-12);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+  text-align: left;
+}
+
+.choice:hover {
+  background: var(--ow-color-row-hover);
+}
+
+.choiceOn {
+  composes: choice;
+  border-color: var(--ow-color-ink);
+  box-shadow: 0 0 0 1px var(--ow-color-ink);
+}
+
+.choiceDot {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+  border: 1px solid var(--ow-color-control-edge);
+}
+
+.choiceOn .choiceDot {
+  border-color: var(--ow-color-ink);
+  background: var(--ow-color-ink);
+}
+
+.choiceName {
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--ow-weight-semibold);
+}
+
+.choiceCarrying {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+/* The caution panel: a paragraph, not a chip. */
+.caution {
+  padding: var(--ow-space-10) var(--ow-space-12);
+  border: 1px solid var(--ow-color-warn-panel-edge);
+  border-radius: var(--ow-radius-tile);
+  background: var(--ow-color-warn-panel);
+  color: var(--ow-color-warn-panel-ink);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-dense);
+}
+
+/* ---------------------------------- foot ---------------------------------- */
+
+.foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-12) var(--ow-space-16);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.footNote {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 var(--ow-space-13);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--ow-color-surface-2);
+}
+
+/**
+ * The one accent-filled control in the dialog — and there is only ever one
+ * dialog open, so the rule holds across all four asks.
+ */
+.btnPrimary {
+  composes: btn;
+  border-color: var(--ow-color-accent-btn);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-bold);
+}
+
+.btnPrimary:hover {
+  background: var(--ow-color-accent-btn-hover);
+  border-color: var(--ow-color-accent-btn-hover);
+}
+
+.btnPrimary:disabled {
+  background: var(--ow-color-neutral-chip);
+  border-color: var(--ow-color-neutral-chip);
+  color: var(--ow-color-ink-4);
+}
+
+/* Undoing an invoice moves money back. The control wears what it does. */
+.btnDanger {
+  composes: btn;
+  border-color: var(--ow-color-bad-ink);
+  background: var(--ow-color-bad-ink);
+  color: var(--ow-color-on-fill);
+  font-weight: var(--ow-weight-bold);
+}
+
+.btnDanger:hover {
+  background: var(--ow-color-accent-btn-hover);
+  border-color: var(--ow-color-accent-btn-hover);
+}

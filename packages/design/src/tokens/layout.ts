@@ -33,12 +33,20 @@ export const space = {
   20: '20px',
   22: '22px',
   24: '24px',
+  /** The gap between the cells of the Order-tracking dock. */
+  26: '26px',
   /** The gutter of the mockup board, and a dialog's outer padding. */
   30: '30px',
 } as const;
 
 /** Each radius names what wears it, because that is how it stays consistent. */
 export const radius = {
+  /**
+   * A meter segment: 8 × 4px, with its corners just taken off. Square would
+   * read as a tick in a scale; anything rounder would read as a pill, and
+   * the six of them in a row are neither — they are a count.
+   */
+  meterSeg: '1px',
   /**
    * A bar in a small inline series — the five months on the customer panel.
    * Not `barTop`: the shortest of those bars is 5px tall, and a 4px radius on
@@ -47,6 +55,13 @@ export const radius = {
   barSmall: '3px',
   /** The top of a bar in a chart. Flat foot, rounded head. */
   barTop: '4px',
+  /**
+   * A 20px tile holding a 12px mark: the four-glyph legend in the
+   * Order-tracking page head. A hair rounder than a bar and a hair squarer
+   * than a section chip, because it is read as a specimen of a control
+   * rather than as a control or a label.
+   */
+  glyph: '5px',
   /** A square chip — the rail's section abbreviations. */
   chipSquare: '6px',
   /** An inner segment: a ghost number field, a dashed placeholder square,

@@ -103,6 +103,15 @@ export const color = {
   railInkBad: '#f8cdc6',
   /** A label on the phone header's margin cell — pale green on the tint. */
   railInkGood: '#b9e6d3',
+  /**
+   * A 5px disc on navy: some of this lane needs chasing.
+   *
+   * The caution family's own inks are mixed for a paper ground and go muddy
+   * on #17223c — `warnInk` measures 2.3:1 there. This is the amber that
+   * survives the navy. It is a DOT, never a word: 5.9:1 on navy is ample for
+   * a mark and the phone's header strip says the count in white beside it.
+   */
+  chaseDot: '#e0a12a',
 
   /* --------------------------------- accent ------------------------------- */
   /** The one thing to do next, as a FILL, an ICON or a left border. */
@@ -124,6 +133,16 @@ export const color = {
    * and neither should make the screen's one button look like a second
    * opinion. This is the same split that already separates `accent` from
    * `accentBtn` from `accentInk`: one coral, named by the job it is doing.
+   *
+   * The Order-tracking board adds a third job, and it is the interesting one:
+   * a control whose fill IS its meaning. That board's card carries one
+   * control whose SHAPE and SKIN say what is possible — a grey chevron, an
+   * amber padlock, a coral van, a solid coral document, a green tick — and
+   * a legend in the page head teaches the four. The solid document is not
+   * "the one thing to do next on this screen"; it is "this card is the kind
+   * that gets invoiced", said in the same four-colour vocabulary as the
+   * padlock beside it. That is a mark, so it wears `accentMark`, and the
+   * screen's single `accentBtn` stays where the next action is.
    */
   accentMark: '#c2311f',
 
@@ -293,6 +312,7 @@ export const neverCarriesText: readonly {
   { token: 'debtFresh', why: '1.57:1 on white — a band of the debt bar' },
   { token: 'payLate', why: '1.88:1 on white — the late band of the pays bar' },
   { token: 'payQuiet', why: '1.38:1 on white — a pays bar with no history in it' },
+  { token: 'chaseDot', why: '1.98:1 on white — a 5px disc on navy, never a word' },
 ];
 
 /**
@@ -426,6 +446,26 @@ export const legalPairings: readonly {
 
   // The focus ring, as a control boundary.
   { ink: 'accentBtn', ground: 'surface', floor: 'ui', note: 'the focus ring' },
+
+  // The Order-tracking board.
+  {
+    ink: 'accentBtnHover',
+    ground: 'badChip',
+    floor: 'body',
+    note: 'the Needs-you flag on a lane card',
+  },
+  {
+    ink: 'warnPanelInk',
+    ground: 'surface',
+    floor: 'body',
+    note: 'a lane rule counting what is still owed',
+  },
+  {
+    ink: 'chaseDot',
+    ground: 'navy',
+    floor: 'ui',
+    note: 'the chasing dot on the phone header strip — a mark, not a word',
+  },
 ];
 
 /** Two names for one value, on purpose. Anything else is a duplicate. */

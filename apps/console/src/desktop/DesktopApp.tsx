@@ -8,7 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { owingBadge, read } from '@ow/domain';
-import { DEMO_TODAY, demoCustomers } from '@ow/data';
+import { DEMO_TODAY, demoAsks, demoCustomers } from '@ow/data';
 import s from './DesktopApp.module.css';
 import { Rail, SECTIONS, TODAY, resolveTab } from './chrome/Rail.js';
 import { Icon } from './icons.js';
@@ -17,6 +17,7 @@ import { NotBuiltYet } from './screens/NotBuiltYet.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
 import { Customers } from './screens/Customers.js';
+import { OrderTracking } from './screens/OrderTracking.js';
 
 /**
  * What a screen puts in the top bar, where the stage chips otherwise sit.
@@ -27,8 +28,20 @@ import { Customers } from './screens/Customers.js';
  * and a Customers screen advertising three order stages would be the shell
  * talking over it. A screen that says nothing keeps the stage chips.
  */
-const CHROME: Record<string, { readonly hint: string; readonly action: string }> = {
+const CHROME: Readonly<
+  Partial<Record<string, { readonly hint: string; readonly action?: string }>>
+> = {
   customers: { hint: 'Name, phone, or "owes over 1m"', action: 'New customer' },
+  /**
+   * Order tracking takes the slot and puts nothing in it.
+   *
+   * The stage chips ARE this screen — `quoted 12 · packing 5 · out 3` is the
+   * board's own lane heads, said a second time, eighty pixels above them and
+   * from a different reckoning. The board's page head carries its own search
+   * and its own `New quote`, which is where frame 1a draws them, so the slot
+   * stays empty rather than holding a second copy of either.
+   */
+  orders: { hint: 'Client, order number or item' },
 };
 
 /** The order-stage chips in the top bar. They replace the old status bar. */
@@ -66,7 +79,12 @@ export default function DesktopApp(): ReactElement {
    * beside a screen that does exist is a lie.
    */
   const badges = useMemo(
-    () => ({ customers: owingBadge(read(demoCustomers(), DEMO_TODAY)) }),
+    () => ({
+      customers: owingBadge(read(demoCustomers(), DEMO_TODAY)),
+      // The board's own queue, which is what a badge on this row means:
+      // twenty decisions only the owner can make.
+      orders: demoAsks().length,
+    }),
     [],
   );
 
@@ -122,7 +140,12 @@ export default function DesktopApp(): ReactElement {
 
           <div className={s.spacer} />
 
-          {chrome === undefined ? (
+          {chrome?.action !== undefined ? (
+            <button type="button" className={s.topAction}>
+              <Icon name="plus" size={15} />
+              {chrome.action}
+            </button>
+          ) : chrome === undefined ? (
             <div className={s.stages}>
               {STAGES.map((st) => (
                 <span
@@ -139,12 +162,7 @@ export default function DesktopApp(): ReactElement {
                 </span>
               ))}
             </div>
-          ) : (
-            <button type="button" className={s.topAction}>
-              <Icon name="plus" size={15} />
-              {chrome.action}
-            </button>
-          )}
+          ) : null}
 
           <div className={s.avatar}>KT</div>
         </header>
@@ -158,6 +176,8 @@ export default function DesktopApp(): ReactElement {
             <Invoices />
           ) : section === 'customers' ? (
             <Customers />
+          ) : section === 'orders' ? (
+            <OrderTracking />
           ) : (
             <NotBuiltYet name={NAMES.get(section) ?? section} />
           )}

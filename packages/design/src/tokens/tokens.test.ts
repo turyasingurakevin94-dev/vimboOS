@@ -263,24 +263,35 @@ describe('type', () => {
 
 describe('space and radius', () => {
   it('is exactly the space scale the design file uses', () => {
+    // Every integer to 16, then the even numbers — the scale the design
+    // files draw. 26 arrived with the Order-tracking dock, which divides its
+    // four tiles at that gap; it is the next even step and not a new idea.
     expect(Object.values(space).map((v) => Number.parseFloat(v))).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 30,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 30,
     ]);
   });
 
   it('names every radius after what wears it', () => {
     // A radius called "md" tells you nothing at the call site; one called
     // "card" cannot be used on a chip by accident.
+    //
+    // `meterSeg` (1px) and `glyph` (5px) joined the list with the
+    // Order-tracking board: its cards draw a six-segment dot meter at the
+    // first, and its page head a four-glyph legend on 20px tiles at the
+    // second. The
+    // assertion is a whole-list one on purpose — it is how a radius gets
+    // added deliberately rather than by someone reaching for the nearest
+    // one — so adding a step means coming here and saying what wears it.
     expect(Object.keys(radius)).toEqual([
-      'barSmall', 'barTop', 'chipSquare', 'segment', 'iconChip', 'button',
-      'field', 'tile', 'block', 'card', 'sheet', 'frame', 'pill',
+      'meterSeg', 'barSmall', 'barTop', 'glyph', 'chipSquare', 'segment', 'iconChip',
+      'button', 'field', 'tile', 'block', 'card', 'sheet', 'frame', 'pill',
     ]);
   });
 
   it('orders the radii from chip to frame', () => {
     const px = [
-      'barSmall', 'barTop', 'chipSquare', 'segment', 'iconChip', 'button',
-      'field', 'tile', 'card', 'frame',
+      'meterSeg', 'barSmall', 'barTop', 'glyph', 'chipSquare', 'segment', 'iconChip',
+      'button', 'field', 'tile', 'card', 'frame',
     ] as const;
     for (let i = 1; i < px.length; i++) {
       expect(Number.parseFloat(radius[px[i]!])).toBeGreaterThan(

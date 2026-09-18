@@ -7,3 +7,4 @@ export * from './demo.js';
 export * from './demo-quote.js';
 export * from './demo-invoices.js';
 export * from './demo-customers.js';
+export * from './demo-tracking.js';

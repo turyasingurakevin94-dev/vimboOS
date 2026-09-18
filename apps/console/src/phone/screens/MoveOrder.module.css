@@ -1,0 +1,230 @@
+/**
+ * The four asks a card's control can raise — the phone.
+ *
+ * A SHEET, not the desktop's centred panel. It rises from the bottom edge,
+ * its buttons are 44px and full width, and the order it is about stays
+ * visible behind it wherever the sheet is short enough — because the
+ * question "which order was this" is the one a dialog over a list of
+ * fourteen cards actually creates.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ow-layer-scrim);
+  background: var(--ow-scrim);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.sheet {
+  max-height: 88%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ow-color-surface);
+  border-top-left-radius: var(--ow-radius-sheet);
+  border-top-right-radius: var(--ow-radius-sheet);
+  box-shadow: var(--ow-elevation-floating);
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.grip {
+  flex: none;
+  width: 36px;
+  height: 4px;
+  margin: var(--ow-space-8) auto var(--ow-space-4);
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-field-edge);
+}
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-8) var(--ow-space-14) var(--ow-space-10);
+  border-bottom: 1px solid var(--ow-color-rule);
+}
+
+.headTitle {
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.ref {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-accent-ink);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-12);
+  padding: var(--ow-space-13) var(--ow-space-14);
+}
+
+.who {
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-2);
+}
+
+.amount {
+  composes: fig from './OrderTracking.fig.css';
+  color: var(--ow-color-ink);
+}
+
+.does {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+  margin: 0;
+  padding: var(--ow-space-12);
+  list-style: none;
+  background: var(--ow-color-surface-2);
+  border-radius: var(--ow-radius-tile);
+}
+
+.doesLabel {
+  font-size: var(--ow-size-10-5);
+  font-weight: var(--ow-weight-bold);
+  letter-spacing: var(--ow-tracking-figure-label);
+  text-transform: uppercase;
+  color: var(--ow-color-ink-3);
+}
+
+.doesItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ow-space-8);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-2);
+}
+
+.doesMark {
+  flex: none;
+  margin-top: var(--ow-space-2);
+  color: var(--ow-color-good-ink);
+}
+
+.doesMarkUndo {
+  composes: doesMark;
+  color: var(--ow-color-bad-ink);
+}
+
+.caution {
+  padding: var(--ow-space-11) var(--ow-space-12);
+  border: 1px solid var(--ow-color-warn-panel-edge);
+  border-radius: var(--ow-radius-tile);
+  background: var(--ow-color-warn-panel);
+  color: var(--ow-color-warn-panel-ink);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-dense);
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  min-height: 44px;
+  padding: var(--ow-space-10) var(--ow-space-12);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+  text-align: left;
+}
+
+.choiceOn {
+  composes: choice;
+  border-color: var(--ow-color-ink);
+  box-shadow: 0 0 0 1px var(--ow-color-ink);
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+}
+
+.choiceDot {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: var(--ow-radius-pill);
+  border: 1px solid var(--ow-color-control-edge);
+}
+
+.choiceOn .choiceDot {
+  border-color: var(--ow-color-ink);
+  background: var(--ow-color-ink);
+}
+
+.choiceName {
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--ow-weight-semibold);
+}
+
+.choiceCarrying {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+}
+
+/* ---------------------------------- foot ---------------------------------- */
+
+/**
+ * Full width, in the thumb zone, 44px. The primary sits on the RIGHT when
+ * there are two, because that is where the thumb of a right hand lands and
+ * the other is the way out.
+ */
+.foot {
+  flex: none;
+  display: flex;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-12) var(--ow-space-14);
+  border-top: 1px solid var(--ow-color-rule);
+}
+
+.btn {
+  flex: 1;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/** The one accent-filled control, and only one sheet is ever open. */
+.btnPrimary {
+  composes: btn;
+  border-color: var(--ow-color-accent-btn);
+  background: var(--ow-color-accent-btn);
+  color: var(--ow-color-on-fill);
+}
+
+.btnDanger {
+  composes: btn;
+  border-color: var(--ow-color-bad-ink);
+  background: var(--ow-color-bad-ink);
+  color: var(--ow-color-on-fill);
+}

@@ -7,9 +7,17 @@
  * dock (frame 4b) — because a shell that owned the header could hold only
  * one of them.
  *
- * The five tabs are Today, Sell, Money, Manager and More. Everything else
+ * The five tabs are Today, Sell, Money, Orders and More. Everything else
  * lives in the More sheet, which is generated from the rail's own index —
  * never a second hand-kept list.
+ *
+ * **Slot four was Manager, and Manager was a stub.** The board arrived with
+ * three phone frames of its own and had to be reachable; the only slot
+ * holding nothing was the one showing `Not built yet`, and a tab labelled
+ * for a screen that exists beats a tab labelled for one that does not.
+ * Manager keeps its rail row and its cards on Today, and it comes back into
+ * the tab bar or into the More sheet the day it is built — that is the
+ * owner's call, and it is named here rather than left to be discovered.
  */
 
 import { useState, type ReactElement } from 'react';
@@ -19,7 +27,7 @@ import { Today } from './screens/Today.js';
 import { Quote } from './screens/Quote.js';
 import { Invoices } from './screens/Invoices.js';
 import { Customers } from './screens/Customers.js';
-import { NotBuiltYet } from './screens/NotBuiltYet.js';
+import { OrderTracking } from './screens/OrderTracking.js';
 
 /**
  * A dot rather than a count.
@@ -33,17 +41,9 @@ const TABS: readonly { readonly id: TabIcon; readonly label: string; readonly do
   { id: 'today', label: 'Today', dot: true },
   { id: 'sell', label: 'Sell' },
   { id: 'money', label: 'Money' },
-  { id: 'manager', label: 'Manager' },
+  { id: 'orders', label: 'Orders' },
   { id: 'more', label: 'More' },
 ];
-
-const TITLES: Record<TabIcon, string> = {
-  today: 'Today',
-  sell: 'Sell',
-  money: 'Money',
-  manager: 'Manager',
-  more: 'More',
-};
 
 export default function PhoneApp(): ReactElement {
   const [tab, setTab] = useState<TabIcon>('today');
@@ -70,7 +70,9 @@ export default function PhoneApp(): ReactElement {
          * reachable while the owner decides which of the two owns slot two.
          */
         <Invoices />
-      ) : tab === 'more' ? (
+      ) : tab === 'orders' ? (
+        <OrderTracking />
+      ) : (
         /**
          * More lands on Customers, which is what frame 1b draws.
          *
@@ -79,10 +81,13 @@ export default function PhoneApp(): ReactElement {
          * this becomes a push. Until then the destination the frame shows
          * under this tab is the destination this tab reaches, rather than a
          * sheet nobody has designed standing between them.
+         *
+         * It is the final branch, not a `tab === 'more'` one, because all
+         * five tabs now land on a screen that exists: `NotBuiltYet` was the
+         * fallback while one of them did not, and a branch that can never be
+         * taken is a screen nobody will ever see.
          */
         <Customers />
-      ) : (
-        <NotBuiltYet name={TITLES[tab]} />
       )}
 
       <nav className={s.tabs} aria-label="Sections">

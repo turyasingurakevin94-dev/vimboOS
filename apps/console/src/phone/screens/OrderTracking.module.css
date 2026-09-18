@@ -1,0 +1,559 @@
+/**
+ * Order tracking — the phone. Frames `1p`, `1q` and `1r`.
+ *
+ * **Five lanes cannot stand side by side at 390px**, so they are not asked
+ * to. The lanes become the header strip, one lane is open at a time, and the
+ * board's whole navigation is five taps across the top of the screen.
+ *
+ * This is not the desktop narrowed. Three things are genuinely different,
+ * and each is a different answer to the same job rather than a smaller one:
+ *
+ * 1. **A locked card is tinted, not merely marked.** On the desktop a
+ *    padlock on a white card is legible across a 1680px board because the
+ *    eye is already scanning controls. At 390 in a yard, at arm's length, in
+ *    daylight, the card itself carries the state: amber ground, amber edge.
+ * 2. **Both controls are 44px**, and they sit at the two ends of the row —
+ *    back on the left, the move on the right where the thumb is. The desktop
+ *    draws them at 24 and 20, because a pointer is not a thumb.
+ * 3. **The two words sit ON the control row**, not above it. The desktop
+ *    lifts them so a supplier name is never truncated by a pair of buttons;
+ *    at 390 there is no row to spare and the name truncates instead.
+ *
+ * There is no width query anywhere in this file, and a test says so. The
+ * phone is one width.
+ */
+
+.screen {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ow-color-bg);
+}
+
+/* --------------------------------- header --------------------------------- */
+
+.header {
+  flex: none;
+  background: var(--ow-color-navy);
+  padding: var(--ow-space-12) var(--ow-space-14) 0;
+}
+
+.headTop {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+}
+
+/**
+ * The brand square. The raw accent, as a fill behind a GLYPH.
+ *
+ * The frame puts the letters `OW` on it in white. White on #ef4b39 measures
+ * **3.66:1** — under the floor, and the one pairing the palette forbids in
+ * both directions. So the square keeps the frame's colour and carries this
+ * app's brand mark instead of two letters, which is what the rail and both
+ * other phone screens already do. The wordmark is the header's title beside
+ * it, in white on navy at 14.5:1.
+ */
+.brand {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ow-radius-segment);
+  background: var(--ow-color-accent);
+  color: var(--ow-color-on-fill);
+}
+
+.headTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-on-fill);
+}
+
+/**
+ * A 26px glyph box with a 44px tap target around it.
+ *
+ * A 44px BOX here would set the height of the header's top row and push the
+ * whole step strip down eighteen pixels, which is the frame's proportions
+ * gone for a hit area nobody can see. So the box keeps the frame's size and
+ * the target is grown outwards by a ring that draws nothing — the phone's
+ * floor is 44 always, and it is a floor on what the thumb can hit, not on
+ * what the eye is asked to look at.
+ */
+.headBtn {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--ow-color-rail-ink);
+}
+
+.headBtn::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ow-space-9));
+}
+
+/* ------------------------------ the five steps ---------------------------- */
+
+/**
+ * The lanes, as a strip. Each carries its count and an amber dot when some
+ * of it needs chasing, and the one you are in has a 2px coral underline —
+ * which is the phone's own convention for an active lens, from §3.
+ */
+.steps {
+  margin-top: var(--ow-space-11);
+  display: flex;
+  gap: var(--ow-space-2);
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ow-space-3);
+  padding: var(--ow-space-6) var(--ow-space-2) var(--ow-space-8);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+}
+
+.stepOn {
+  composes: step;
+  border-bottom-color: var(--ow-color-accent-btn);
+}
+
+.stepLabel {
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-9-5);
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-rail-ink-2);
+}
+
+.stepOn .stepLabel {
+  font-weight: var(--ow-weight-bold);
+  color: var(--ow-color-on-fill);
+}
+
+.stepFigures {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-3);
+}
+
+.stepCount {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-on-fill);
+}
+
+/* Something in this lane needs chasing. A mark, never a word. */
+.stepDot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--ow-radius-pill);
+  background: var(--ow-color-chase-dot);
+}
+
+/* ------------------------------- the lane rule ---------------------------- */
+
+/** One line: what moves an order out of this lane, and this lane's one figure. */
+.rule {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  padding: var(--ow-space-10) var(--ow-space-12);
+  background: var(--ow-color-surface);
+  border-bottom: 1px solid var(--ow-color-hairline);
+}
+
+.ruleText {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.ruleWord {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-2);
+}
+
+.ruleFigure {
+  composes: fig from './OrderTracking.fig.css';
+  font-size: var(--ow-size-12);
+  color: var(--ow-color-ink);
+}
+
+.ruleLocked {
+  composes: ruleFigure;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.ruleLockMark {
+  flex: none;
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.ruleToInvoice {
+  composes: ruleFigure;
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-accent-ink);
+}
+
+.ruleDocMark {
+  flex: none;
+  color: var(--ow-color-accent-btn);
+}
+
+/* --------------------------------- the lane ------------------------------- */
+
+.lane {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-9);
+  padding: var(--ow-space-12);
+}
+
+/**
+ * How many are below the fold, and the way to them.
+ *
+ * A BUTTON, not a caption. The frames draw `+5` as a line under four cards,
+ * and a line is a dead end: five of this lane's nine orders would be on the
+ * board and unreachable from the phone. Pressing it opens the lane.
+ */
+.more {
+  align-self: flex-start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ow-space-2) var(--ow-space-8) var(--ow-space-2) var(--ow-space-2);
+  border: 0;
+  background: none;
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-11-5);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink-2);
+}
+
+.empty {
+  padding: var(--ow-space-2);
+  font-size: var(--ow-size-12-5);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-3);
+}
+
+/* --------------------------------- a card --------------------------------- */
+
+.card {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+  padding: var(--ow-space-11) var(--ow-space-12);
+  background: var(--ow-color-surface);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+}
+
+/** Something is still owed on this one, said by the card and not by a glyph. */
+.cardLocked {
+  composes: card;
+  background: var(--ow-color-warn-panel);
+  border-color: var(--ow-color-warn-panel-edge);
+}
+
+/** The card being acted on: a navy border and a navy ring, as on the board. */
+.cardActing {
+  composes: card;
+  border-color: var(--ow-color-ink);
+  box-shadow: 0 0 0 1px var(--ow-color-ink);
+}
+
+.top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-8);
+  min-width: 0;
+}
+
+.client {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-14);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amount {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-size: var(--ow-size-13);
+  color: var(--ow-color-ink);
+}
+
+.amountUnread {
+  composes: amount;
+  font-weight: var(--ow-weight-medium);
+  color: var(--ow-color-ink-3);
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ow-space-7);
+  min-width: 0;
+}
+
+.ref {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+.where {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.age {
+  composes: fig from './OrderTracking.fig.css';
+  flex: none;
+  font-weight: var(--ow-weight-medium);
+  font-size: var(--ow-size-11);
+  color: var(--ow-color-ink-2);
+}
+
+/**
+ * The age tones. The phone keeps a READABLE grey where the desktop draws the
+ * divider colour: a card held at arm's length in daylight has no hover and
+ * no second look, so the quiet state is `ink-2` at 5.7:1 rather than a rule
+ * at 1.7:1.
+ */
+.ageClosing {
+  composes: age;
+  color: var(--ow-color-warn-ink);
+}
+
+.agePast {
+  composes: age;
+  color: var(--ow-color-bad-ink);
+}
+
+/* ------------------------------ the control row --------------------------- */
+
+.acts {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  min-width: 0;
+}
+
+.mark {
+  font-size: var(--ow-size-11-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markWaiting {
+  composes: mark;
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.markDone {
+  composes: mark;
+  color: var(--ow-color-good-ink);
+}
+
+.markQuiet {
+  composes: mark;
+  color: var(--ow-color-ink-2);
+}
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-7);
+  flex: none;
+}
+
+.seg {
+  width: 8px;
+  height: 4px;
+  flex: none;
+  border-radius: var(--ow-radius-meter-seg);
+}
+
+.segPart {
+  composes: seg;
+  background: var(--ow-color-ink-2);
+}
+
+.segFull {
+  composes: seg;
+  background: var(--ow-color-good-ink);
+}
+
+.segEmpty {
+  composes: seg;
+  background: var(--ow-color-field-edge);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/**
+ * 44 by 44, both of them, which is what the handoff says in words: *"both
+ * controls are 44px"*. The frame's markup draws this one 38 wide, and 38 is
+ * under the floor the design system sets for a phone target "always". Two
+ * authorities say 44 and one drawing says 38, so it is 44 — the six pixels
+ * cost nothing and the rule is not the kind that bends.
+ *
+ * It stays the quieter of the two at half strength: same target, less voice.
+ */
+.back {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--ow-color-ink-2);
+  opacity: 0.55;
+}
+
+.move {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid;
+  border-radius: var(--ow-radius-block);
+}
+
+.moveChevron {
+  composes: move;
+  border-color: var(--ow-color-divider);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+}
+
+.moveLock {
+  composes: move;
+  border-color: var(--ow-color-warn-panel-edge);
+  background: var(--ow-color-warn-panel);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.moveVan {
+  composes: move;
+  border-color: var(--ow-color-divider);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-accent-btn);
+}
+
+/* The accent as a MARK, in the four-glyph vocabulary — not as a button. */
+.moveDoc {
+  composes: move;
+  border-color: var(--ow-color-accent-mark);
+  background: var(--ow-color-accent-mark);
+  color: var(--ow-color-on-fill);
+}
+
+.moveTick {
+  composes: move;
+  border-color: var(--ow-color-good-edge-soft);
+  background: var(--ow-color-good-chip-light);
+  color: var(--ow-color-good-ink);
+}
+
+/* ------------------------------- the step back ---------------------------- */
+
+/** In the card, in its own lane. Nothing floats over the list. */
+.stepFromTo {
+  padding-top: var(--ow-space-8);
+  border-top: 1px solid var(--ow-color-hairline);
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-8);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+}
+
+.stepArrow {
+  flex: none;
+  color: var(--ow-color-ink-2);
+}
+
+.stepCost {
+  font-size: var(--ow-size-11-5);
+  line-height: var(--ow-leading-dense);
+  color: var(--ow-color-ink-2);
+}
+
+.stepActs {
+  display: flex;
+  gap: var(--ow-space-8);
+}
+
+.stepLeave {
+  flex: 1;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-divider);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink-2);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+}
+
+/** It undoes somebody's work, so it wears the colour of what it does. */
+.stepBackBtn {
+  flex: 1;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ow-color-bad-ink);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-bad-ink);
+  color: var(--ow-color-on-fill);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+}

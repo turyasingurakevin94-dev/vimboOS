@@ -53,7 +53,14 @@ export type IconName =
   | 'more-horizontal'
   | 'trash'
   | 'sort'
-  | 'alert-triangle';
+  | 'alert-triangle'
+  | 'lock'
+  | 'van'
+  | 'doc'
+  | 'tick'
+  | 'move-on'
+  | 'step-back'
+  | 'step-arrow';
 
 const P: Record<IconName, ReactElement> = {
   /* Deleting a payment moves money, so the glyph is the one everybody reads
@@ -224,6 +231,51 @@ const P: Record<IconName, ReactElement> = {
       <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
       <circle cx="17" cy="18" r="2" />
       <circle cx="7" cy="18" r="2" />
+    </>
+  ),
+
+  /* ------------------------ the five moves of a card ---------------------- */
+  /**
+   * These five are the Order-tracking board's whole vocabulary, and they are
+   * drawn to the frame rather than to Lucide's own outlines. A padlock at
+   * thirteen pixels has to read as a padlock at a glance across a five-lane
+   * board, and Lucide's is a taller shackle on a shorter body than the one
+   * the design draws; the difference is the difference between recognising
+   * it and reading it.
+   *
+   * `move-on` and `step-back` are a mirrored pair on purpose — they sit
+   * seven pixels apart on the same row, one quiet and one not, and Lucide's
+   * chevrons are offset by a pixel from each other's reflection.
+   */
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="1.6" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  van: (
+    <>
+      <path d="M3 7h11v9H3z" />
+      <path d="M14 10h4l2 3v3h-6" />
+      <circle cx="7" cy="18" r="1.6" />
+      <circle cx="17" cy="18" r="1.6" />
+    </>
+  ),
+  doc: (
+    <>
+      <path d="M14 3H7a1.6 1.6 0 0 0-1.6 1.6v14.8A1.6 1.6 0 0 0 7 21h10a1.6 1.6 0 0 0 1.6-1.6V8z" />
+      <path d="M14 3v5h4.6" />
+    </>
+  ),
+  tick: <path d="M20 6.5 9.5 17 4 11.5" />,
+  'move-on': <path d="M10 6l6 6-6 6" />,
+  'step-back': <path d="M14 6l-6 6 6 6" />,
+  /* The arrow between a from and a to. Longer in the shaft than an
+     `arrow-right`, because it is read as a journey and not as a direction. */
+  'step-arrow': (
+    <>
+      <path d="M5 12h13" />
+      <path d="m13 7 5 5-5 5" />
     </>
   ),
 };

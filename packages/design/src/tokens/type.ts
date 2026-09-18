@@ -76,17 +76,37 @@ export const size = {
 } as const;
 
 export const leading = {
+  /**
+   * A big figure, set solid. §2 of the design system gives 1.1 for exactly
+   * this and the Order-tracking dock draws its four tiles at it: a 22px
+   * figure on a 1.2 line sits a pixel low under its own label.
+   */
+  figure: 1.1,
   /** Figures and tight headings. */
   tight: 1.2,
   /** Titles. */
   title: 1.35,
   /** Prose. */
   prose: 1.55,
+  /**
+   * Prose in a card that is competing for height — a lane rule, the sentence
+   * a step back costs, the reason an order is in the queue. The frame draws
+   * 1.4 on the lane rule and 1.45 on the two sentences; at eleven pixels that
+   * is half a pixel apart, and the design system names no step between
+   * `title` and `prose` for either, so they take one value.
+   */
+  dense: 1.45,
 } as const;
 
 export const tracking = {
   /** Every figure. */
   figure: '-0.02em',
+  /**
+   * A display figure — 22px and up, where the design system drops the
+   * weight to 500 and tightens the tracking a step further. The dock's four
+   * tiles are the first place in this app to need it.
+   */
+  display: '-0.03em',
   /** Headings. */
   heading: '-0.02em',
   /** A smaller heading. */
@@ -96,6 +116,14 @@ export const tracking = {
   /** A table's column heading: 10px, 600, uppercase, and wider than a label
    * because at ten pixels the letters close up. */
   column: '0.07em',
+  /**
+   * The label above a figure and over a lane, at 11px — §2 of the design
+   * system gives this one 0.09em and the Order-tracking frame draws it on
+   * every dock tile and every lane head. `label` is the Today handoff's 0.03em
+   * and is a different element; rounding one to the other would close up
+   * eleven-pixel capitals that were spaced on purpose.
+   */
+  figureLabel: '0.09em',
   /** The phone dock's label, at 9.5px — a hair wider again. */
   dock: '0.08em',
   /** Section heads: 700, uppercase. */
