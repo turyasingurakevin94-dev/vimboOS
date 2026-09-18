@@ -19,7 +19,7 @@
  * charges is two prices for one purchase.
  */
 
-import { known, partial, unavailable, type Derived } from './derived.js';
+import { known, map, match, partial, unavailable, type Derived } from './derived.js';
 import * as Money from './money.js';
 
 /** Which side of the book a price comes off. */
@@ -426,3 +426,141 @@ export const markupFor = (
   offTheShelf
     ? (side === 'wholesale' ? markups.stockWholesale : markups.stockRetail)
     : (side === 'wholesale' ? markups.wholesale : markups.retail);
+
+/* -------------------------------------------------------------------------- *
+ * Choosing one: everything the picker has to say about a thing at a quantity
+ * -------------------------------------------------------------------------- */
+
+/** Anything that can be put on a quote, with everything known about it. */
+export interface Choosable {
+  readonly name: string;
+  readonly prices: readonly PriceRow[];
+  readonly lots: readonly Lot[];
+  readonly counted: number;
+  readonly markups: Markups;
+}
+
+/** One place the goods could come from, and what it would cost from there. */
+export interface Source {
+  /** A supplier id, or {@link OWN_SHELF}. */
+  readonly id: string;
+  readonly name: string;
+  /** What one unit costs from here, at this quantity. */
+  readonly at: Derived<number>;
+  /** The pack this source sells in. */
+  readonly packUnit: string;
+  readonly packQty: number;
+  readonly unit: string;
+  /** How many are here right now, where that is knowable. */
+  readonly have: number | null;
+  /** Cheapest of the suppliers at this quantity. The shelf is never "best". */
+  readonly best: boolean;
+  /** Whose goods these are, where they are not the shop's. */
+  readonly consignedTo: string | null;
+}
+
+/** What the picker draws once a thing has been chosen. */
+export interface Choice {
+  readonly sources: readonly Source[];
+  /** The one picked at rest: the shelf where there is stock, else cheapest. */
+  readonly restsOn: string | null;
+  /** How many are on the shelf, whoever's they are. */
+  readonly onShelf: number;
+  /** Suppliers who have run out, and since when. Said, not silently dropped. */
+  readonly runOut: readonly { readonly name: string; readonly since: string | null }[];
+  /** True when nobody has it — a different sentence from "the cheapest is out". */
+  readonly nobodyHasIt: boolean;
+}
+
+/**
+ * Everything the picker needs about one thing at one quantity.
+ *
+ * The shelf is a source like any other, and it rests there when there is
+ * stock — that is how a sale off the shelf should be recorded, and the
+ * ranking only decides who to BUY from when there is nothing to sell.
+ *
+ * Suppliers who have run out are named rather than dropped. The picker used
+ * to simply not list them, so "the cheapest supplier is out of stock" and
+ * "nobody has this at all" looked identical: an empty space where a price
+ * should be.
+ */
+export function choose(thing: Choosable, qty: number): Choice {
+  const ranked = rankedAtQty(thing.prices, qty);
+  const shelf = onShelf(thing.lots);
+  const cost = shelfCost(thing.lots);
+  const context = ranked[0] ?? thing.prices[0] ?? null;
+
+  const sources: Source[] = [];
+
+  if (shelf > 0 || cost.status === 'known') {
+    const holders = consigned(thing.lots);
+    sources.push({
+      id: OWN_SHELF,
+      name: 'Our stock',
+      at: cost,
+      packUnit: context?.packUnit ?? '',
+      packQty: context?.packQty ?? 0,
+      unit: context?.unit ?? '',
+      have: shelf,
+      best: false,
+      // The card called every shelf line OUR STOCK and priced it "bought
+      // at", which is a purchase that never happened when a consignor left
+      // the goods and is still owed for them.
+      consignedTo: holders[0] ?? null,
+    });
+  }
+
+  ranked.forEach((row, at) => {
+    sources.push({
+      id: row.supplierId,
+      name: row.supplierName,
+      at:
+        row.at === null
+          ? unavailable(`nothing on file says what ${row.supplierName} charges`)
+          : known(row.at, `${row.supplierName}, ${qty} at a time`),
+      packUnit: row.packUnit,
+      packQty: row.packQty,
+      unit: row.unit,
+      have: null,
+      best: at === 0 && row.at !== null,
+      consignedTo: null,
+    });
+  });
+
+  const runOut = thing.prices
+    .filter((r) => r.outOfStock)
+    .map((r) => ({ name: r.supplierName, since: r.outOfStockSince }));
+
+  return {
+    sources,
+    restsOn: shelf > 0 ? OWN_SHELF : (ranked[0]?.supplierId ?? null),
+    onShelf: shelf,
+    runOut,
+    nobodyHasIt: shelf === 0 && ranked.length === 0,
+  };
+}
+
+/** The source the picker is resting on, or the first that can price it. */
+export const sourceOf = (choice: Choice, id: string | null): Source | null =>
+  choice.sources.find((s) => s.id === id) ?? choice.sources[0] ?? null;
+
+/**
+ * What to charge for one of them, off the source that is chosen.
+ *
+ * The side is decided from that source's own row where it has one, so a
+ * carton-only supplier prices out of the column the money came from — and
+ * the shelf, which has no row, falls back to the rule the shop set.
+ */
+export function priceFrom(thing: Choosable, source: Source, qty: number): Derived<number> {
+  const offTheShelf = source.id === OWN_SHELF;
+  const row = thing.prices.find((r) => r.supplierId === source.id) ?? null;
+  const side = sideSold(row, qty, source.packQty, thing.markups, offTheShelf);
+  const markup = markupFor(thing.markups, side, offTheShelf);
+
+  return match(source.at, {
+    known: (cost) => suggestedSell(cost, markup, side, source.packQty),
+    partial: (cost) =>
+      map(suggestedSell(cost, markup, side, source.packQty), (at) => at),
+    unavailable: (why) => unavailable<number>(`no price can be worked out — ${why}`),
+  });
+}

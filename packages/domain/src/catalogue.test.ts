@@ -13,6 +13,7 @@ import {
   OWN_SHELF,
   consigned,
   costOfLine,
+  choose,
   find,
   markupFor,
   onShelf,
@@ -22,6 +23,8 @@ import {
   sideAtQty,
   sideBought,
   sideSold,
+  sourceOf,
+  priceFrom,
   suggestedSell,
   stockKey,
   tieredUnitPrice,
@@ -390,5 +393,97 @@ describe('what to charge for it', () => {
 
     expect(side).toBe('wholesale');
     expect(sell(suggestedSell(250_000, rule, side, 0))).toBe(265_000);
+  });
+});
+
+describe('choosing one', () => {
+  const lot = (over: Partial<Lot> = {}): Lot => ({ qty: 8, cost: 1_900, consign: null, ...over });
+
+  const thing = (over: Partial<Parameters<typeof choose>[0]> = {}) => ({
+    name: 'Soft Close Mulper — Half Bend',
+    // The shape half this shop's catalogue is in: one supplier carton-only
+    // with no retail figure at all, one selling loose.
+    prices: [
+      row({ supplierId: 'S094', supplierName: 'Roto Industry', wholesale: 2_300, retail: null, packQty: 100 }),
+      row({ supplierId: 'S012', supplierName: 'Shafik Katwe', wholesale: null, retail: 2_600, packQty: 0 }),
+    ],
+    lots: [] as readonly Lot[],
+    counted: 0,
+    markups: { ...NO_MARKUPS, wholesale: { kind: 'fixed' as const, value: 15_000, from: 'product' as const } },
+    ...over,
+  });
+
+  /**
+   * That is how a sale off the shelf should be recorded. The ranking only
+   * decides who to BUY from when there is nothing on the shelf to sell.
+   */
+  it('rests on the shelf where there is stock, and on the cheapest where there is not', () => {
+    expect(choose(thing({ lots: [lot()] }), 1).restsOn).toBe(OWN_SHELF);
+    // Roto is carton-only, so even one unit prices off its wholesale rate
+    // — 2,300 against Shafik's 2,600 loose.
+    expect(choose(thing(), 1).restsOn).toBe('S094');
+    expect(choose(thing(), 100).restsOn).toBe('S094');
+  });
+
+  it('lists the shelf as a source, and never marks it best', () => {
+    const c = choose(thing({ lots: [lot()] }), 1);
+
+    expect(c.sources.map((x) => x.name)).toEqual(['Our stock', 'Roto Industry', 'Shafik Katwe']);
+    expect(c.sources.find((x) => x.id === OWN_SHELF)?.best).toBe(false);
+    expect(c.sources.filter((x) => x.best).map((x) => x.name)).toEqual(['Roto Industry']);
+  });
+
+  /**
+   * The card called every shelf line OUR STOCK and priced it "bought at",
+   * which is a purchase that never happened when a consignor left the goods
+   * and is still owed for them.
+   */
+  it('says whose the goods on the shelf are', () => {
+    const c = choose(thing({ lots: [lot({ consign: 'Roto Industry' })] }), 1);
+    expect(c.sources[0]?.consignedTo).toBe('Roto Industry');
+  });
+
+  /**
+   * "The cheapest supplier is out of stock" and "nobody has this at all"
+   * looked identical once: an empty space where a price should be.
+   */
+  it('names who has run out, and says when nobody has it', () => {
+    const someGone = thing({
+      prices: [
+        row({ supplierId: 'S094', supplierName: 'Roto Industry', retail: 2_300, outOfStock: true, outOfStockSince: '2026-09-04' }),
+        row({ supplierId: 'S012', supplierName: 'Shafik Katwe', retail: 2_600, packQty: 0 }),
+      ],
+    });
+    const allGone = thing({
+      prices: [row({ supplierId: 'S094', supplierName: 'Roto Industry', retail: 2_300, outOfStock: true })],
+    });
+
+    expect(choose(someGone, 1).runOut).toEqual([{ name: 'Roto Industry', since: '2026-09-04' }]);
+    expect(choose(someGone, 1).nobodyHasIt).toBe(false);
+    expect(choose(allGone, 1).nobodyHasIt).toBe(true);
+    // And with stock on the shelf, somebody does have it.
+    expect(choose(thing({ prices: allGone.prices, lots: [lot()] }), 1).nobodyHasIt).toBe(false);
+  });
+
+  it('prices off the source that is chosen, by the column the money came from', () => {
+    const c = choose(thing(), 1);
+    const roto = sourceOf(c, 'S094');
+    const shafik = sourceOf(c, 'S012');
+
+    // Roto is carton-only, so one unit still prices off the WHOLESALE
+    // column — and the wholesale rule is the one that applies, +15,000 on
+    // a carton of 100, which is +150 a unit.
+    expect(roto === null ? null : sell(priceFrom(thing(), roto, 1))).toBe(2_450);
+    // Shafik has no pack and no wholesale figure, so retail — and the shop
+    // set no retail rule, so there is nothing to charge.
+    expect(shafik === null ? 'x' : priceFrom(thing(), shafik, 1).status).toBe('unavailable');
+  });
+
+  it('has no price at all where the source cannot be costed', () => {
+    const blind = thing({ lots: [lot({ cost: null })] });
+    const shelf = sourceOf(choose(blind, 1), OWN_SHELF);
+
+    expect(shelf).not.toBeNull();
+    expect(shelf === null ? '' : priceFrom(blind, shelf, 1).status).toBe('unavailable');
   });
 });
