@@ -15,6 +15,7 @@ import {
   ageLabel,
   ageTone,
   invoiced,
+  lineCheckedIn,
   loaded,
   moveOn,
   nextInvoiceNumber,
@@ -22,6 +23,7 @@ import {
   notInvoiced,
   settledShort,
   steppedBack,
+  supplierAnswered,
   dockBasis,
   handedOverAt,
   heldByPick,
@@ -29,6 +31,7 @@ import {
   laneWindow,
   markFor,
   meter,
+  meterFor,
   moveFor,
   readTracking,
   stepBack,
@@ -545,5 +548,64 @@ describe('the moves themselves', () => {
     const done = invoiced(card({ stage: 'completed' }), 'INV-0413');
     expect(moveFor(done).control).toBe('tick');
     expect(moveFor(notInvoiced(done)).control).toBe('doc');
+  });
+});
+
+describe('clearing a padlock', () => {
+  const LATER = new Date(NOW.getTime() + 60_000);
+
+  it('moves a Taken order ITSELF when the last supplier answers', () => {
+    const waiting = card({
+      toBuy: 2,
+      suppliers: [
+        { name: 'Haidery', answered: true },
+        { name: 'Bbosa Steel', answered: false },
+      ],
+    });
+    expect(moveFor(waiting).control).toBe('lock');
+
+    const answered = supplierAnswered(waiting, 'Bbosa Steel', LATER);
+    // It left Taken on its own — nobody pressed a chevron.
+    expect(answered.stage).toBe('awaiting_goods');
+    expect(answered.since).toBe(LATER);
+  });
+
+  it('stays put while anyone else is still owed, and says who', () => {
+    const waiting = card({
+      suppliers: [
+        { name: 'Mulongo Hardware', answered: false },
+        { name: 'Bbosa Steel', answered: false },
+      ],
+    });
+    const one = supplierAnswered(waiting, 'Mulongo Hardware', LATER);
+    expect(one.stage).toBe('draft');
+    expect(moveFor(one).control).toBe('lock');
+    expect(markFor(one)?.text).toBe('waiting: Bbosa Steel');
+  });
+
+  it('UNLOCKS Buying on the last line in, and does not move it', () => {
+    let order = card({ stage: 'awaiting_goods', toBuy: 3, checkedIn: 1 });
+    expect(meterFor(order)).toEqual(['part', 'empty', 'empty']);
+
+    order = lineCheckedIn(order);
+    expect(moveFor(order).control).toBe('lock');
+
+    order = lineCheckedIn(order);
+    // All in: a chevron, still in Buying. Goods arriving is not picking.
+    expect(order.stage).toBe('awaiting_goods');
+    expect(moveFor(order).control).toBe('chevron');
+    expect(markFor(order)?.text).toBe('all in');
+    expect(meterFor(order)).toEqual(['full', 'full', 'full']);
+  });
+
+  it('cannot check in more lines than the order has to buy', () => {
+    const full = card({ stage: 'awaiting_goods', toBuy: 2, checkedIn: 2 });
+    expect(lineCheckedIn(full)).toBe(full);
+  });
+
+  it('leaves a lane that has no supplier to answer alone', () => {
+    const preparing = card({ stage: 'preparing' });
+    expect(supplierAnswered(preparing, 'Anyone', LATER)).toBe(preparing);
+    expect(lineCheckedIn(preparing)).toBe(preparing);
   });
 });

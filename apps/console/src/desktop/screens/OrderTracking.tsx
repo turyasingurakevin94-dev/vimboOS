@@ -47,6 +47,7 @@ import {
   hoursWaiting,
   invoiced,
   laneWindow,
+  lineCheckedIn,
   loaded,
   markFor,
   match,
@@ -59,6 +60,8 @@ import {
   settledShort,
   stepBack,
   steppedBack,
+  supplierAnswered,
+  unanswered,
   type Control,
   type LaneReading,
   type TrackedOrder,
@@ -134,7 +137,12 @@ const SHOWN = 24;
 /** Delivered is a window on today, and the morning is counted at its foot. */
 const SHOWN_DELIVERED = 6;
 
-export function OrderTracking(): ReactElement {
+export interface OrderTrackingProps {
+  /** The shell's own navigation. A door on this board is a door, not a stub. */
+  readonly onGo: (destination: string) => void;
+}
+
+export function OrderTracking({ onGo }: OrderTrackingProps): ReactElement {
   const now = DEMO_BOARD_NOW;
   const trip = useMemo(demoTrip, []);
   const asks = useMemo(demoAsks, []);
@@ -172,9 +180,27 @@ export function OrderTracking(): ReactElement {
     else if (control === 'van') setAsk({ at: 'load', reference: order.reference });
     else if (control === 'doc') setAsk({ at: 'invoice', reference: order.reference });
     else if (control === 'tick') setAsk({ at: 'undo', reference: order.reference });
-    // A padlock in Taken or Buying waits on somebody in Kikuubo and says so
-    // in its title; only a short pick is the owner's to clear from here.
     else if (order.stage === 'preparing') setAsk({ at: 'settle', reference: order.reference });
+    // Taken and Buying wait on somebody in Kikuubo, and the padlock used to
+    // say so only in its `title` — a hover, which is nothing on a phone and
+    // a guess on a console. It opens and says what is owed.
+    else setAsk({ at: 'owed', reference: order.reference });
+  };
+
+  /**
+   * A lane's own door. Two of the three lead off this screen; the third is
+   * the screen's own work, so it opens here.
+   */
+  const laneAct = (lane: LaneReading): void => {
+    if (lane.stage === 'awaiting_goods') onGo('sourcing');
+    else if (lane.stage === 'pending_delivery') onGo('runs');
+    else {
+      // `Invoice` at the head of Delivered invoices the one the lane is
+      // about: the oldest handover nobody has invoiced yet. It used to be a
+      // button that did nothing at the head of a lane of seventeen.
+      const next = laneWindow(lane, now, lane.count).shown.find((o) => o.invoice === null);
+      if (next !== undefined) setAsk({ at: 'invoice', reference: next.reference });
+    }
   };
 
   const inAsk = orders.find((o) => o.reference === ask?.reference);
@@ -205,6 +231,20 @@ export function OrderTracking(): ReactElement {
             change(inAsk.reference, (o) => settledShort(o, how));
             setAsk(null);
           }}
+          onAnswered={(supplier) => {
+            change(inAsk.reference, (o) => supplierAnswered(o, supplier, now));
+            // The panel stays open while other suppliers are still owed, and
+            // closes itself when the order has left the lane behind it.
+            if (unanswered(inAsk).length <= 1) setAsk(null);
+          }}
+          onCheckIn={() => {
+            change(inAsk.reference, lineCheckedIn);
+            if (inAsk.checkedIn + 1 >= inAsk.toBuy) setAsk(null);
+          }}
+          onGo={(destination) => {
+            setAsk(null);
+            onGo(destination);
+          }}
         />
       )}
 
@@ -233,7 +273,7 @@ export function OrderTracking(): ReactElement {
           <Icon name="search" size={14} />
           Client, order number or item
         </button>
-        <button type="button" className={s.control}>
+        <button type="button" className={s.control} onClick={() => onGo('quote')}>
           New quote
         </button>
       </header>
@@ -275,10 +315,10 @@ export function OrderTracking(): ReactElement {
           <div className={s.tripHead}>
             <span className={s.tileLabel}>Today&rsquo;s trip &amp; runs</span>
             <span className={s.spacer} />
-            <button type="button" className={s.tripSmall}>
+            <button type="button" className={s.tripSmall} onClick={() => onGo('sourcing')}>
               Plan trip
             </button>
-            <button type="button" className={s.tripSmall}>
+            <button type="button" className={s.tripSmall} onClick={() => onGo('runs')}>
               Runs
             </button>
           </div>
@@ -353,7 +393,11 @@ export function OrderTracking(): ReactElement {
                   })}
                 </span>
                 <div className={s.askActs}>
-                  <button type="button" className={s.askSecondary}>
+                  <button
+                    type="button"
+                    className={s.askSecondary}
+                    onClick={() => onGo('messages')}
+                  >
                     {current.instead}
                   </button>
                   <button
@@ -412,6 +456,7 @@ export function OrderTracking(): ReactElement {
               onPress={press}
               opened={opened.has(lane.stage)}
               onOpen={() => setOpened((prior) => new Set([...prior, lane.stage]))}
+              onAct={() => laneAct(lane)}
             />
           ))
         )}
@@ -462,6 +507,7 @@ function Lane({
   onPress,
   opened,
   onOpen,
+  onAct,
 }: {
   readonly lane: LaneReading;
   readonly now: Date;
@@ -472,6 +518,7 @@ function Lane({
   readonly onPress: (order: TrackedOrder) => void;
   readonly opened: boolean;
   readonly onOpen: () => void;
+  readonly onAct: () => void;
 }): ReactElement {
   const act = LANE_ACT[lane.stage];
   const fits = lane.stage === 'completed' ? SHOWN_DELIVERED : SHOWN;
@@ -485,7 +532,7 @@ function Lane({
           <span className={s.laneCount}>{lane.count}</span>
           <span className={s.spacer} />
           {act !== undefined && (
-            <button type="button" className={s.laneAct}>
+            <button type="button" className={s.laneAct} onClick={onAct}>
               {act}
             </button>
           )}

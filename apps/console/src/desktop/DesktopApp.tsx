@@ -85,6 +85,17 @@ const NAMES = new Map<string, string>([
  * reads "Sell › New quote". Today belongs to no section, so it keeps "Start",
  * which is what screen 2a draws.
  */
+/**
+ * What to call a destination that has no rail row.
+ *
+ * A screen can send you somewhere the map does not list yet — the board's
+ * `Runs` is one — and `NotBuiltYet` then headed itself with the raw id, in
+ * lower case. Title-casing the id is not a name, but it is the id said
+ * politely, and it is what the breadcrumb was already doing for Today.
+ */
+const titleOf = (id: string): string =>
+  NAMES.get(id) ?? id.charAt(0).toUpperCase() + id.slice(1);
+
 const PARENTS = new Map<string, string>(
   SECTIONS.flatMap((sec) => sec.items.map((i) => [i.id, sec.name] as [string, string])),
 );
@@ -170,7 +181,7 @@ export default function DesktopApp(): ReactElement {
           <div className={s.crumbs}>
             <span className={s.crumbStart}>{PARENTS.get(section) ?? 'Start'}</span>
             <Icon name="chevron-right" size={14} className={s.crumbSep} />
-            <span className={s.crumbHere}>{NAMES.get(section) ?? 'Today'}</span>
+            <span className={s.crumbHere}>{titleOf(section)}</span>
             {trail !== null && (
               <>
                 <Icon name="chevron-right" size={14} className={s.crumbSep} />
@@ -255,9 +266,9 @@ export default function DesktopApp(): ReactElement {
           ) : section === 'shop' ? (
             <Shop onTrail={onTrail} />
           ) : section === 'orders' ? (
-            <OrderTracking />
+            <OrderTracking onGo={navigate} />
           ) : (
-            <NotBuiltYet name={NAMES.get(section) ?? section} />
+            <NotBuiltYet name={titleOf(section)} />
           )}
         </div>
       </div>

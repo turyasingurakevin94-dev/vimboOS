@@ -24,6 +24,7 @@ import {
   handedOverAt,
   invoiced,
   laneWindow,
+  lineCheckedIn,
   loaded,
   markFor,
   match,
@@ -37,6 +38,8 @@ import {
   stepBack,
   steppedBack,
   steps,
+  supplierAnswered,
+  unanswered,
   type Control,
   type LaneReading,
   type Stage,
@@ -99,6 +102,10 @@ export function OrderTracking(): ReactElement {
     else if (control === 'doc') setAsk({ at: 'invoice', reference: order.reference });
     else if (control === 'tick') setAsk({ at: 'undo', reference: order.reference });
     else if (order.stage === 'preparing') setAsk({ at: 'settle', reference: order.reference });
+    // Taken and Buying wait on somebody in Kikuubo. The card says so in the
+    // padlock's `title`, which on a phone is nothing at all, so pressing it
+    // opens the panel that names what is owed and carries the act.
+    else setAsk({ at: 'owed', reference: order.reference });
   };
 
   const inAsk = orders.find((o) => o.reference === ask?.reference);
@@ -132,6 +139,16 @@ export function OrderTracking(): ReactElement {
           onSettle={(how) => {
             change(inAsk.reference, (o) => settledShort(o, how));
             setAsk(null);
+          }}
+          onAnswered={(supplier) => {
+            change(inAsk.reference, (o) => supplierAnswered(o, supplier, now));
+            // Stays open while others are still owed; closes itself once the
+            // order has moved out of the lane behind it.
+            if (unanswered(inAsk).length <= 1) setAsk(null);
+          }}
+          onCheckIn={() => {
+            change(inAsk.reference, lineCheckedIn);
+            if (inAsk.checkedIn + 1 >= inAsk.toBuy) setAsk(null);
           }}
         />
       )}

@@ -148,6 +148,94 @@
   color: var(--ow-color-bad-ink);
 }
 
+/* ------------------------------- still owed ------------------------------- */
+
+/**
+ * One row per thing that is owed.
+ *
+ * The padlock's `title` said this already, and a `title` is a hover: it does
+ * not exist on the phone at all, and on a console it is a thing you have to
+ * already suspect is there. A control that is pressed and does nothing is
+ * worse than no control, so the padlock opens and names what is owed in the
+ * same words the card does.
+ */
+.owed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-7);
+}
+
+.owedRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  padding: var(--ow-space-9) var(--ow-space-12);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+}
+
+.owedRowWaiting {
+  composes: owedRow;
+  background: var(--ow-color-warn-panel);
+  border-color: var(--ow-color-warn-panel-edge);
+}
+
+/**
+ * The name and its state stack, as they do on the phone.
+ *
+ * Side by side they fit in a 420px panel right up until a supplier is called
+ * `Mulongo Hardware`, and then the one word the row exists to say is the one
+ * that truncates. Stacked, the name has the row.
+ */
+.owedText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-2);
+}
+
+.owedName {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owedWaiting {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-warn-panel-ink);
+  white-space: nowrap;
+}
+
+.owedDone {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-good-ink);
+  white-space: nowrap;
+}
+
+.owedAct {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 var(--ow-space-11);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-icon-chip);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
+.owedAct:hover {
+  background: var(--ow-color-surface-2);
+}
+
 /* -------------------------------- choosing -------------------------------- */
 
 .choices {

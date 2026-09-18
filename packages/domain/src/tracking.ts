@@ -735,6 +735,42 @@ export function steppedBack(order: TrackedOrder, now: Date): TrackedOrder {
   };
 }
 
+/**
+ * A supplier comes back.
+ *
+ * Taken is the one lane that moves ITSELF — the handoff says so in those
+ * words — so this does not merely flip a flag. When the one answering is the
+ * last the order was waiting on, the order leaves Taken in the same act, and
+ * the owner never has to press a chevron for a thing they did not decide.
+ */
+export function supplierAnswered(
+  order: TrackedOrder,
+  name: string,
+  now: Date,
+): TrackedOrder {
+  if (order.stage !== 'draft') return order;
+  const suppliers = order.suppliers.map((s) =>
+    s.name === name ? { ...s, answered: true } : s,
+  );
+  const answeredAll = suppliers.every((s) => s.answered);
+  const next: TrackedOrder = { ...order, suppliers };
+  return answeredAll ? moveOn(next, now) : next;
+}
+
+/**
+ * A bought-in line arrives and is checked in.
+ *
+ * Buying does NOT move itself: its rule is *"unlocks on the last line in"*,
+ * and unlocking is not moving. The last line in turns the padlock into a
+ * chevron and the owner presses it — because an order whose goods are all in
+ * still has to be picked by somebody, and the board should not claim that
+ * has started.
+ */
+export function lineCheckedIn(order: TrackedOrder): TrackedOrder {
+  if (order.stage !== 'awaiting_goods' || order.checkedIn >= order.toBuy) return order;
+  return { ...order, checkedIn: order.checkedIn + 1 };
+}
+
 /** Settling a short pick: confirm what was found, or send the pick back. */
 export function settledShort(order: TrackedOrder, how: 'amend' | 'confirm'): TrackedOrder {
   const short = order.shortPick;

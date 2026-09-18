@@ -14,12 +14,14 @@ import {
   UNDOING_INVOICE_DOES,
   match,
   runsToday,
+  unanswered,
   type TrackedOrder,
 } from '@ow/domain';
 import s from './MoveOrder.module.css';
 import { MoveMark } from '../icons.js';
 
 export type Ask =
+  | { readonly at: 'owed'; readonly reference: string }
   | { readonly at: 'load'; readonly reference: string }
   | { readonly at: 'invoice'; readonly reference: string }
   | { readonly at: 'undo'; readonly reference: string }
@@ -34,6 +36,10 @@ export interface MoveOrderProps {
   readonly onInvoice: () => void;
   readonly onUndo: () => void;
   readonly onSettle: (how: 'amend' | 'confirm') => void;
+  /** A supplier has come back. Taken moves itself when it is the last one. */
+  readonly onAnswered: (supplier: string) => void;
+  /** A bought-in line has arrived. */
+  readonly onCheckIn: () => void;
   readonly onClose: () => void;
 }
 
@@ -45,6 +51,7 @@ const worth = (order: TrackedOrder): string =>
   });
 
 const TITLE: Readonly<Record<Ask['at'], string>> = {
+  owed: 'Still owed',
   load: 'Load it',
   invoice: 'Invoice it',
   undo: 'Undo the invoice',
@@ -63,7 +70,9 @@ export function MoveOrder(props: MoveOrderProps): ReactElement {
           <span className={s.ref}>{order.reference}</span>
         </header>
 
-        {ask.at === 'load' ? (
+        {ask.at === 'owed' ? (
+          <Owed {...props} />
+        ) : ask.at === 'load' ? (
           <Load {...props} />
         ) : ask.at === 'invoice' ? (
           <Invoice {...props} />
@@ -74,6 +83,83 @@ export function MoveOrder(props: MoveOrderProps): ReactElement {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * What a padlock is holding, said out loud — and cleared from here.
+ *
+ * The board's rule is that the card carries one control and no sentences,
+ * and the padlock's `title` names what is owed. A `title` does not exist on
+ * a phone. Twenty of the fifty-four cards on a busy day wear a padlock, so
+ * without this the commonest control on the screen was one that could be
+ * tapped, said nothing and did nothing.
+ */
+function Owed({ order, onAnswered, onCheckIn, onClose }: MoveOrderProps): ReactElement {
+  const waiting = unanswered(order);
+  const stillOut = order.toBuy - order.checkedIn;
+
+  return (
+    <>
+      <div className={s.body}>
+        <p className={s.who}>
+          {order.customer} · {order.place} · <span className={s.amount}>{worth(order)}</span>
+        </p>
+
+        {order.stage === 'draft' ? (
+          <div className={s.owed}>
+            {order.suppliers.map((supplier) => (
+              <div
+                key={supplier.name}
+                className={supplier.answered ? s.owedRow : s.owedRowWaiting}
+              >
+                <span className={s.owedText}>
+                  <span className={s.owedName}>{supplier.name}</span>
+                  <span className={supplier.answered ? s.owedDone : s.owedWaiting}>
+                    {supplier.answered ? 'answered' : 'has not answered'}
+                  </span>
+                </span>
+                {!supplier.answered && (
+                  <button
+                    type="button"
+                    className={s.owedAct}
+                    onClick={() => onAnswered(supplier.name)}
+                  >
+                    They answered
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <p className={s.who}>
+              <span className={s.amount}>{order.checkedIn}</span> of{' '}
+              <span className={s.amount}>{order.toBuy}</span> bought-in lines are checked in.{' '}
+              <span className={s.amount}>{stillOut}</span>{' '}
+              {stillOut === 1 ? 'is' : 'are'} still out.
+            </p>
+            <div className={s.caution}>
+              It cannot be picked until the last line is in — the goods are still in a
+              supplier&rsquo;s shop, not on the shelf.
+            </div>
+          </>
+        )}
+      </div>
+
+      <footer className={s.foot}>
+        <button type="button" className={s.btn} onClick={onClose}>
+          {/* Taken's acts are on the rows, one per supplier — a foot button
+              answering "the first one owed" would be a guess about which. */}
+          {order.stage === 'draft' && waiting.length > 0 ? 'Leave it' : 'Done'}
+        </button>
+        {order.stage === 'awaiting_goods' && (
+          <button type="button" className={s.btn} onClick={onCheckIn}>
+            Check the next line in
+          </button>
+        )}
+      </footer>
+    </>
   );
 }
 

@@ -184,6 +184,81 @@
   color: var(--ow-color-ink-3);
 }
 
+/* ------------------------------- still owed ------------------------------- */
+
+/**
+ * One row per thing that is owed, at 44px.
+ *
+ * This is the panel the phone needs most. On the console a padlock's `title`
+ * at least appears on hover; here there is no hover at all, so before this
+ * existed twenty of the fifty-four cards carried a control that could be
+ * pressed, said nothing, and did nothing.
+ */
+.owed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-8);
+}
+
+.owedRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ow-space-10);
+  min-height: 44px;
+  padding: var(--ow-space-9) var(--ow-space-12);
+  border: 1px solid var(--ow-color-hairline);
+  border-radius: var(--ow-radius-block);
+}
+
+.owedRowWaiting {
+  composes: owedRow;
+  background: var(--ow-color-warn-panel);
+  border-color: var(--ow-color-warn-panel-edge);
+}
+
+.owedText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ow-space-2);
+}
+
+.owedName {
+  font-size: var(--ow-size-13);
+  font-weight: var(--ow-weight-semibold);
+  color: var(--ow-color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owedWaiting {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-warn-panel-ink);
+}
+
+.owedDone {
+  font-size: var(--ow-size-11-5);
+  color: var(--ow-color-good-ink);
+}
+
+.owedAct {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 var(--ow-space-12);
+  border: 1px solid var(--ow-color-control-edge);
+  border-radius: var(--ow-radius-block);
+  background: var(--ow-color-surface);
+  color: var(--ow-color-ink);
+  font-family: var(--ow-font-ui);
+  font-size: var(--ow-size-12-5);
+  font-weight: var(--ow-weight-semibold);
+  white-space: nowrap;
+}
+
 /* ---------------------------------- foot ---------------------------------- */
 
 /**
