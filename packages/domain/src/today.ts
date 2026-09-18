@@ -71,9 +71,133 @@ export interface MarginInput {
 
 /** What the shelf is worth, and how much of it has stopped moving. */
 export interface StockInput {
-  readonly held: Derived<Amount>;
+  readonly shelf: Shelf;
   readonly dead: Derived<Amount>;
   readonly deadLines: number;
+}
+
+/**
+ * One lot, as `stock_lots` stores it.
+ *
+ * `consign` is the supplier who still OWNS these units — goods held to be
+ * paid for as they sell. Null is the shop's own stock.
+ */
+export interface StockLot {
+  readonly qty: number | null;
+  readonly cost: number | null;
+  readonly consign: string | null;
+}
+
+/** One shelf line: what is on it now, and the lots behind it. */
+export interface ShelfLine {
+  readonly key: string;
+  /** `stock.qty` — what is actually on the shelf, not what was ever bought. */
+  readonly onShelf: number;
+  readonly lots: readonly StockLot[];
+}
+
+export interface Shelf {
+  /** What the shop's own units are worth, at what it paid. */
+  readonly ours: Derived<Amount>;
+  /** What a consignor's units on the same shelf are worth. Never in `ours`. */
+  readonly heldForOthers: Derived<Amount>;
+  /** Lines with something on them. The strip's "lines on the shelf". */
+  readonly linesOnShelf: number;
+  /** Units the shop owns that no lot accounts for, so cannot be valued. */
+  readonly uncostedUnits: number;
+}
+
+/**
+ * What one shelf line is worth — ported from the old app's
+ * `shelfValueForKey`, which is the ONE reading its Inventory screen and its
+ * balance sheet both take.
+ *
+ * The naive reading — sum `qty × cost` over the lots — is wrong, and the
+ * real books prove it: it returns 15,634,018 where the shop's own Inventory
+ * screen reads 11,186,018. Lots are a purchase ledger. They record what was
+ * bought, including units long since sold. What is on the shelf is
+ * `stock.qty`, and the lots only say what a unit of it cost.
+ *
+ * So: take what is on the shelf, remove the consignor's units, and price the
+ * remainder at the weighted average of the costed owned lots — capped at the
+ * quantity those lots actually account for. A shelf holding more than the
+ * lots explain has a surplus with no cost behind it, and that surplus is
+ * counted in units and NOT valued at zero.
+ */
+export function shelfLineValue(line: ShelfLine): {
+  readonly ours: number;
+  readonly theirs: number;
+  readonly uncostedUnits: number;
+} {
+  const consigned = line.lots.filter((l) => l.consign !== null);
+  const consignedQty = consigned.reduce((n, l) => n + (l.qty ?? 0), 0);
+  const theirs = consigned.reduce((n, l) => n + (l.qty ?? 0) * (l.cost ?? 0), 0);
+
+  const ownedQty = Math.max(0, line.onShelf - consignedQty);
+  if (ownedQty <= 0) return { ours: 0, theirs, uncostedUnits: 0 };
+
+  const costed = line.lots.filter((l) => l.consign === null && l.cost !== null);
+  const costedQty = costed.reduce((n, l) => n + (l.qty ?? 0), 0);
+  if (costedQty <= 0) return { ours: 0, theirs, uncostedUnits: ownedQty };
+
+  const costedValue = costed.reduce((n, l) => n + (l.qty ?? 0) * (l.cost ?? 0), 0);
+  const unitCost = costedValue / costedQty;
+  const priced = Math.min(ownedQty, costedQty);
+
+  return {
+    ours: priced * unitCost,
+    theirs,
+    uncostedUnits: ownedQty > costedQty ? ownedQty - costedQty : 0,
+  };
+}
+
+/**
+ * The whole shelf.
+ *
+ * A line with nothing on it is skipped, as the old app skips it — 434 of
+ * this shop's 485 lines have an empty shelf, and valuing them would add 434
+ * noughts to a figure that is about what is there.
+ *
+ * The rounding happens ONCE, on the total. A weighted unit cost is
+ * fractional by nature (the real books' own sum lands on
+ * `15634017.99999…`), and rounding each line before adding them would drift
+ * from the figure the shop already reads on its own screen.
+ */
+export function shelfValue(lines: readonly ShelfLine[]): Shelf {
+  const standing = lines.filter((l) => l.onShelf > 0);
+
+  let ours = 0;
+  let theirs = 0;
+  let uncostedUnits = 0;
+  for (const line of standing) {
+    const v = shelfLineValue(line);
+    ours += v.ours;
+    theirs += v.theirs;
+    uncostedUnits += v.uncostedUnits;
+  }
+
+  const basis = `across ${standing.length} lines, at what you paid`;
+  const held = Money.money(Math.round(ours));
+
+  return {
+    ours:
+      uncostedUnits === 0
+        ? known(held, basis)
+        : partial(
+            held,
+            basis,
+            `${Math.round(uncostedUnits)} units have no cost behind them`,
+          ),
+    heldForOthers:
+      theirs === 0
+        ? known(Money.ZERO, 'nothing is held on consignment')
+        : known(
+            Money.money(Math.round(theirs)),
+            `${standing.filter((l) => l.lots.some((x) => x.consign !== null)).length} lines on consignment`,
+          ),
+    linesOnShelf: standing.length,
+    uncostedUnits: Math.round(uncostedUnits),
+  };
 }
 
 export interface StripInputs {
@@ -116,6 +240,8 @@ export interface StockCell {
   readonly held: Derived<Amount>;
   readonly dead: Derived<Amount>;
   readonly deadLines: number;
+  readonly heldForOthers: Derived<Amount>;
+  readonly linesOnShelf: number;
 }
 
 export interface TodayStrip {
@@ -232,9 +358,11 @@ function marginCell(m: MarginInput): MarginCell {
 }
 
 const stockCell = (s: StockInput): StockCell => ({
-  held: s.held,
+  held: s.shelf.ours,
   dead: s.dead,
   deadLines: s.deadLines,
+  heldForOthers: s.shelf.heldForOthers,
+  linesOnShelf: s.shelf.linesOnShelf,
 });
 
 /** The whole strip, from what the books gave. */

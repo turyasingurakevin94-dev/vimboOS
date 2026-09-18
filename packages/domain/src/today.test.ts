@@ -14,9 +14,12 @@ import {
   DUE_SOON_DAYS,
   MARGIN_DAYS,
   readStrip,
+  shelfValue,
   wantsYou,
   type MarginInput,
   type StockInput,
+  type ShelfLine,
+  type StockLot,
   type StripInputs,
 } from './today.js';
 
@@ -79,8 +82,8 @@ const noCash: CashPosition = {
 };
 
 const noStock: StockInput = {
-  held: unavailable('stock lots carry no cost'),
-  dead: unavailable('nothing records when a line last sold'),
+  shelf: shelfValue([]),
+  dead: unavailable('nothing here records when a line last sold'),
   deadLines: 0,
 };
 
@@ -215,11 +218,100 @@ describe('the margin over the week', () => {
 });
 
 describe('the shelf', () => {
-  it('says it cannot be valued rather than reading zero', () => {
-    const strip = readStrip(inputs(), NOW);
+  const line = (key: string, onShelf: number, lots: readonly StockLot[]): ShelfLine => ({
+    key,
+    onShelf,
+    lots,
+  });
 
-    expect(strip.stock.held.status).toBe('unavailable');
-    expect(strip.stock.dead.status).toBe('unavailable');
+  it('values what is ON the shelf, not everything ever bought', () => {
+    // The lots record two purchases of 10 at 1,000. Only 4 are still there.
+    // Summing the lots says 20,000; the shelf is worth 4,000.
+    const shelf = shelfValue([
+      line('a', 4, [
+        { qty: 10, cost: 1_000, consign: null },
+        { qty: 10, cost: 1_000, consign: null },
+      ]),
+    ]);
+
+    expect(shelf.ours.status !== 'unavailable' && shelf.ours.value).toBe(4_000);
+  });
+
+  it('prices at the weighted average of the costed lots', () => {
+    // 10 bought at 1,000 and 10 at 2,000 is 1,500 a unit; 6 on the shelf.
+    const shelf = shelfValue([
+      line('a', 6, [
+        { qty: 10, cost: 1_000, consign: null },
+        { qty: 10, cost: 2_000, consign: null },
+      ]),
+    ]);
+
+    expect(shelf.ours.status !== 'unavailable' && shelf.ours.value).toBe(9_000);
+  });
+
+  it('takes a consignor’s units out of what the shop owns', () => {
+    // 10 on the shelf, 3 of them somebody else's. The shop owns 7.
+    const shelf = shelfValue([
+      line('a', 10, [
+        { qty: 10, cost: 1_000, consign: null },
+        { qty: 3, cost: 5_000, consign: 'Kampala Steel' },
+      ]),
+    ]);
+
+    expect(shelf.ours.status !== 'unavailable' && shelf.ours.value).toBe(7_000);
+    expect(shelf.heldForOthers.status !== 'unavailable' && shelf.heldForOthers.value).toBe(15_000);
+  });
+
+  it('counts a surplus the lots cannot explain, and does not value it at zero', () => {
+    // 10 on the shelf, lots account for 4. Six units have no cost behind
+    // them: valuing them at zero would understate the shelf silently.
+    const shelf = shelfValue([line('a', 10, [{ qty: 4, cost: 1_000, consign: null }])]);
+
+    expect(shelf.ours.status).toBe('partial');
+    expect(shelf.ours.status === 'partial' && shelf.ours.value).toBe(4_000);
+    expect(shelf.ours.status === 'partial' && shelf.ours.missing).toMatch(/6 units/);
+    expect(shelf.uncostedUnits).toBe(6);
+  });
+
+  it('skips a line with an empty shelf', () => {
+    // 434 of this shop's 485 lines have nothing on them.
+    const shelf = shelfValue([
+      line('a', 0, [{ qty: 10, cost: 1_000, consign: null }]),
+      line('b', 2, [{ qty: 2, cost: 500, consign: null }]),
+    ]);
+
+    expect(shelf.linesOnShelf).toBe(1);
+    expect(shelf.ours.status !== 'unavailable' && shelf.ours.value).toBe(1_000);
+  });
+
+  it('is worth nothing, knowably, when the shelf is entirely a consignor’s', () => {
+    const shelf = shelfValue([
+      line('a', 3, [{ qty: 3, cost: 5_000, consign: 'Kampala Steel' }]),
+    ]);
+
+    expect(shelf.ours.status).toBe('known');
+    expect(shelf.ours.status !== 'unavailable' && shelf.ours.value).toBe(0);
+  });
+
+  it('rounds once on the total, not per line', () => {
+    // A weighted unit cost is fractional by nature. Rounding each line
+    // first drifts from the figure the shop reads on its own screen.
+    // Each line's weighted unit cost is 3,001/3 = 1,000.333…, one unit on
+    // the shelf. Three of them come to 3,001; rounding each line to 1,000
+    // first would report 3,000 and quietly lose a shilling a line.
+    const lots = [
+      { qty: 2, cost: 1_000, consign: null },
+      { qty: 1, cost: 1_001, consign: null },
+    ];
+    const shelf = shelfValue([line('a', 1, lots), line('b', 1, lots), line('c', 1, lots)]);
+
+    expect(shelf.ours.status !== 'unavailable' && shelf.ours.value).toBe(3_001);
+  });
+
+  it('still says the dead-stock figure cannot be derived yet', () => {
+    // Nothing fetched here records when a line last SOLD, and a restock or
+    // a count is not a sale. Reading zero would say the shelf is all moving.
+    expect(readStrip(inputs(), NOW).stock.dead.status).toBe('unavailable');
   });
 });
 
