@@ -119,7 +119,7 @@ Insight   #ffdfe9 / #8a2450      Setup   #f0eeea / #5f6a7d
 ```
 green   #c3e2d3 #a9d7c2 #71bfa0 #3f9f7c #1a8f66 #0f7a56
 violet  #5b46d6 #7a68e0 #9a8ceb #bcb2f2
-aging   #c7d3e8 (0–14 days) · #f0a98f (15–30) · #ef4b39 (30+)
+aging   #c7d3e8 (under 30 days) · #f0a98f (30–60) · #ef4b39 (60+)   /* three stops, always */
 stage   taken #7f8aa3 · buying #8f7fd6 · preparing #e0a33a · out #5b8ad6 · delivered #4d9c76
 ```
 
@@ -335,6 +335,14 @@ reduced by 3) and a `#fdf6f4` fill. One row per screen.
 
 The first cell may carry a 6px three-segment aging bar (radius 999, 2px gaps, the `aging` ramp)
 between the figure and the basis line.
+
+**The aging bar always has three fills, and the bands are never re-cut for a screen.**
+`agingBands` splits the debt at 0/30/45/60 because that is what the Customers register shows;
+the bar keeps all four pieces (the 2px gaps separate them) but **30–45 and 45–60 share the middle
+stop**, because the shop takes the same action on both. That is the intended mapping, not an
+approximation. A fourth hue is never added, and the split points are never moved to suit the ramp —
+two screens disagreeing about one debt is the worse fault. Where the extra precision matters, it is
+said in words on the basis line ("oldest 74 days"), never in a colour.
 
 ### Queue card (a thing that needs you)
 

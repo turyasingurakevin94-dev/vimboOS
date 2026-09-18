@@ -120,18 +120,19 @@ const fig = (d: Derived<Money.Money>): string =>
   d.status === 'unavailable' ? '—' : Money.format(d.value);
 
 /**
- * The three-segment aging bar, from four bands.
+ * The aging bar: four bands, three fills, and that is the intended mapping.
  *
- * The handoff draws three segments and the design system's `aging` ramp has
- * three stops, over 0–14, 15–30 and 30+. `agingBands` splits at 0, 30, 45
- * and 60, because that is what the Customers register's own bar shows. The
- * two do not line up, and neither is obviously wrong — so the middle pair is
- * folded into the middle stop rather than inventing a fourth colour, which
- * §7 forbids, or quietly dropping a band, which would understate the debt
- * the bar is about.
+ * `agingBands` splits at 0, 30, 45 and 60 because that is what the Customers
+ * register shows, and the ramp has three stops. **30–45 and 45–60 share the
+ * middle stop, because the shop takes the same action on both.** All four
+ * pieces are still drawn — the bar's 2px gaps keep them apart — so nothing
+ * is dropped and no debt is understated.
  *
- * **This is an approximation and it is the one thing on this screen that is.
- * The bar wants a design decision: four stops, or bands at 14 and 30.**
+ * Raised as a question and settled by design: a fourth hue is never added,
+ * and the split points are never moved to suit the ramp, because two
+ * screens disagreeing about one debt is the worse fault. Where the extra
+ * precision matters here it is said in words on the basis line, never in a
+ * colour. See DESIGN-SYSTEM.md §5.
  */
 function agingSegments(bands: readonly AgingBand[]): readonly {
   readonly pct: number;
@@ -139,9 +140,12 @@ function agingSegments(bands: readonly AgingBand[]): readonly {
 }[] {
   const share = (from: number): number => bands.find((b) => b.from === from)?.share ?? 0;
 
+  // Four pieces, not three: the two middle bands keep their own segment and
+  // share a fill, so the gaps still show where 45 days begins.
   return [
     { pct: share(0), fill: v('aging-fresh') },
-    { pct: share(30) + share(45), fill: v('aging-middle') },
+    { pct: share(30), fill: v('aging-middle') },
+    { pct: share(45), fill: v('aging-middle') },
     { pct: share(60), fill: v('aging-oldest') },
   ];
 }

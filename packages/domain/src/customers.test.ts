@@ -17,6 +17,8 @@ import {
   boughtMonthly,
   boughtOver,
   byAsk,
+  dayOf,
+  describeDay,
   draftPromise,
   hasBrokenPromise,
   howTheyPay,
@@ -34,6 +36,7 @@ import {
   payBands,
   paysWithoutChasing,
   PROMISE_NOTE_MAX,
+  promiseDayChips,
   promisesBroken,
   promiseState,
   quietReading,
@@ -45,6 +48,7 @@ import {
   type CustomerInvoice,
   type Promised,
   type PromiseRecord,
+  unspokenFor,
 } from './customers.js';
 
 const m = Money.money;
@@ -669,5 +673,84 @@ describe('drafting a promise', () => {
 
     expect(promiseState({ id: 'p', ...record }, c, NOW)).toBe('broken');
     expect(promisesBroken(c, NOW)).toBe(1);
+  });
+});
+
+/**
+ * The day chips, and the line that keeps a mis-tap visible.
+ *
+ * All of this is derived from today on purpose: a stored label goes stale
+ * the moment the week turns, and then the control offers a day in the past.
+ */
+describe('naming the day they said', () => {
+  // A Thursday, which is the day the handoff's own frame was drawn on:
+  // tomorrow Fri 18, Saturday 19, Monday 21.
+  const THURSDAY = new Date('2026-09-17T09:00:00Z');
+
+  it('offers the words somebody would actually use', () => {
+    const chips = promiseDayChips(THURSDAY);
+
+    expect(chips.map((c) => `${c.label} ${c.detail}`.trim())).toEqual([
+      'Tomorrow Fri 18',
+      'Saturday 19',
+      'Monday 21',
+      'End of month 30 Sep',
+    ]);
+  });
+
+  it('keeps them in order, soonest first', () => {
+    const chips = promiseDayChips(THURSDAY);
+    const days = chips.map((c) => c.on.getTime());
+
+    expect([...days].sort((a, b) => a - b)).toEqual(days);
+  });
+
+  it('never offers the same day under two names', () => {
+    // A Friday: tomorrow IS Saturday, so one of the two has to go.
+    const chips = promiseDayChips(new Date('2026-09-18T09:00:00Z'));
+    const days = chips.map((c) => c.on.getTime());
+
+    expect(new Set(days).size).toBe(days.length);
+    expect(chips[0]?.detail).toBe('Sat 19');
+  });
+
+  it('drops the month end once it has passed, rather than offering yesterday', () => {
+    // The 30th: the end of the month is today, and a chip for it would be
+    // offering a day that is not ahead.
+    const chips = promiseDayChips(new Date('2026-09-30T09:00:00Z'));
+
+    expect(chips.some((c) => c.id === 'month-end')).toBe(false);
+    expect(chips.every((c) => c.on.getTime() > dayOf(new Date('2026-09-30T09:00:00Z')).getTime())).toBe(
+      true,
+    );
+  });
+
+  it('writes the chosen day out in full, weekday and all', () => {
+    // The safeguard: the weekday is generated from the date, so the two
+    // cannot disagree and the control cannot manufacture the error it
+    // exists to prevent.
+    expect(describeDay(new Date('2026-09-19T00:00:00Z'), THURSDAY)).toBe(
+      'Saturday 19 Sep 2026 — in 2 days',
+    );
+    expect(describeDay(new Date('2026-09-18T00:00:00Z'), THURSDAY)).toBe(
+      'Friday 18 Sep 2026 — tomorrow',
+    );
+    expect(describeDay(new Date('2026-09-17T00:00:00Z'), THURSDAY)).toBe(
+      'Thursday 17 Sep 2026 — today',
+    );
+    // A day already gone is accepted by the books and must read as gone.
+    expect(describeDay(new Date('2026-09-15T00:00:00Z'), THURSDAY)).toBe(
+      'Tuesday 15 Sep 2026 — 2 days ago',
+    );
+  });
+
+  it('names what a part promise leaves out', () => {
+    // A promise for part of a debt is not a promise about the debt.
+    expect(unspokenFor(m(1_000_000), m(2_410_000))).toBe(m(1_410_000));
+    // Naming the whole balance, or more, leaves nothing out.
+    expect(unspokenFor(m(2_410_000), m(2_410_000))).toBeNull();
+    expect(unspokenFor(m(3_000_000), m(2_410_000))).toBeNull();
+    // And naming no figure at all IS the whole balance.
+    expect(unspokenFor(null, m(2_410_000))).toBeNull();
   });
 });

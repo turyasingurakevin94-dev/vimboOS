@@ -342,6 +342,111 @@ export type PromiseDraft =
  * a typo looks like, so the screen should say which it thinks it is; that
  * is a question for the dialog, not a rule for the books.
  */
+/* ------------------------- the day they might name ------------------------ */
+
+/** One offered day: the word somebody would use, and the day it resolves to. */
+export interface DayChip {
+  readonly id: string;
+  /** "Tomorrow", "Saturday", "End of month" — the word, not the date. */
+  readonly label: string;
+  /** "Fri 18", "19" — the date beside the word, in the figure face. */
+  readonly detail: string;
+  readonly on: Date;
+}
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Midnight UTC on the day `d` falls in. Every date here is a calendar day. */
+export const dayOf = (d: Date): Date =>
+  new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+
+const plusDays = (d: Date, n: number): Date => new Date(dayOf(d).getTime() + n * DAY);
+
+/** The next `weekday` strictly after `from`. 0 is Sunday. */
+const nextWeekday = (from: Date, weekday: number): Date => {
+  const ahead = (weekday - dayOf(from).getUTCDay() + 7) % 7;
+  return plusDays(from, ahead === 0 ? 7 : ahead);
+};
+
+const endOfMonth = (d: Date): Date =>
+  new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
+
+/**
+ * The days somebody is likely to name, derived from today.
+ *
+ * People answer *"Friday"* or *"end of month"*, not *"19/09/2026"*. So the
+ * chips are the words, each carrying its date — and they are **computed from
+ * today every time, never stored**, because a stored label goes stale the
+ * moment the week turns and would then offer a day in the past.
+ *
+ * Duplicates collapse. When tomorrow IS Saturday, one chip reads "Tomorrow
+ * Sat 19" and the Saturday chip is dropped rather than offering the same day
+ * twice under two names.
+ */
+export function promiseDayChips(now: Date): readonly DayChip[] {
+  const wanted: readonly { readonly id: string; readonly label: string; readonly on: Date }[] = [
+    { id: 'tomorrow', label: 'Tomorrow', on: plusDays(now, 1) },
+    { id: 'saturday', label: 'Saturday', on: nextWeekday(now, 6) },
+    { id: 'monday', label: 'Monday', on: nextWeekday(now, 1) },
+    { id: 'month-end', label: 'End of month', on: endOfMonth(now) },
+  ];
+
+  const seen = new Set<number>();
+  const out: DayChip[] = [];
+
+  for (const w of wanted) {
+    const at = w.on.getTime();
+    // The end of the month can be today or already gone; a chip offering a
+    // day that has passed is worse than one chip fewer.
+    if (at < plusDays(now, 1).getTime() || seen.has(at)) continue;
+    seen.add(at);
+
+    const sameWeek = at < plusDays(now, 7).getTime();
+    out.push({
+      ...w,
+      // "Tomorrow" needs its weekday spelled out because the word does not
+      // carry one; a chip already named for its weekday only needs the date.
+      detail:
+        w.id === 'tomorrow'
+          ? `${WEEKDAYS[w.on.getUTCDay()]?.slice(0, 3) ?? ''} ${w.on.getUTCDate()}`
+          : sameWeek
+            ? String(w.on.getUTCDate())
+            : dayAndMonth(w.on),
+    });
+  }
+
+  return out.sort((a, b) => a.on.getTime() - b.on.getTime());
+}
+
+/**
+ * The chosen day, written out so a mis-tap cannot pass unseen.
+ *
+ * *"Saturday 19 Sep 2026 — in 2 days"*. **Generated from the date, never
+ * written beside it**: the weekday and the date have to agree, or the
+ * control manufactures the very error it exists to prevent.
+ */
+export function describeDay(on: Date, now: Date): string {
+  const days = Math.round((dayOf(on).getTime() - dayOf(now).getTime()) / DAY);
+  const full = `${WEEKDAYS[dayOf(on).getUTCDay()] ?? ''} ${on.getUTCDate()} ${MONTHS[on.getUTCMonth()] ?? ''} ${on.getUTCFullYear()}`;
+
+  if (days === 0) return `${full} — today`;
+  if (days === 1) return `${full} — tomorrow`;
+  if (days < 0) return `${full} — ${Math.abs(days)} ${Math.abs(days) === 1 ? 'day' : 'days'} ago`;
+  return `${full} — in ${days} days`;
+}
+
+/**
+ * What a part promise leaves unspoken for.
+ *
+ * A promise for part of a debt is not a promise about the debt, and the
+ * screen must not let that pass quietly. `null` when they named the whole
+ * balance or more, or named nothing at all — then there is nothing left out.
+ */
+export function unspokenFor(promised: Amount | null, balance: Amount): Amount | null {
+  if (promised === null || Money.compare(promised, balance) >= 0) return null;
+  return Money.subtract(balance, promised);
+}
+
 export function draftPromise(
   words: {
     readonly promisedOn: Date | null;
