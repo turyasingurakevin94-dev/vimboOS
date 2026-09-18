@@ -33,12 +33,14 @@
  */
 
 import {
+  OWN_SHELF,
   match,
   perChosen,
   qtyInBaseUnits,
   type ChargeLine,
   type ItemLine,
   type Quote,
+  type Stage,
 } from '@ow/domain';
 import {
   QUOTE_ID_KIND,
@@ -77,13 +79,31 @@ export interface NewQuote {
 /** Kampala is UTC+3, and every day-string in both apps is a UTC one. */
 const isoDay = (d: Date): string => d.toISOString().slice(0, 10);
 
+/** The lines somebody has to go out and buy — never the shop's own shelf. */
+export const boughtInLines = (quote: NewQuote): readonly QuoteLineWrite[] =>
+  quote.items.filter((i) => i.supplierId !== OWN_SHELF);
+
+/**
+ * The lane a raised order lands in.
+ *
+ * Draft is where an order waits **for a supplier to come back** — the old
+ * app holds it there until every one of them has, and only then tells the
+ * sales group. Raising an order is not agreeing it.
+ *
+ * An order with nothing to buy in has nobody to wait for. Landing it in
+ * Draft put it behind a padlock reading `Cannot move yet — Our stock has
+ * not answered`, which is the shop waiting on itself: a lane whose rule
+ * cannot be met by anything that will ever happen. It goes where the board
+ * would send it anyway — `nextStage` sends Taken past Buying when there is
+ * nothing bought in, for exactly this reason — and that is Preparing, where
+ * an order off the shelf actually is: waiting to be picked.
+ */
+export const stageOf = (quote: NewQuote): Stage =>
+  boughtInLines(quote).length > 0 ? 'draft' : 'preparing';
+
 /**
  * An order as a row — the part of this file that can be wrong, and the part
  * that needs no database to test.
- *
- * `status: 'draft'` because that is where a raised order waits: the old app
- * holds it in Draft until every supplier on it has come back, and only then
- * tells the sales group. Raising an order is not agreeing it.
  *
  * `client_name` and `client_phone` are columns AND payload — the old app
  * writes both from one object, and the board reads the column while the
@@ -97,7 +117,7 @@ export function quoteRow(shopId: string, id: number, quote: NewQuote, now: Date)
     client_name: quote.client.name === '' ? null : quote.client.name,
     client_phone: quote.client.phone === '' ? null : quote.client.phone,
     date: isoDay(now),
-    status: 'draft',
+    status: stageOf(quote),
     invoiced: false,
     invoiced_at: null,
     invoiced_ts: null,

@@ -8,9 +8,17 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { Money, asId, known, unavailable, type ItemLine } from '@ow/domain';
+import { Money, OWN_SHELF, asId, known, unavailable, type ItemLine } from '@ow/domain';
 import { PAYLOAD_KEYS, lineIds, type QuoteLineWrite } from './savedQuotes.js';
-import { quoteRow, whyNotSaveable, writeLine, writeQuote, type NewQuote } from './quotes.js';
+import {
+  boughtInLines,
+  quoteRow,
+  stageOf,
+  whyNotSaveable,
+  writeLine,
+  writeQuote,
+  type NewQuote,
+} from './quotes.js';
 
 const NOW = new Date('2026-09-18T09:30:00.000Z');
 
@@ -48,6 +56,33 @@ describe('an order as a row', () => {
     expect(row.voided).toBe(false);
     expect(row.amount_paid).toBe(0);
     expect(row.date).toBe('2026-09-18');
+  });
+
+  /**
+   * The shop's own shelf is not a supplier and cannot answer a message.
+   *
+   * Order #370 — two Bow Saw Blades off our own stock, ten on the shelf —
+   * was raised into Draft and sat there behind `Cannot move yet — Our stock
+   * has not answered`: a padlock nothing that will ever happen can open.
+   */
+  it('sends an order filled off our own shelf straight to Preparing', () => {
+    const shelf = order({ items: [line({ supplierId: OWN_SHELF, supplierName: 'Our stock' })] });
+
+    expect(boughtInLines(shelf)).toEqual([]);
+    expect(stageOf(shelf)).toBe('preparing');
+    expect(quoteRow('shop', 370, shelf, NOW).status).toBe('preparing');
+  });
+
+  it('holds an order in Draft for the supplier lines on it, and only those', () => {
+    const mixed = order({
+      items: [
+        line({ lineId: 1, supplierId: OWN_SHELF, supplierName: 'Our stock' }),
+        line({ lineId: 2, supplierId: 'S072', supplierName: 'Maria Building Materials' }),
+      ],
+    });
+
+    expect(boughtInLines(mixed).map((i) => i.supplierName)).toEqual(['Maria Building Materials']);
+    expect(stageOf(mixed)).toBe('draft');
   });
 
   /**

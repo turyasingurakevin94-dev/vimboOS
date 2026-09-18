@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { Money, match } from '@ow/domain';
+import { Money, OWN_SHELF, match, moveFor, nextStage } from '@ow/domain';
 import { assembleBoard, toTrackedOrder, tripFrom } from './tracking.js';
 
 const row = (over: Record<string, unknown> = {}): unknown => ({
@@ -145,6 +145,48 @@ describe('an order as a card', () => {
     ]);
   });
 
+  /**
+   * Order #370: two Bow Saw Blades taken off our own shelf, and nothing
+   * else on it. `__stock__` is written into `supplierId` exactly like a
+   * supplier's id, so every count here took our own store for a supplier —
+   * and the card read `Cannot move yet — Our stock has not answered`.
+   */
+  it('never asks our own shelf to answer, and never counts it as bought in', () => {
+    const shelf = one({
+      status: 'draft',
+      payload: {
+        stageEnteredAt: 1,
+        items: [
+          { qty: 2, sellPrice: 10_800, supplierId: '__stock__', supplierName: 'Our stock' },
+        ],
+      },
+    });
+
+    expect(shelf?.suppliers).toEqual([]);
+    expect(shelf?.toBuy).toBe(0);
+    // Nothing to wait for, so nothing holds it: it moves, and it skips
+    // Buying, which has nothing to unlock it either.
+    expect(shelf && moveFor(shelf).control).toBe('chevron');
+    expect(shelf && nextStage(shelf)).toBe('preparing');
+  });
+
+  it('waits on the supplier lines of a mixed order, and only those', () => {
+    const mixed = one({
+      status: 'draft',
+      payload: {
+        stageEnteredAt: 1,
+        items: [
+          { qty: 2, supplierId: OWN_SHELF, supplierName: 'Our stock' },
+          { qty: 1, supplierId: 'S012', supplierName: 'Shafik Katwe' },
+        ],
+      },
+    });
+
+    expect(mixed?.suppliers).toEqual([{ name: 'Shafik Katwe', answered: false }]);
+    expect(mixed?.toBuy).toBe(1);
+    expect(mixed && moveFor(mixed).why).toBe('Cannot move yet — Shafik Katwe has not answered');
+  });
+
   it('carries the picker, the run and the invoice number', () => {
     const order = toTrackedOrder(
       row({
@@ -228,6 +270,26 @@ describe('the trip behind the lanes', () => {
     expect(tripFrom([toFetch({ voided: true })]).stops).toBe(0);
     expect(tripFrom([toFetch({ status: 'who_knows' })]).stops).toBe(0);
     expect(tripFrom([toFetch({ status: 'completed' })]).route).toBe('Nothing to fetch');
+  });
+
+  /** Our own store is not a stop, and the buyer carries no cash to it. */
+  it('plans no stop at our own shelf', () => {
+    const shelf = toFetch({
+      payload: {
+        stageEnteredAt: 1_786_253_866_337,
+        items: [
+          { qty: 2, price: 9_800, supplierId: OWN_SHELF, supplierName: 'Our stock' },
+          { qty: 1, price: 30_000, supplierId: 'S012', supplierName: 'Shafik Katwe' },
+        ],
+      },
+    });
+    const trip = tripFrom([shelf]);
+
+    expect(trip.stops).toBe(1);
+    expect(trip.route).toBe('Shafik Katwe');
+    expect(match(trip.carry, { known: (m) => m, partial: () => null, unavailable: () => null })).toEqual(
+      Money.money(30_000),
+    );
   });
 
   it('skips a line already received — it needs no stop and costs nothing', () => {

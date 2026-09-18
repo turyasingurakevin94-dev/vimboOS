@@ -30,6 +30,7 @@
  */
 
 import { useState, type ReactElement } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Money,
   asId,
@@ -56,7 +57,15 @@ import {
   type ItemLine,
   type QuoteLine,
 } from '@ow/domain';
-import { raiseQuote, whyNotSaveable, writeQuote, type Service } from '@ow/data';
+import {
+  boughtInLines,
+  raiseQuote,
+  stageOf,
+  whyNotSaveable,
+  writeQuote,
+  type NewQuote,
+  type Service,
+} from '@ow/data';
 import { useCatalogue } from '../../app/useCatalogue.js';
 import { useBooks } from '../../app/Books.js';
 import { useRegister } from '../../app/useRegister.js';
@@ -135,6 +144,24 @@ const dayReads = (on: Date): string =>
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+/**
+ * Where the order just saved has gone, in the lane's own words.
+ *
+ * Read off the same `stageOf` the row was written with rather than stated
+ * as a fact about Taken. It used to say Taken either way, which was wrong
+ * about every order filled off the shelf — and the person reading it would
+ * then go looking in the lane it is not in.
+ */
+function landedIn(order: NewQuote): string {
+  if (stageOf(order) !== 'draft') {
+    return 'Everything on it is off our own shelf, so it is in Preparing, waiting to be picked.';
+  }
+  const waiting = new Set(boughtInLines(order).map((i) => i.supplierName)).size;
+  return `It waits in Taken until ${
+    waiting === 1 ? 'the supplier on it has' : `all ${waiting} suppliers on it have`
+  } answered.`;
+}
+
 export function Quote(): ReactElement {
   const read = useCatalogue();
   if (read.at === 'loading') return <Waiting />;
@@ -180,6 +207,7 @@ function Desk({
   readonly read: Extract<ReturnType<typeof useCatalogue>, { at: 'ready' }>;
 }): ReactElement {
   const books = useBooks();
+  const cache = useQueryClient();
   // Read here rather than inside the strip: the same register answers the
   // aside panels, and two reads of it are two answers about one account.
   const people = useRegister();
@@ -282,20 +310,34 @@ function Desk({
       return;
     }
 
+    const order = writeQuote(
+      { client, date: dayReads(read.today), lines },
+      client.id === '' ? null : client.id,
+    );
+
     setSaving(true);
     setSaid(null);
-    const written = await raiseQuote(
-      books.shopId,
-      writeQuote({ client, date: dayReads(read.today), lines }, client.id === '' ? null : client.id),
-      read.today,
-    );
+    const written = await raiseQuote(books.shopId, order, read.today);
     setSaving(false);
 
     if (!written.ok) {
       setSaid(written.why);
       return;
     }
-    setSaid(`Saved as #${written.id}. It waits in Taken until every supplier on it has answered.`);
+
+    // Every screen that reads an order is now out of date — the board and
+    // its Live count above all, and Today's figures behind them. Re-read
+    // rather than push the new order into a cache by hand: the board is a
+    // reckoning of rows, and a second one assembled here is how two
+    // screens start disagreeing about the same order.
+    //
+    // Without this the order was in the books and on nobody's board until
+    // somebody reloaded the page: the cache holds a read for a minute
+    // (see `Books.tsx`), so opening Order tracking re-used the answer from
+    // before the save.
+    void cache.invalidateQueries();
+
+    setSaid(`Saved as #${written.id}. ${landedIn(order)}`);
     setLines([]);
     setClient(NOBODY);
   };

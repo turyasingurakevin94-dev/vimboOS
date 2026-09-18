@@ -385,6 +385,22 @@ export const NO_MARKUPS: Markups = {
 };
 
 /**
+ * A figure inside a basis line, grouped the way every figure on screen is.
+ *
+ * These are per-BASE-unit prices and the books hold fractions here, so the
+ * rounding is for the sentence only — `suggestedSell` returns the exact
+ * figure and the line that is written rounds it once, where it matters.
+ *
+ * A figure past the whole-shilling range is written as it stands rather
+ * than thrown over. This is a sentence under a price box: a corrupt row in
+ * the catalogue should cost the shop a badly written hint, not the picker.
+ */
+const grouped = (value: number): string => {
+  const whole = Math.round(value);
+  return Number.isSafeInteger(whole) ? Money.format(Money.money(whole)) : `${value}`;
+};
+
+/**
  * What to charge, from what it cost.
  *
  * **A fixed wholesale markup is an amount added to the PACK price**, not to
@@ -392,6 +408,13 @@ export const NO_MARKUPS: Markups = {
  * a 300,000 carton is 310,000 a carton, which is 15,500 a dozen and not
  * 310,000 a dozen. A percent scales the same either way, so only `fixed`
  * needs the conversion.
+ *
+ * **The basis names the markup that was APPLIED, not the rule's own figure.**
+ * It used to read the rule, so the same `+10,000` carton rule that added
+ * 1,000 to a 9,800 blade said `+10000 on 9800` — a sentence that does not
+ * describe the price beside it and cannot be checked against it. A hint
+ * whose arithmetic does not work out is worse than none: it teaches that
+ * the suggested price came from somewhere nobody can see.
  *
  * `unavailable` where no rule applies: the shop has not said what it charges
  * for this, and inventing a figure to fill the box is how a price nobody
@@ -407,14 +430,12 @@ export function suggestedSell(
     return unavailable('no markup rule is set for this, so nothing says what to charge');
   }
 
-  const basis = `${markup.kind === 'fixed' ? `+${markup.value}` : `+${markup.value}%`} on ${cost}`;
-
   if (markup.kind === 'fixed') {
     const perUnit = side === 'wholesale' && packQty > 0 ? markup.value / packQty : markup.value;
-    return known(cost + perUnit, basis);
+    return known(cost + perUnit, `+${grouped(perUnit)} on ${grouped(cost)}`);
   }
 
-  return known(cost * (1 + markup.value / 100), basis);
+  return known(cost * (1 + markup.value / 100), `+${markup.value}% on ${grouped(cost)}`);
 }
 
 /** Which of the four rules prices this line. */

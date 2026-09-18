@@ -572,7 +572,8 @@ export function newQuotePayload(input: {
     customerId: input.customerId,
     debtCharged: 0,
     // When the order entered its lane. Only a stage move ever advances it,
-    // and a new order enters Draft the moment it is raised.
+    // and a new order enters whichever lane it is raised into — see
+    // `stageOf`, which is Draft only where there is a supplier to wait for.
     stageEnteredAt: input.now.getTime(),
     assignedWorkerId: null,
     assignedDeliveryId: null,

@@ -38,6 +38,10 @@ import { known, match, type Derived } from './derived.js';
 const sell = (at: Derived<number>): number | null =>
   match(at, { known: (n) => n, partial: (n) => n, unavailable: () => null });
 
+/** The sentence the picker prints under the price box. */
+const basis = (at: Derived<number>): string | null =>
+  match(at, { known: (_n, b) => b, partial: (_n, b) => b, unavailable: () => null });
+
 const row = (over: Partial<PriceRow> = {}): PriceRow => ({
   supplierId: 'S094',
   supplierName: 'Roto Industry',
@@ -328,6 +332,38 @@ describe('what to charge for it', () => {
    */
   it('has no price rather than a made-up one where no rule is set', () => {
     expect(suggestedSell(250_000, null, 'retail', 0).status).toBe('unavailable');
+  });
+
+  /**
+   * Bow Saw Blade — Bahco, off the shop's own books: 9,800 a blade, a
+   * `+10,000` carton rule over a pack of ten, which is the 10,800 the price
+   * box fills in. The hint under it used to read `+10000 on 9800` — the
+   * rule's own figure, unformatted, describing a price ten times the one
+   * beside it.
+   */
+  it('names the markup it applied, not the rule it came from', () => {
+    const carton = { kind: 'fixed' as const, value: 10_000, from: 'product' as const };
+    const applied = suggestedSell(9_800, carton, 'wholesale', 10);
+
+    expect(sell(applied)).toBe(10_800);
+    expect(basis(applied)).toBe('+1,000 on 9,800');
+
+    // Nothing to convert through, so the rule's figure IS what was applied.
+    expect(basis(suggestedSell(250_000, carton, 'wholesale', 0))).toBe('+10,000 on 250,000');
+    // A percent is the same either way, and it is the rule that is quoted.
+    const fifth = { kind: 'percent' as const, value: 20, from: 'product' as const };
+    expect(basis(suggestedSell(250_000, fifth, 'retail', 0))).toBe('+20% on 250,000');
+  });
+
+  /** A basis a person can check: the two figures in it add to the price. */
+  it('writes a basis whose arithmetic works out', () => {
+    const rule = { kind: 'fixed' as const, value: 10_000, from: 'product' as const };
+    const applied = suggestedSell(15_000, rule, 'wholesale', 20);
+    const [added, on] = (basis(applied) ?? '').split(' on ');
+
+    expect(Number((added ?? '').replace(/[+,]/g, '')) + Number((on ?? '').replace(/,/g, ''))).toBe(
+      sell(applied),
+    );
   });
 
   it('prices the shelf by the shelf rule and a bought-in line by the other', () => {

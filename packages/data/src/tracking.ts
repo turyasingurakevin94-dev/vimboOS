@@ -26,13 +26,14 @@
  * | the run it is on | `payload.assignedDeliveryId` |
  * | packed | `payload.pickingStatus === 'done'` |
  * | short pick | `pickedQty` against `qty`, per item |
- * | bought-in lines | items carrying a `supplierId` |
+ * | bought-in lines | items whose `supplierId` is a supplier's, not `__stock__` |
  * | checked in | those whose `receivedQty` has arrived |
  */
 
 import {
   known,
   Money,
+  OWN_SHELF,
   partial,
   STAGES,
   unavailable,
@@ -114,7 +115,31 @@ function valueOf(payload: Record<string, unknown>, doc: string): Derived<Money.M
     : partial(money, basis, `${blind} of ${counted} lines have no price`);
 }
 
-/** The suppliers asked for this order, and whether they have answered. */
+/**
+ * Whether this line has to be bought in from somebody outside the shop.
+ *
+ * `__stock__` is the old app's own sentinel for a line taken off our own
+ * shelf, and it is written into `supplierId` exactly like a supplier's id —
+ * with `supplierName` reading `Our stock`. Every count here used to take it
+ * for a supplier, and the shop's own shelf cannot answer a message: an
+ * order filled entirely from stock sat in Taken behind `Cannot move yet —
+ * Our stock has not answered`, and the buying trip listed a stop at our own
+ * store with cash to carry there.
+ *
+ * Asked of the LINE rather than of the name, because the name is what the
+ * card shows and the sentinel is what the books mean.
+ */
+const boughtIn = (item: Record<string, unknown> | null): item is Record<string, unknown> =>
+  item !== null && readText(item.supplierId) !== null && item.supplierId !== OWN_SHELF;
+
+/**
+ * The suppliers asked for this order, and whether they have answered.
+ *
+ * Only outside suppliers are asked. Our own shelf is not one of them, so a
+ * line off it is never an ask and never holds the order in Taken — where
+ * some lines are bought in and some are not, it is only the bought-in ones
+ * the lane waits on.
+ */
 function suppliersOf(payload: Record<string, unknown>): readonly SupplierAsk[] {
   const confirms = obj(payload.supplierConfirms) ?? {};
   const names = new Map<string, boolean>();
@@ -122,7 +147,7 @@ function suppliersOf(payload: Record<string, unknown>): readonly SupplierAsk[] {
   for (const raw of arr(payload.items)) {
     const item = obj(raw);
     const name = item === null ? null : readText(item.supplierName);
-    if (item === null || name === null) continue;
+    if (!boughtIn(item) || name === null) continue;
 
     const id = readText(item.supplierId) ?? name;
     // Answered once, answered for the order: the confirmation is per
@@ -158,8 +183,8 @@ export function toTrackedOrder(
   const payload = obj(row.payload) ?? {};
   const items = arr(payload.items).map(obj);
 
-  const bought = items.filter((i) => i !== null && readText(i.supplierId) !== null);
-  const checkedIn = bought.filter((i) => (num(i?.receivedQty) ?? 0) > 0);
+  const bought = items.filter(boughtIn);
+  const checkedIn = bought.filter((i) => (num(i.receivedQty) ?? 0) > 0);
 
   const asked = items.reduce((n, i) => n + (num(i?.qty) ?? 0), 0);
   const found = items.reduce((n, i) => n + (num(i?.pickedQty) ?? num(i?.qty) ?? 0), 0);
@@ -233,7 +258,9 @@ export function tripFrom(rows: readonly unknown[]): Trip {
 
     for (const item of arr(obj(row.payload)?.items).map(obj)) {
       const supplier = item === null ? null : readText(item.supplierName);
-      if (item === null || supplier === null) continue;
+      // A line off our own shelf is already here: no stop, and no cash for
+      // the buyer to carry to it.
+      if (!boughtIn(item) || supplier === null) continue;
       // Already in. Nothing to fetch and nothing to pay.
       if ((num(item.receivedQty) ?? 0) > 0) continue;
 
